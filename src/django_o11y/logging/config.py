@@ -13,10 +13,26 @@ import structlog
 
 from django_o11y.logging.processors import add_open_telemetry_spans
 
+logger = logging.getLogger("django_o11y.logging")
+
 
 def setup_logging(config: dict[str, Any]) -> None:
     """Configure structlog: console or JSON format, optional OTLP, trace context."""
     logging_config = config["LOGGING"]
+
+    logger.debug(
+        "django_o11y: setting up logging",
+        extra={
+            "format": logging_config.get("FORMAT"),
+            "level": logging_config.get("LEVEL"),
+            "otlp_enabled": logging_config.get("OTLP_ENABLED"),
+            "otlp_endpoint": logging_config.get("OTLP_ENDPOINT")
+            if logging_config.get("OTLP_ENABLED")
+            else None,
+            "colorized": logging_config.get("COLORIZED"),
+            "rich_exceptions": logging_config.get("RICH_EXCEPTIONS"),
+        },
+    )
 
     base_processors = [
         structlog.contextvars.merge_contextvars,
@@ -88,6 +104,12 @@ def _configure_python_logging(logging_config: dict[str, Any]) -> None:
             "()": OTLPHandler,
             "endpoint": logging_config["OTLP_ENDPOINT"],
         }
+        logger.debug(
+            "django_o11y: OTLP log exporter enabled",
+            extra={"endpoint": logging_config["OTLP_ENDPOINT"]},
+        )
+    else:
+        logger.debug("django_o11y: OTLP log exporter disabled")
 
     root_handlers = ["console"]
     if logging_config.get("OTLP_ENABLED", False):

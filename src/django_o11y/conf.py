@@ -50,7 +50,7 @@ def get_config() -> dict[str, Any]:
             "RICH_EXCEPTIONS": _get_bool_env(
                 "DJANGO_LOG_RICH_EXCEPTIONS", settings.DEBUG
             ),
-            "OTLP_ENABLED": _get_bool_env("DJANGO_O11Y_LOG_OTLP_ENABLED", True),
+            "OTLP_ENABLED": _get_bool_env("DJANGO_O11Y_LOG_OTLP_ENABLED", False),
             "OTLP_ENDPOINT": os.getenv(
                 "OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317"
             ),
