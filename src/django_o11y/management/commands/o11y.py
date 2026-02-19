@@ -78,7 +78,7 @@ def start(app_url, app_container):
       python manage.py o11y stack start
 
       # App running in Docker with a custom container name
-      python manage.py o11y stack start --app-url django-app:8000 --app-container django-app
+      python manage.py o11y stack start --app-url django-app:8000 --app-container myapp
     """
     if not _check_docker_compose():  # pragma: no cover
         raise SystemExit(1)
@@ -127,41 +127,22 @@ def stop():
 
 
 @stack.command()
-@click.option(
-    "--app-url",
-    default="host.docker.internal:8000",
-    help="URL where Django app exposes /metrics endpoint",
-    show_default=True,
-)
-@click.option(
-    "--app-container",
-    default="django-app",
-    help="Docker container name to scrape logs from",
-    show_default=True,
-)
-def restart(app_url, app_container):
-    """Restart the observability stack."""
+def restart():
+    """Restart the observability stack without recreating containers."""
     if not _check_docker_compose():  # pragma: no cover
         raise SystemExit(1)
 
     click.echo("Restarting observability stack...")
-    work_dir = _get_work_dir(app_url, app_container)
+    work_dir = _get_work_dir()
     cmd = _get_compose_cmd()
 
     try:
-        # Stop
         subprocess.run(
-            cmd + ["-f", "docker-compose.yml", "down"],
+            cmd + ["-f", "docker-compose.yml", "restart"],
             cwd=work_dir,
             check=True,
         )
-        # Start
-        subprocess.run(
-            cmd + ["-f", "docker-compose.yml", "up", "-d"],
-            cwd=work_dir,
-            check=True,
-        )
-        click.secho("Stack restarted successfully", fg="green")
+        click.secho("Stack restarted.", fg="green")
     except subprocess.CalledProcessError as e:  # pragma: no cover
         click.secho(f"Failed to restart services: {e}", fg="red", err=True)
         raise SystemExit(1) from e
