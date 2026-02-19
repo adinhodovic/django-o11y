@@ -2,6 +2,8 @@
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 
 def test_profiling_disabled_by_default():
     import os
@@ -178,7 +180,7 @@ def test_setup_profiling_handles_import_error():
         setup_profiling(config)
 
 
-def test_setup_profiling_handles_generic_exception():
+def test_setup_profiling_raises_on_configure_error():
     from django_o11y.profiling import setup_profiling
 
     mock_pyroscope = MagicMock()
@@ -193,4 +195,5 @@ def test_setup_profiling_handles_generic_exception():
     }
 
     with patch.dict("sys.modules", {"pyroscope": mock_pyroscope}):
-        setup_profiling(config)
+        with pytest.raises(RuntimeError, match="Connection failed"):
+            setup_profiling(config)

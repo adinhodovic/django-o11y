@@ -1,5 +1,6 @@
 """Django app configuration for django-o11y."""
 
+import os
 from importlib.metadata import PackageNotFoundError, version
 
 from django.apps import AppConfig
@@ -19,7 +20,6 @@ class DjangoO11yConfig(AppConfig):
 
         from django_o11y.conf import get_o11y_config
         from django_o11y.instrumentation.setup import setup_instrumentation
-        from django_o11y.logging.config import setup_logging
         from django_o11y.profiling import setup_profiling
         from django_o11y.tracing.provider import setup_tracing
         from django_o11y.validation import validate_config
@@ -35,11 +35,14 @@ class DjangoO11yConfig(AppConfig):
             )
             raise ImproperlyConfigured(error_msg)
 
+        # runserver spawns a reloader process and a worker process, both calling
+        # ready(). Django sets DJANGO_AUTORELOAD_ENV in the reloader process;
+        # skip setup there to avoid double initialisation and a duplicate banner.
+        if os.environ.get("DJANGO_AUTORELOAD_ENV"):
+            return
+
         if config["TRACING"]["ENABLED"]:
             setup_tracing(config)
-
-        if config["LOGGING"]["ENABLED"]:
-            setup_logging(config)
 
         setup_instrumentation(config)
 
@@ -75,15 +78,6 @@ class DjangoO11yConfig(AppConfig):
                 endpoint = tracing.get("OTLP_ENDPOINT", "")
                 sample = tracing.get("SAMPLE_RATE", 1.0)
                 banner.append(f"✅ Tracing → {endpoint} ({sample * 100:.0f}% sampling)")
-
-            logging_config = config.get("LOGGING", {})
-            if logging_config.get("ENABLED"):
-                fmt = logging_config.get("FORMAT", "console")
-                colorized = logging_config.get("COLORIZED", False)
-                fmt_str = f"{fmt} format"
-                if colorized:
-                    fmt_str += " (colorized)"
-                banner.append(f"✅ Logging → {fmt_str}")
 
             if config.get("CELERY", {}).get("ENABLED"):
                 banner.append("✅ Celery → auto-instrumented")

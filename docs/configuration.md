@@ -36,7 +36,6 @@ DJANGO_O11Y = {
 
 | Setting | Type | Default | Env Var |
 |---------|------|---------|---------|
-| `LOGGING.ENABLED` | bool | `True` | `DJANGO_O11Y_LOGGING_ENABLED` |
 | `LOGGING.FORMAT` | str | `"console"` (DEBUG=True) / `"json"` (DEBUG=False) | `DJANGO_LOG_FORMAT` |
 | `LOGGING.LEVEL` | str | `"INFO"` | `DJANGO_LOG_LEVEL` |
 | `LOGGING.REQUEST_LEVEL` | str | `"INFO"` | `DJANGO_REQUEST_LOG_LEVEL` |
@@ -69,7 +68,6 @@ DJANGO_O11Y = {
 |---------|------|---------|---------|
 | `PROFILING.ENABLED` | bool | `False` | `DJANGO_O11Y_PROFILING_ENABLED` |
 | `PROFILING.PYROSCOPE_URL` | str | `"http://localhost:4040"` | `PYROSCOPE_SERVER_ADDRESS` |
-| `PROFILING.MODE` | str | `"push"` | `PYROSCOPE_MODE` |
 | `PROFILING.TAGS` | dict | `{}` | — |
 
 ## Environment variables

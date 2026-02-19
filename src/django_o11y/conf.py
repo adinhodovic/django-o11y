@@ -38,7 +38,6 @@ def get_config() -> dict[str, Any]:
             "CONSOLE_EXPORTER": _get_bool_env("DJANGO_O11Y_CONSOLE_EXPORTER", False),
         },
         "LOGGING": {
-            "ENABLED": _get_bool_env("DJANGO_O11Y_LOGGING_ENABLED", True),
             "FORMAT": os.getenv(
                 "DJANGO_LOG_FORMAT", "json" if not settings.DEBUG else "console"
             ),
@@ -84,7 +83,6 @@ def get_config() -> dict[str, Any]:
             "PYROSCOPE_URL": os.getenv(
                 "PYROSCOPE_SERVER_ADDRESS", "http://localhost:4040"
             ),
-            "MODE": os.getenv("PYROSCOPE_MODE", "push"),
             "TAGS": {},  # Custom profiling tags
         },
     }

@@ -38,47 +38,44 @@ def test_config_defaults():
 # ---------------------------------------------------------------------------
 
 
-def test_setup_logging_json_format():
-    from django_o11y.logging.config import setup_logging
+def test_build_logging_dict_json_format():
+    from django_o11y.logging.config import build_logging_dict
 
-    config = {
-        "LOGGING": {
-            "FORMAT": "json",
-            "LEVEL": "INFO",
-            "REQUEST_LEVEL": "INFO",
-            "DATABASE_LEVEL": "WARNING",
-            "CELERY_LEVEL": "INFO",
-            "COLORIZED": False,
-            "OTLP_ENABLED": False,
-        }
+    logging_config = {
+        "FORMAT": "json",
+        "LEVEL": "INFO",
+        "REQUEST_LEVEL": "INFO",
+        "DATABASE_LEVEL": "WARNING",
+        "CELERY_LEVEL": "INFO",
+        "COLORIZED": False,
+        "OTLP_ENABLED": False,
     }
 
-    # Drives the json branch (lines 52-55) and else formatter (line 79)
-    setup_logging(config)
+    result = build_logging_dict(logging_config)
+    assert result["version"] == 1
+    assert "json" in result["formatters"]
 
 
-def test_setup_logging_with_otlp_enabled():
-    from django_o11y.logging.config import setup_logging
+def test_build_logging_dict_with_otlp_enabled():
+    from django_o11y.logging.config import build_logging_dict
 
-    config = {
-        "LOGGING": {
-            "FORMAT": "console",
-            "LEVEL": "INFO",
-            "REQUEST_LEVEL": "INFO",
-            "DATABASE_LEVEL": "WARNING",
-            "CELERY_LEVEL": "INFO",
-            "COLORIZED": False,
-            "OTLP_ENABLED": True,
-            "OTLP_ENDPOINT": "http://localhost:4317",
-        }
+    logging_config = {
+        "FORMAT": "console",
+        "LEVEL": "INFO",
+        "REQUEST_LEVEL": "INFO",
+        "DATABASE_LEVEL": "WARNING",
+        "CELERY_LEVEL": "INFO",
+        "COLORIZED": False,
+        "OTLP_ENABLED": True,
+        "OTLP_ENDPOINT": "http://localhost:4317",
     }
 
     with (
         patch("django_o11y.logging.otlp_handler.OTLPLogExporter"),
         patch("django_o11y.logging.otlp_handler.set_logger_provider"),
     ):
-        # Drives the OTLP_ENABLED branches (lines 95-105)
-        setup_logging(config)
+        result = build_logging_dict(logging_config)
+        assert "otlp" in result["handlers"]
 
 
 # ---------------------------------------------------------------------------

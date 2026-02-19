@@ -8,7 +8,7 @@
 pip install django-o11y
 ```
 
-For all features:
+For everything:
 
 ```bash
 pip install django-o11y[all]
@@ -27,6 +27,11 @@ Or pick what you need:
 Add to your Django settings:
 
 ```python
+from django_o11y.logging.config import build_logging_dict
+
+LOGGING_CONFIG = None
+LOGGING = build_logging_dict()
+
 INSTALLED_APPS = [
     "django_prometheus",
     "django_o11y",
@@ -53,8 +58,6 @@ MIDDLEWARE = [
     "django_prometheus.middleware.PrometheusAfterMiddleware",
 ]
 ```
-
-That's it. django-o11y auto-configures tracing, logging, and metrics with sensible defaults on startup.
 
 ---
 
@@ -130,7 +133,21 @@ Custom metrics appear on the same `/metrics` endpoint alongside infrastructure m
 
 ## Logs
 
-Structured logging via [Structlog](https://www.structlog.org/) with automatic trace correlation. Every log line includes the active `trace_id` and `span_id`, so you can jump from a log entry directly to its trace in Grafana.
+Structured logging via [Structlog](https://www.structlog.org/) with automatic trace correlation. Every log line includes `trace_id` and `span_id`, so you can jump from a log entry directly to its trace in Grafana.
+
+### Setup
+
+Logging is configured by calling `build_logging_dict()` in your settings. Django applies it through the standard `LOGGING` setting — no magic, no auto-configuration.
+
+```python
+# settings.py
+from django_o11y.logging.config import build_logging_dict
+
+LOGGING_CONFIG = None  # prevent Django applying its DEFAULT_LOGGING first
+LOGGING = build_logging_dict()
+```
+
+`LOGGING_CONFIG = None` is required. Without it Django applies its own default handlers before your app config is ready, which causes duplicate access logs and Werkzeug's color handler showing up alongside structlog output.
 
 ### Usage
 
@@ -147,13 +164,15 @@ logger.error("payment_failed", error=str(e), order_id=order_id)
 
 Use keyword arguments, not f-strings. This keeps logs machine-readable and queryable in Loki.
 
-### Development output (console)
+### Output formats
+
+Development (`DEBUG=True`) — colorized console:
 
 ```
 2026-02-12T10:30:45 [info     ] order_placed    order_id=123 amount=49.99 [views.py:42]
 ```
 
-### Production output (JSON)
+Production (`DEBUG=False`) — JSON with trace correlation:
 
 ```json
 {
@@ -170,36 +189,47 @@ Use keyword arguments, not f-strings. This keeps logs machine-readable and query
 }
 ```
 
-The format switches automatically: `console` when `DEBUG=True`, `json` when `DEBUG=False`.
+The format switches automatically based on `DEBUG`. Override it:
+
+```python
+LOGGING = build_logging_dict({"FORMAT": "json", "LEVEL": "INFO", ...})
+```
+
+Or via env var: `DJANGO_LOG_FORMAT=json`.
 
 ### Log file (dev only)
 
-When `DEBUG=True`, logs are also written as JSON to `/tmp/django-o11y/django.log` in addition to stdout. The local dev stack (`o11y stack start`) tails this file with Alloy and ships it to Loki, so logs show up in Grafana even when OTLP push is disabled.
+When `DEBUG=True`, logs are also written as JSON to `/tmp/django-o11y/django.log`. The local dev stack (`o11y stack start`) tails this file with Alloy and ships it to Loki, so logs show up in Grafana without needing OTLP push enabled. Useful when running `runserver` or `runserver_plus` directly on the host.
 
-The path can be changed via env var:
+Override the path:
 
 ```bash
 DJANGO_O11Y_LOG_FILE_PATH=/var/log/myapp/django.log
 ```
 
-Or disabled entirely:
+Disable it:
 
 ```bash
 DJANGO_O11Y_LOG_FILE_ENABLED=false
 ```
 
-### Configuration
+### Extending the config
+
+Pass `extra` to deep-merge additional loggers or handlers into the base dict:
 
 ```python
-DJANGO_O11Y = {
-    "LOGGING": {
-        "FORMAT": "json",           # "console" or "json"
-        "LEVEL": "INFO",
-        "REQUEST_LEVEL": "INFO",    # django_structlog request logs
-        "DATABASE_LEVEL": "WARNING" # set to "DEBUG" to log all SQL
-    }
-}
+from django_o11y.logging.config import build_logging_dict
+
+LOGGING_CONFIG = None
+LOGGING = build_logging_dict(extra={
+    "loggers": {
+        "myapp": {"level": "DEBUG"},
+        "myapp.payments": {"level": "WARNING"},
+    },
+})
 ```
+
+Nested dicts are merged rather than replaced, so you only need to specify what you want to change.
 
 ### Adding context
 
@@ -219,7 +249,7 @@ set_custom_tags({"tenant_id": "acme", "feature": "checkout_v2"})
 
 ## Profiling
 
-Continuous profiling via [Pyroscope](https://pyroscope.io/). Disabled by default.
+Continuous profiling via [Pyroscope](https://pyroscope.io/). Disabled by default. The Python SDK only supports push mode.
 
 ### Setup
 
@@ -240,11 +270,11 @@ DJANGO_O11Y = {
 }
 ```
 
-Profiles are pushed to Pyroscope automatically on startup. View them in Grafana under **Explore → Pyroscope**.
+Profiles are pushed to Pyroscope on startup. View them in Grafana under **Explore → Pyroscope**.
 
 ### Custom tags
 
-Tag profiles with business context for filtering:
+Tag profiles with extra context for filtering:
 
 ```python
 DJANGO_O11Y = {
@@ -262,15 +292,15 @@ DJANGO_O11Y = {
 
 ## Traces
 
-Distributed tracing via [OpenTelemetry](https://opentelemetry.io/). Django requests, database queries, cache operations, and outbound HTTP calls are all instrumented automatically.
+Distributed tracing via [OpenTelemetry](https://opentelemetry.io/). Django requests, database queries, cache operations, and outbound HTTP calls are instrumented automatically.
 
-### What is instrumented automatically
+### What gets instrumented
 
 - Every HTTP request — span per view with status code, route, and user ID
 - Database queries — span per query (requires django-prometheus DB backend)
 - Outbound HTTP — spans for `requests` and `urllib3` calls (requires `django-o11y[http]`)
 - Redis — spans for cache operations (requires `django-o11y[redis]`)
-- Celery tasks — span per task, linked to the triggering request (requires `django-o11y[celery]`)
+- Celery tasks — span per task, linked to the request that triggered it (requires `django-o11y[celery]`)
 
 ### Configuration
 
@@ -324,7 +354,7 @@ DJANGO_O11Y = {
 }
 ```
 
-Observability is set up automatically via Celery signals when the worker starts. Tasks get a trace span linked to the request that triggered them, structured logs with `trace_id`/`span_id`, and task lifecycle metrics.
+Observability is set up via Celery signals when the worker starts. Each task gets a trace span linked to the request that triggered it, structured logs with `trace_id`/`span_id`, and task lifecycle metrics.
 
 ```python
 import structlog
