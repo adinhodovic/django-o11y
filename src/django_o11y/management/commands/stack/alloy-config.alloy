@@ -1,3 +1,7 @@
+// ============================================================
+// Traces: OTLP → Tempo
+// ============================================================
+
 otelcol.receiver.otlp "default" {
   grpc {
     endpoint = "0.0.0.0:4317"
@@ -7,7 +11,7 @@ otelcol.receiver.otlp "default" {
   }
   output {
     traces  = [otelcol.exporter.otlp.tempo.input]
-    logs    = [otelcol.exporter.loki.default.input]
+    logs    = [otelcol.exporter.loki.otlp.input]
   }
 }
 
@@ -20,7 +24,52 @@ otelcol.exporter.otlp "tempo" {
   }
 }
 
-otelcol.exporter.loki "default" {
+// ============================================================
+// Logs: OTLP push path → Loki
+// ============================================================
+
+otelcol.exporter.loki "otlp" {
+  forward_to = [loki.write.default.receiver]
+}
+
+// ============================================================
+// Logs: Docker stdout scrape path → Loki
+// Picks up logs when OTLP log push is disabled (the default).
+// Django writes JSON logs to stdout; Alloy tails them here.
+// ============================================================
+
+loki.source.docker "django" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.docker.containers.targets
+  forward_to = [loki.process.django.receiver]
+}
+
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+loki.process "django" {
+  // Parse JSON log lines emitted by structlog in production format
+  stage.json {
+    expressions = {
+      level     = "level",
+      logger    = "logger",
+      timestamp = "timestamp",
+    }
+  }
+
+  stage.labels {
+    values = {
+      level  = "level",
+      logger = "logger",
+    }
+  }
+
+  stage.timestamp {
+    source = "timestamp"
+    format = "RFC3339"
+  }
+
   forward_to = [loki.write.default.receiver]
 }
 
@@ -30,16 +79,20 @@ loki.write "default" {
   }
 }
 
+// ============================================================
+// Metrics: scrape Django /metrics → Prometheus
+// ============================================================
+
 prometheus.scrape "django" {
   targets = [
     {
       "__address__" = "host.docker.internal:8000",
-      "job" = "django-app",
+      "job"         = "django-app",
     },
   ]
-  metrics_path = "/metrics"
+  metrics_path    = "/metrics"
   scrape_interval = "15s"
-  forward_to = [prometheus.remote_write.default.receiver]
+  forward_to      = [prometheus.remote_write.default.receiver]
 }
 
 prometheus.remote_write "default" {

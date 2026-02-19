@@ -20,3 +20,12 @@ storage:
     
 ingester:
   max_block_duration: 5m
+
+metrics_generator:
+  storage:
+    path: /tmp/tempo/generator/wal
+
+overrides:
+  defaults:
+    metrics_generator:
+      processors: [local-blocks]
