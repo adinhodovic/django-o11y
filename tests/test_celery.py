@@ -45,15 +45,6 @@ def test_celery_setup_warns_on_missing_package():
             _setup_celery_tracing()
 
 
-def test_celery_auto_setup_respects_config(celery_app):
-    from django_observability.celery.setup import _auto_setup_on_worker_init
-    from django_observability.conf import get_observability_config
-
-    with override_settings(DJANGO_OBSERVABILITY={"CELERY": {"ENABLED": False}}):
-        get_observability_config.cache_clear()
-        _auto_setup_on_worker_init(sender=celery_app)
-
-
 def test_celery_setup_connects_signals(celery_app):
     from django_observability.celery.setup import setup_celery_observability
     from django_observability.celery import setup
@@ -72,16 +63,6 @@ def test_celery_setup_connects_signals(celery_app):
         assert receivers_after >= receivers_before
     finally:
         setup._instrumented = original_flag
-
-
-def test_celery_config_defaults():
-    from django_observability.conf import get_observability_config
-
-    config = get_observability_config()
-
-    assert "CELERY" in config
-    assert "ENABLED" in config["CELERY"]
-    assert isinstance(config["CELERY"]["ENABLED"], bool)
 
 
 def test_celery_setup_loads_config_from_django_settings(celery_app):

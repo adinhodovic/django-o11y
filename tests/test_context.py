@@ -1,14 +1,24 @@
 """Tests for context management functions."""
 
-import pytest
 import structlog
-from unittest.mock import Mock, patch
+from unittest.mock import patch
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
 
-def test_set_custom_tags_adds_to_span(mock_tracer):
+def _make_tracer():
+    """Return a tracer backed by a local in-memory exporter (no global state)."""
+    provider = TracerProvider()
+    provider.add_span_processor(SimpleSpanProcessor(InMemorySpanExporter()))
+    return provider.get_tracer(__name__)
+
+
+def test_set_custom_tags_adds_to_span():
     from django_observability.context import set_custom_tags
 
-    with mock_tracer.start_as_current_span("test-span") as span:
+    tracer = _make_tracer()
+    with tracer.start_as_current_span("test-span") as span:
         set_custom_tags(
             {"tenant_id": "acme-corp", "feature": "checkout", "tier": "premium"}
         )
@@ -32,7 +42,7 @@ def test_set_custom_tags_adds_to_log_context():
     assert "user_id" in str(context) or hasattr(context, "get")
 
 
-def test_set_custom_tags_without_recording_span(mock_tracer):
+def test_set_custom_tags_without_recording_span():
     from django_observability.context import set_custom_tags
     from opentelemetry import trace
 
@@ -41,27 +51,23 @@ def test_set_custom_tags_without_recording_span(mock_tracer):
         set_custom_tags({"key": "value"})
 
 
-def test_set_custom_tags_converts_values_to_strings(mock_tracer):
+def test_set_custom_tags_converts_values_to_strings():
     from django_observability.context import set_custom_tags
 
-    with mock_tracer.start_as_current_span("test-span") as span:
-        set_custom_tags(
-            {
-                "count": 42,
-                "enabled": True,
-                "value": 3.14,
-            }
-        )
+    tracer = _make_tracer()
+    with tracer.start_as_current_span("test-span") as span:
+        set_custom_tags({"count": 42, "enabled": True, "value": 3.14})
 
         assert span.attributes.get("custom.count") == "42"
         assert span.attributes.get("custom.enabled") == "True"
         assert span.attributes.get("custom.value") == "3.14"
 
 
-def test_add_span_attribute(mock_tracer):
+def test_add_span_attribute():
     from django_observability.context import add_span_attribute
 
-    with mock_tracer.start_as_current_span("test-span") as span:
+    tracer = _make_tracer()
+    with tracer.start_as_current_span("test-span") as span:
         add_span_attribute("query_count", 15)
         add_span_attribute("cache_hit", True)
 
@@ -104,10 +110,11 @@ def test_clear_custom_context():
     assert "key" not in context_str or len(str(bound_logger._context)) < 10
 
 
-def test_get_current_trace_id(mock_tracer):
+def test_get_current_trace_id():
     from django_observability.context import get_current_trace_id
 
-    with mock_tracer.start_as_current_span("test-span"):
+    tracer = _make_tracer()
+    with tracer.start_as_current_span("test-span"):
         trace_id = get_current_trace_id()
 
         assert trace_id is not None
@@ -125,10 +132,11 @@ def test_get_current_trace_id_no_span():
         assert trace_id is None
 
 
-def test_get_current_span_id(mock_tracer):
+def test_get_current_span_id():
     from django_observability.context import get_current_span_id
 
-    with mock_tracer.start_as_current_span("test-span"):
+    tracer = _make_tracer()
+    with tracer.start_as_current_span("test-span"):
         span_id = get_current_span_id()
 
         assert span_id is not None
@@ -146,7 +154,7 @@ def test_get_current_span_id_no_span():
         assert span_id is None
 
 
-def test_context_workflow(mock_tracer):
+def test_context_workflow():
     from django_observability.context import (
         set_custom_tags,
         add_span_attribute,
@@ -155,7 +163,8 @@ def test_context_workflow(mock_tracer):
         clear_custom_context,
     )
 
-    with mock_tracer.start_as_current_span("workflow-span") as span:
+    tracer = _make_tracer()
+    with tracer.start_as_current_span("workflow-span") as span:
         set_custom_tags({"tenant": "acme"})
         add_span_attribute("step", "processing")
         add_log_context(detail="extra info")

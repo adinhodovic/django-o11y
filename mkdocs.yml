@@ -1,0 +1,54 @@
+site_name: Django Observability
+site_description: OpenTelemetry observability for Django with traces, logs, metrics, and profiling
+site_url: https://adinhodovic.github.io/django-observability/
+repo_url: https://github.com/adinhodovic/django-observability
+repo_name: adinhodovic/django-observability
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.expand
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+    - content.code.annotate
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Integration Guide: integration.md
+  - Configuration Reference: CONFIGURATION.md
+  - Usage Guide: USAGE.md
+  - Contributing: contributing.md

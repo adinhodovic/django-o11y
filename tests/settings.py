@@ -37,7 +37,7 @@ DJANGO_OBSERVABILITY = {
     "NAMESPACE": os.getenv("SERVICE_NAMESPACE", ""),
     "TRACING": {
         "ENABLED": True,
-        "OTLP_ENDPOINT": os.getenv("OTLP_ENDPOINT", "http://localhost:4317"),
+        "OTLP_ENDPOINT": os.getenv("OTLP_ENDPOINT", ""),  # No collector in tests
         "SAMPLE_RATE": float(os.getenv("OTEL_TRACE_SAMPLE_RATE", "1.0")),
         "CONSOLE_EXPORTER": False,  # Too noisy in tests
     },
@@ -50,8 +50,7 @@ DJANGO_OBSERVABILITY = {
         "OTLP_ENABLED": False,  # Disabled in tests - no network calls
     },
     "METRICS": {
-        "PROMETHEUS_ENABLED": True,  # Enabled but won't export
-        "OTLP_ENABLED": False,  # Disabled in tests - no network calls
+        "PROMETHEUS_ENABLED": True,
     },
     "CELERY": {
         "ENABLED": True,  # Always instrument, even if not used in all tests

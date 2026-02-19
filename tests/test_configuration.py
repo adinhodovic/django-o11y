@@ -87,18 +87,16 @@ def test_setup_logging_with_otlp_enabled():
 # ---------------------------------------------------------------------------
 
 
-def test_add_open_telemetry_spans_with_parent(mock_tracer):
+def test_add_open_telemetry_spans_with_parent():
     from django_observability.logging.processors import add_open_telemetry_spans
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import SimpleSpanProcessor
     from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
         InMemorySpanExporter,
     )
-    from opentelemetry import trace
 
-    exporter = InMemorySpanExporter()
     provider = TracerProvider()
-    provider.add_span_processor(SimpleSpanProcessor(exporter))
+    provider.add_span_processor(SimpleSpanProcessor(InMemorySpanExporter()))
     tracer = provider.get_tracer(__name__)
 
     with tracer.start_as_current_span("parent-span"):

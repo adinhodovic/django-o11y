@@ -5,12 +5,6 @@ import time
 
 import pytest
 from click.testing import CliRunner
-from opentelemetry import trace
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import SimpleSpanProcessor
-from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
-from unittest.mock import Mock, MagicMock, patch
-
 
 # ---------------------------------------------------------------------------
 # Integration fixture: full observability stack via Docker Compose
@@ -110,7 +104,6 @@ def mock_config():
         },
         "METRICS": {
             "PROMETHEUS_ENABLED": True,
-            "OTLP_ENABLED": False,
         },
         "CELERY": {
             "ENABLED": True,
@@ -124,31 +117,6 @@ def mock_config():
         "RESOURCE_ATTRIBUTES": {},
         "CUSTOM_TAGS": {},
     }
-
-
-@pytest.fixture
-def mock_tracer():
-    """Mock OpenTelemetry tracer with in-memory exporter."""
-    exporter = InMemorySpanExporter()
-    provider = TracerProvider()
-    provider.add_span_processor(SimpleSpanProcessor(exporter))
-    trace.set_tracer_provider(provider)
-    tracer = provider.get_tracer(__name__)
-
-    # Store exporter for inspection in tests
-    tracer._test_exporter = exporter
-
-    yield tracer
-
-    # Cleanup
-    exporter.clear()
-
-
-@pytest.fixture
-def mock_span(mock_tracer):
-    """Mock span for testing."""
-    with mock_tracer.start_as_current_span("test-span") as span:
-        yield span
 
 
 @pytest.fixture
@@ -180,29 +148,6 @@ def django_user_request(rf):
     return request
 
 
-@pytest.fixture
-def django_anonymous_request(rf):
-    """Request factory with anonymous user."""
-    from django.contrib.auth.models import AnonymousUser
-
-    request = rf.get("/")
-    request.user = AnonymousUser()
-
-    return request
-
-
-@pytest.fixture
-def mock_otlp_exporter():
-    """Mock OTLP exporter to avoid network calls in tests."""
-    with patch(
-        "opentelemetry.exporter.otlp.proto.grpc.trace_exporter.OTLPSpanExporter"
-    ) as mock:
-        exporter = Mock()
-        exporter.export.return_value = Mock(is_success=True)
-        mock.return_value = exporter
-        yield exporter
-
-
 @pytest.fixture(autouse=True)
 def reset_observability_cache():
     """Reset the lru_cache on get_observability_config for each test."""
@@ -210,56 +155,4 @@ def reset_observability_cache():
 
     get_observability_config.cache_clear()
     yield
-    get_observability_config.cache_clear()
-
-
-@pytest.fixture
-def capture_structlog_output():
-    """Capture structlog output for inspection in tests."""
-    import structlog
-    from io import StringIO
-
-    output = StringIO()
-
-    # Configure structlog with string output
-    structlog.configure(
-        processors=[
-            structlog.processors.JSONRenderer(),
-        ],
-        wrapper_class=structlog.BoundLogger,
-        context_class=dict,
-        logger_factory=structlog.PrintLoggerFactory(file=output),
-        cache_logger_on_first_use=False,
-    )
-
-    yield output
-
-    # Reset structlog config
-    structlog.reset_defaults()
-
-
-@pytest.fixture
-def mock_django_settings(settings):
-    """Provide easy access to Django settings for modification in tests."""
-    return settings
-
-
-@pytest.fixture
-def django_user_model():
-    """Provide Django User model for tests."""
-    from django.contrib.auth import get_user_model
-
-    return get_user_model()
-
-
-@pytest.fixture
-def clean_observability_state():
-    """Reset observability state before and after tests."""
-    from opentelemetry import trace
-    from django_observability.conf import get_observability_config
-
-    get_observability_config.cache_clear()
-
-    yield
-
     get_observability_config.cache_clear()

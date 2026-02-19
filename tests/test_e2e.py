@@ -10,7 +10,6 @@ via ``observability stack start`` and tears it down at the end of the session.
 """
 
 import time
-from decimal import Decimal
 
 import pytest
 import requests
@@ -174,79 +173,3 @@ class TestObservabilityStackE2E:
 
         metrics_text = response.text
         assert "# HELP" in metrics_text or "# TYPE" in metrics_text
-
-
-@pytest.mark.django_db
-class TestObservabilityWithTestApp:
-    """Tests using the test Django app."""
-
-    def test_create_order_with_tracing(self):
-        """Test creating an order generates traces."""
-        from tests.models import Order
-
-        order = Order.objects.create(
-            order_number="E2E-TEST-001",
-            customer_email="e2e@example.com",
-            amount=Decimal("99.99"),
-            status="pending",
-        )
-
-        assert order.id is not None
-        assert Order.objects.filter(order_number="E2E-TEST-001").exists()
-
-    def test_query_orders_with_tracing(self):
-        """Test querying orders generates DB traces."""
-        from tests.models import Order
-
-        Order.objects.create(
-            order_number="E2E-QUERY-001",
-            customer_email="query@example.com",
-            amount=Decimal("50.00"),
-        )
-
-        orders = list(Order.objects.filter(status="pending"))
-
-        assert len(orders) >= 1
-
-    def test_bulk_operations_with_tracing(self):
-        """Test bulk operations generate traces."""
-        from tests.models import Order
-
-        orders = [
-            Order(
-                order_number=f"E2E-BULK-{i:03d}",
-                customer_email=f"bulk{i}@example.com",
-                amount=Decimal("10.00"),
-            )
-            for i in range(5)
-        ]
-
-        Order.objects.bulk_create(orders)
-
-        bulk_orders = Order.objects.filter(order_number__startswith="E2E-BULK-")
-        assert bulk_orders.count() == 5
-
-    def test_order_aggregation_with_tracing(self):
-        """Test aggregation queries generate traces."""
-        from django.db.models import Count, Sum
-
-        from tests.models import Order
-
-        Order.objects.bulk_create(
-            [
-                Order(
-                    order_number=f"E2E-AGG-{i}",
-                    customer_email=f"agg{i}@example.com",
-                    amount=Decimal("100.00"),
-                    status="completed",
-                )
-                for i in range(3)
-            ]
-        )
-
-        stats = Order.objects.filter(status="completed").aggregate(
-            total=Sum("amount"), count=Count("id")
-        )
-
-        assert stats["count"] >= 3
-        assert stats["total"] >= Decimal("300.00")

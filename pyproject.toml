@@ -42,6 +42,8 @@ dependencies = [
     "structlog>=23.1.0",
     "django-structlog>=5.0.0",
     "click>=8.0.0",
+    "django-prometheus>=2.3.0",
+    "prometheus-client>=0.17.0",
 ]
 
 [project.optional-dependencies]
@@ -49,12 +51,6 @@ dependencies = [
 celery = [
     "celery>=5.0.0",
     "opentelemetry-instrumentation-celery>=0.41b0",
-]
-
-# Prometheus metrics (hybrid approach)
-prometheus = [
-    "django-prometheus>=2.3.0",
-    "prometheus-client>=0.17.0",
 ]
 
 # Profiling support (push mode - optional)
@@ -85,7 +81,13 @@ dev-logging = [
 
 # All features
 all = [
-    "django-observability[celery,prometheus,profiling,postgres,redis,http,dev-logging]",
+    "django-observability[celery,profiling,postgres,redis,http,dev-logging]",
+]
+
+# Documentation
+docs = [
+    "mkdocs>=1.6,<2.0",
+    "mkdocs-material>=9.5.0",
 ]
 
 # Development dependencies
@@ -102,6 +104,8 @@ dev = [
     "pytest-django>=4.11.0",
     "pytest-clarity>=1.0.1",
     "pytest-mock>=3.14.0",
+    "django-prometheus>=2.3.0",
+    "prometheus-client>=0.17.0",
     "celery>=5.0.0",
     "redis>=4.0.0",
     "opentelemetry-instrumentation-redis>=0.41b0",
