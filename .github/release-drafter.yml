@@ -1,53 +1,53 @@
 ---
-name-template: 'v$RESOLVED_VERSION'
-tag-template: 'v$RESOLVED_VERSION'
+name-template: "$RESOLVED_VERSION"
+tag-template: "$RESOLVED_VERSION"
 categories:
-  - title: '🚀 Features'
+  - title: "🚀 Features"
     labels:
-      - 'feat'
-      - 'feature'
-  - title: '🐛 Bug Fixes'
+      - "feat"
+      - "feature"
+  - title: "🐛 Bug Fixes"
     labels:
-      - 'fix'
-      - 'bugfix'
-      - 'revert'
-  - title: '📚 Documentation'
+      - "fix"
+      - "bugfix"
+      - "revert"
+  - title: "📚 Documentation"
     labels:
-      - 'docs'
-      - 'documentation'
-  - title: '🔧 Maintenance'
+      - "docs"
+      - "documentation"
+  - title: "🔧 Maintenance"
     labels:
-      - 'build'
-      - 'chore'
-      - 'ci'
-      - 'style'
-      - 'refactor'
-      - 'perf'
-      - 'test'
-change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
+      - "build"
+      - "chore"
+      - "ci"
+      - "style"
+      - "refactor"
+      - "perf"
+      - "test"
+change-template: "- $TITLE @$AUTHOR (#$NUMBER)"
 change-title-escapes: '\<*_&'
 version-resolver:
   major:
     labels:
-      - 'major'
-      - 'breaking'
+      - "major"
+      - "breaking"
   minor:
     labels:
-      - 'feat'
-      - 'feature'
+      - "feat"
+      - "feature"
   patch:
     labels:
-      - 'fix'
-      - 'bugfix'
-      - 'build'
-      - 'chore'
-      - 'ci'
-      - 'docs'
-      - 'style'
-      - 'refactor'
-      - 'perf'
-      - 'test'
-      - 'revert'
+      - "fix"
+      - "bugfix"
+      - "build"
+      - "chore"
+      - "ci"
+      - "docs"
+      - "style"
+      - "refactor"
+      - "perf"
+      - "test"
+      - "revert"
   default: patch
 template: |
   ## What's Changed
@@ -57,39 +57,39 @@ template: |
   **Full Changelog**: https://github.com/adinhodovic/django-o11y/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
 
 autolabeler:
-  - label: 'breaking'
+  - label: "breaking"
     body:
-      - '/BREAKING CHANGE.*/'
-  - label: 'feat'
+      - "/BREAKING CHANGE.*/"
+  - label: "feat"
     title:
       - '/^feat(\(.*\))?:.*/'
-  - label: 'fix'
+  - label: "fix"
     title:
       - '/^fix(\(.*\))?:.*/'
-  - label: 'chore'
+  - label: "chore"
     title:
       - '/^chore(\(.*\))?:.*/'
-  - label: 'ci'
+  - label: "ci"
     title:
       - '/^ci(\(.*\))?:.*/'
-  - label: 'build'
+  - label: "build"
     title:
       - '/^build(\(.*\))?:.*/'
-  - label: 'docs'
+  - label: "docs"
     title:
       - '/^docs(\(.*\))?:.*/'
-  - label: 'style'
+  - label: "style"
     title:
       - '/^style(\(.*\))?:.*/'
-  - label: 'refactor'
+  - label: "refactor"
     title:
       - '/^refactor(\(.*\))?:.*/'
-  - label: 'perf'
+  - label: "perf"
     title:
       - '/^perf(\(.*\))?:.*/'
-  - label: 'test'
+  - label: "test"
     title:
       - '/^test(\(.*\))?:.*/'
-  - label: 'revert'
+  - label: "revert"
     title:
       - '/^revert(\(.*\))?:.*/'
