@@ -5,9 +5,9 @@
 [![PyPI Version](https://img.shields.io/pypi/v/django-o11y.svg?style=flat)](https://pypi.org/project/django-o11y/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-Zero-config observability for Django — traces, logs, metrics, and profiling wired together out of the box.
+Observability for Django. Traces, logs, metrics, and profiling with minimal setup.
 
-This package packages up the patterns from these blog posts into a single installable library:
+This package bundles the patterns from these blog posts into an installable library:
 
 - [Django Monitoring with Prometheus and Grafana](https://hodovi.cc/blog/django-monitoring-with-prometheus-and-grafana/)
 - [Django Development and Production Logging](https://hodovi.cc/blog/django-development-and-production-logging/)
@@ -15,13 +15,13 @@ This package packages up the patterns from these blog posts into a single instal
 
 ## Features
 
-- **Distributed Tracing** — OpenTelemetry traces for requests, database queries, cache, and Celery tasks
-- **Structured Logging** — Structlog with colorized dev logs, JSON production logs, and automatic trace correlation
-- **Metrics** — django-prometheus for infrastructure metrics and a simple API for custom business metrics
-- **Profiling** — Pyroscope continuous profiling (optional)
-- **Celery** — Full observability for async tasks: tracing, structured logs, and metrics
-- **Grafana Dashboards** — Pre-built dashboards from the blog posts work without modification
-- **Zero config** — Sensible defaults, customizable via Django settings or environment variables
+- OpenTelemetry traces for requests, database queries, cache, and Celery tasks
+- Structlog with colorized dev output, JSON production logs, and automatic trace correlation
+- django-prometheus for infrastructure metrics and a simple API for custom business metrics
+- Pyroscope continuous profiling (optional)
+- Full Celery observability: tracing, structured logs, and metrics
+- Pre-built Grafana dashboards from the blog posts
+- Sensible defaults, overridable via Django settings or environment variables
 
 ## Local development stack
 
@@ -31,7 +31,7 @@ Start the full observability stack with one command:
 python manage.py o11y stack start
 ```
 
-This starts all services via Docker Compose and automatically imports the Grafana dashboards:
+This starts all services via Docker Compose and imports the Grafana dashboards:
 
 | Service | URL | Purpose |
 |---------|-----|---------|
@@ -50,13 +50,13 @@ python manage.py o11y stack start --app-url host.docker.internal:8080
 
 ## Grafana dashboards
 
-The following dashboards from the blog posts are automatically imported:
+The following dashboards are imported automatically:
 
-1. [Django Overview](https://grafana.com/grafana/dashboards/17617) — Request metrics, database ops, cache hit rate
-2. [Django Requests Overview](https://grafana.com/grafana/dashboards/17616) — Per-view breakdown, error rates
-3. [Django Requests by View](https://grafana.com/grafana/dashboards/17613) — Detailed per-view latency analysis
-4. [Celery Tasks Overview](https://grafana.com/grafana/dashboards/17509) — Task states, queue length, worker status
-5. [Celery Tasks by Task](https://grafana.com/grafana/dashboards/17508) — Per-task metrics and failures
+1. [Django Overview](https://grafana.com/grafana/dashboards/17617) — request metrics, database ops, cache hit rate
+2. [Django Requests Overview](https://grafana.com/grafana/dashboards/17616) — per-view breakdown, error rates
+3. [Django Requests by View](https://grafana.com/grafana/dashboards/17613) — per-view latency analysis
+4. [Celery Tasks Overview](https://grafana.com/grafana/dashboards/17509) — task states, queue length, worker status
+5. [Celery Tasks by Task](https://grafana.com/grafana/dashboards/17508) — per-task metrics and failures
 
 ## Acknowledgments
 

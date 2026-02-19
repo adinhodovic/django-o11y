@@ -55,7 +55,7 @@ celery = [
 
 # Profiling support (push mode - optional)
 profiling = [
-    "pyroscope-io>=0.8.0",  # Only needed for push mode; pull mode uses Pyroscope server scraping
+    "pyroscope-io>=0.8.0",
 ]
 
 # Database instrumentation

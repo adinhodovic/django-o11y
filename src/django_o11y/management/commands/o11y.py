@@ -390,15 +390,6 @@ def _check_configuration():
             click.secho("  ⚠️  Tracing disabled", fg="yellow")
             warn += 1
 
-        # Logging
-        if config.get("LOGGING", {}).get("ENABLED"):
-            fmt = config["LOGGING"].get("FORMAT", "console")
-            click.secho(f"  ✅ Logging enabled ({fmt} format)", fg="green")
-            ok += 1
-        else:  # pragma: no cover
-            click.secho("  ⚠️  Logging disabled", fg="yellow")
-            warn += 1
-
         # Celery
         if config.get("CELERY", {}).get("ENABLED"):  # pragma: no cover
             click.secho("  ✅ Celery enabled", fg="green")

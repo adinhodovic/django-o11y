@@ -2,10 +2,15 @@
 Structlog configuration for Django Observability.
 
 Based on the blog post: https://hodovi.cc/blog/django-development-and-production-logging/
+
+Usage in settings.py:
+
+    from django_o11y.logging.config import build_logging_dict
+
+    LOGGING_CONFIG = None
+    LOGGING = build_logging_dict()
 """
 
-import logging
-import logging.config
 import sys
 from pathlib import Path
 from typing import Any
@@ -14,27 +19,162 @@ import structlog
 
 from django_o11y.logging.processors import add_open_telemetry_spans
 
-logger = logging.getLogger("django_o11y.logging")
 
+def build_logging_dict(
+    logging_config: dict[str, Any] | None = None,
+    extra: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """
+    Build and return a Django-compatible LOGGING dict wired up for structlog.
 
-def setup_logging(config: dict[str, Any]) -> None:
-    """Configure structlog: console or JSON format, optional OTLP, trace context."""
-    logging_config = config["LOGGING"]
+    Call this in settings.py and assign the result to LOGGING. Set
+    LOGGING_CONFIG = None alongside it so Django does not apply its own
+    DEFAULT_LOGGING before the dict takes effect.
 
-    logger.debug(
-        "django_o11y: setting up logging",
-        extra={
-            "format": logging_config.get("FORMAT"),
-            "level": logging_config.get("LEVEL"),
-            "otlp_enabled": logging_config.get("OTLP_ENABLED"),
-            "otlp_endpoint": logging_config.get("OTLP_ENDPOINT")
-            if logging_config.get("OTLP_ENABLED")
-            else None,
-            "colorized": logging_config.get("COLORIZED"),
-            "rich_exceptions": logging_config.get("RICH_EXCEPTIONS"),
+    Args:
+        logging_config: The LOGGING sub-dict from DJANGO_O11Y config. When
+            omitted the defaults from conf.get_config() are used, which means
+            the function can be called with no arguments in settings.py before
+            DJANGO_O11Y is defined.
+        extra: A partial LOGGING dict to deep-merge into the result, letting
+            you add or override loggers/handlers without rewriting the whole
+            config. For example::
+
+                LOGGING = build_logging_dict(extra={
+                    "loggers": {"myapp": {"level": "DEBUG"}},
+                })
+    """
+    if logging_config is None:
+        from django_o11y.conf import get_config
+
+        logging_config = get_config()["LOGGING"]
+
+    cfg: dict[str, Any] = logging_config  # type: ignore[assignment]
+
+    _configure_structlog(cfg)
+
+    if cfg["FORMAT"] == "console":
+        default_formatter: dict[str, Any] = {
+            "()": structlog.stdlib.ProcessorFormatter,
+            "processor": structlog.dev.ConsoleRenderer(
+                colors=cfg["COLORIZED"],
+            ),
+        }
+    else:
+        default_formatter = {
+            "()": structlog.stdlib.ProcessorFormatter,
+            "processor": structlog.processors.JSONRenderer(),
+        }
+
+    json_formatter: dict[str, Any] = {
+        "()": structlog.stdlib.ProcessorFormatter,
+        "processor": structlog.processors.JSONRenderer(),
+    }
+
+    handlers: dict[str, Any] = {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "default",
+            "stream": sys.stdout,
         },
-    )
+        "null": {
+            "class": "logging.NullHandler",
+        },
+    }
 
+    if cfg.get("OTLP_ENABLED", False):
+        from django_o11y.logging.otlp_handler import OTLPHandler
+
+        handlers["otlp"] = {
+            "()": OTLPHandler,
+            "endpoint": cfg["OTLP_ENDPOINT"],
+        }
+
+    if cfg.get("FILE_ENABLED", False):
+        log_path = Path(cfg["FILE_PATH"])
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        # Always write JSON to the file so Alloy can parse it regardless of FORMAT
+        handlers["file"] = {
+            "class": "logging.FileHandler",
+            "formatter": "json",
+            "filename": str(log_path),
+            "encoding": "utf-8",
+        }
+
+    root_handlers = ["console"]
+    if cfg.get("OTLP_ENABLED", False):
+        root_handlers.append("otlp")
+    if cfg.get("FILE_ENABLED", False):
+        root_handlers.append("file")
+
+    result: dict[str, Any] = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {
+            "default": default_formatter,
+            "json": json_formatter,
+        },
+        "handlers": handlers,
+        "root": {
+            "handlers": root_handlers,
+            "level": "WARNING",
+        },
+        "loggers": {
+            "django_o11y": {
+                "level": cfg["LEVEL"],
+            },
+            "django_structlog": {
+                "level": cfg["LEVEL"],
+            },
+            "django_structlog.middlewares": {
+                "level": cfg["REQUEST_LEVEL"],
+            },
+            "django_structlog.celery": {
+                "level": cfg["CELERY_LEVEL"],
+            },
+            "django.db.backends": {
+                "level": cfg["DATABASE_LEVEL"],
+            },
+            # Suppress built-in access logs — django-structlog middleware handles these
+            "django.server": {
+                "handlers": ["null"],
+                "propagate": False,
+            },
+            "django.request": {
+                "handlers": ["null"],
+                "propagate": False,
+            },
+            "django.channels.server": {
+                "handlers": ["null"],
+                "propagate": False,
+            },
+            # Level set explicitly — werkzeug attaches its own ColorStreamHandler
+            # at import time if the logger level is NOTSET
+            "werkzeug": {
+                "handlers": ["null"],
+                "level": "WARNING",
+                "propagate": False,
+            },
+        },
+    }
+
+    if extra:
+        _deep_merge(result, extra)
+
+    return result
+
+
+def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> None:
+    """Deep-merge override into base in place."""
+    for key, value in override.items():
+        if key in base and isinstance(base[key], dict) and isinstance(value, dict):
+            _deep_merge(base[key], value)
+        else:
+            base[key] = value
+
+
+def _configure_structlog(logging_config: dict[str, Any]) -> None:
+    """Configure the structlog processor chain."""
     base_processors = [
         structlog.contextvars.merge_contextvars,
         structlog.stdlib.add_logger_name,
@@ -55,137 +195,11 @@ def setup_logging(config: dict[str, Any]) -> None:
     ]
 
     if logging_config["FORMAT"] == "json":
-        production_processors = [
-            structlog.processors.dict_tracebacks,
-        ]
-        base_processors.extend(production_processors)
-
-    formatter_processor = [structlog.stdlib.ProcessorFormatter.wrap_for_formatter]
+        base_processors.append(structlog.processors.dict_tracebacks)
 
     structlog.configure(
-        processors=base_processors + formatter_processor,  # type: ignore[arg-type]
+        processors=base_processors
+        + [structlog.stdlib.ProcessorFormatter.wrap_for_formatter],  # type: ignore[arg-type]
         logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
     )
-
-    _configure_python_logging(logging_config)
-
-
-def _configure_python_logging(logging_config: dict[str, Any]) -> None:
-    """Configure Python's logging module to work with structlog."""
-
-    if logging_config["FORMAT"] == "console":
-        formatter = {
-            "()": structlog.stdlib.ProcessorFormatter,
-            "processor": structlog.dev.ConsoleRenderer(
-                colors=logging_config["COLORIZED"],
-            ),
-        }
-    else:
-        formatter = {
-            "()": structlog.stdlib.ProcessorFormatter,
-            "processor": structlog.processors.JSONRenderer(),
-        }
-
-    handlers: dict[str, Any] = {
-        "console": {
-            "class": "logging.StreamHandler",
-            "formatter": "default",
-            "stream": sys.stdout,
-        },
-        "null": {
-            "class": "logging.NullHandler",
-        },
-    }
-
-    if logging_config.get("OTLP_ENABLED", False):
-        from django_o11y.logging.otlp_handler import OTLPHandler
-
-        handlers["otlp"] = {
-            "()": OTLPHandler,
-            "endpoint": logging_config["OTLP_ENDPOINT"],
-        }
-        logger.debug(
-            "django_o11y: OTLP log exporter enabled",
-            extra={"endpoint": logging_config["OTLP_ENDPOINT"]},
-        )
-    else:
-        logger.debug("django_o11y: OTLP log exporter disabled")
-
-    if logging_config.get("FILE_ENABLED", False):
-        log_path = Path(logging_config["FILE_PATH"])
-        log_path.parent.mkdir(parents=True, exist_ok=True)
-        # Always write JSON to the file so Alloy can parse it regardless of FORMAT
-        handlers["file"] = {
-            "class": "logging.FileHandler",
-            "formatter": "json",
-            "filename": str(log_path),
-            "encoding": "utf-8",
-        }
-        logger.debug(
-            "django_o11y: file log handler enabled",
-            extra={"path": str(log_path)},
-        )
-
-    root_handlers = ["console"]
-    if logging_config.get("OTLP_ENABLED", False):
-        root_handlers.append("otlp")
-    if logging_config.get("FILE_ENABLED", False):
-        root_handlers.append("file")
-
-    json_formatter = {
-        "()": structlog.stdlib.ProcessorFormatter,
-        "processor": structlog.processors.JSONRenderer(),
-    }
-
-    logging_dict = {
-        "version": 1,
-        "disable_existing_loggers": False,
-        "formatters": {
-            "default": formatter,
-            "json": json_formatter,
-        },
-        "handlers": handlers,
-        "root": {
-            "handlers": root_handlers,
-            "level": "WARNING",
-        },
-        "loggers": {
-            "django_o11y": {
-                "level": logging_config["LEVEL"],
-            },
-            "django_structlog": {
-                "level": logging_config["LEVEL"],
-            },
-            # Django Structlog request middlewares
-            "django_structlog.middlewares": {
-                "level": logging_config["REQUEST_LEVEL"],
-            },
-            # Django Structlog Celery receivers
-            "django_structlog.celery": {
-                "level": logging_config["CELERY_LEVEL"],
-            },
-            # Database logs
-            "django.db.backends": {
-                "level": logging_config["DATABASE_LEVEL"],
-            },
-            "django.server": {
-                "handlers": ["null"],
-                "propagate": False,
-            },
-            "django.request": {
-                "handlers": ["null"],
-                "propagate": False,
-            },
-            "django.channels.server": {
-                "handlers": ["null"],
-                "propagate": False,
-            },
-            "werkzeug": {
-                "handlers": ["null"],
-                "propagate": False,
-            },
-        },
-    }
-
-    logging.config.dictConfig(logging_dict)
