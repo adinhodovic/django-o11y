@@ -30,7 +30,7 @@ def get_config() -> dict[str, Any]:
         "RESOURCE_ATTRIBUTES": {},
         "CUSTOM_TAGS": {},
         "TRACING": {
-            "ENABLED": _get_bool_env("DJANGO_O11Y_TRACING_ENABLED", True),
+            "ENABLED": _get_bool_env("DJANGO_O11Y_TRACING_ENABLED", False),
             "OTLP_ENDPOINT": os.getenv(
                 "OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317"
             ),

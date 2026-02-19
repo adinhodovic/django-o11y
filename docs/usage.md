@@ -137,17 +137,39 @@ Structured logging via [Structlog](https://www.structlog.org/) with automatic tr
 
 ### Setup
 
-Logging is configured by calling `build_logging_dict()` in your settings. Django applies it through the standard `LOGGING` setting — no magic, no auto-configuration.
+Call `build_logging_dict()` in each settings file. The defaults are keyed off `DEBUG`, so most of the difference between environments is handled automatically.
+
+`LOGGING_CONFIG = None` is required in every settings file. Without it Django applies its own default handlers at startup, which causes duplicate access logs and Werkzeug's color handler showing up alongside structlog output.
+
+**`settings/local.py`**
 
 ```python
-# settings.py
 from django_o11y.logging.config import build_logging_dict
 
-LOGGING_CONFIG = None  # prevent Django applying its DEFAULT_LOGGING first
+LOGGING_CONFIG = None
 LOGGING = build_logging_dict()
+# DEBUG=True: console format, colorized, file output to /tmp/django-o11y/django.log
 ```
 
-`LOGGING_CONFIG = None` is required. Without it Django applies its own default handlers before your app config is ready, which causes duplicate access logs and Werkzeug's color handler showing up alongside structlog output.
+**`settings/production.py`**
+
+```python
+from django_o11y.logging.config import build_logging_dict
+
+LOGGING_CONFIG = None
+LOGGING = build_logging_dict()
+# DEBUG=False: JSON format, no file output
+```
+
+**`settings/test.py`**
+
+```python
+from django_o11y.logging.config import build_logging_dict
+
+LOGGING_CONFIG = None
+LOGGING = build_logging_dict({"LEVEL": "WARNING", "FILE_ENABLED": False})
+# Quiet in tests regardless of DEBUG
+```
 
 ### Usage
 
@@ -307,11 +329,14 @@ Distributed tracing via [OpenTelemetry](https://opentelemetry.io/). Django reque
 ```python
 DJANGO_O11Y = {
     "TRACING": {
+        "ENABLED": True,          # default: False
         "OTLP_ENDPOINT": "http://localhost:4317",
-        "SAMPLE_RATE": 1.0,   # 1.0 = 100%, use 0.01 in high-traffic prod
+        "SAMPLE_RATE": 1.0,       # 1.0 = 100%, use 0.01 in high-traffic prod
     }
 }
 ```
+
+To disable tracing entirely, set `ENABLED: False` or `DJANGO_O11Y_TRACING_ENABLED=false`.
 
 ### Adding custom context
 

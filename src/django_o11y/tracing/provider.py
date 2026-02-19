@@ -1,5 +1,6 @@
 """OpenTelemetry tracing provider setup."""
 
+import logging
 import os
 import socket
 from typing import Any
@@ -11,6 +12,8 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 
 from django_o11y import __version__
+
+logger = logging.getLogger("django_o11y.tracing")
 
 
 def setup_tracing(config: dict[str, Any]) -> TracerProvider:
@@ -55,4 +58,10 @@ def setup_tracing(config: dict[str, Any]) -> TracerProvider:
         provider.add_span_processor(BatchSpanProcessor(console_exporter))
 
     trace.set_tracer_provider(provider)
+    logger.info(
+        "Tracing configured for %s, sending to %s (%.0f%% sampling)",
+        service_name,
+        tracing_config["OTLP_ENDPOINT"],
+        tracing_config.get("SAMPLE_RATE", 1.0) * 100,
+    )
     return provider
