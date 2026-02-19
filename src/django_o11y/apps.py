@@ -1,10 +1,12 @@
 """Django app configuration for django-o11y."""
 
-import os
+import logging
 from importlib.metadata import PackageNotFoundError, version
 
 from django.apps import AppConfig
 from django.conf import settings
+
+logger = logging.getLogger("django_o11y")
 
 
 class DjangoO11yConfig(AppConfig):
@@ -13,6 +15,7 @@ class DjangoO11yConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "django_o11y"
     verbose_name = "Django O11y"
+    _o11y_ready: bool = False
 
     def ready(self):
         """Initialize observability when Django starts."""
@@ -35,19 +38,32 @@ class DjangoO11yConfig(AppConfig):
             )
             raise ImproperlyConfigured(error_msg)
 
-        # runserver spawns a reloader process and a worker process, both calling
-        # ready(). Django sets DJANGO_AUTORELOAD_ENV in the reloader process;
-        # skip setup there to avoid double initialisation and a duplicate banner.
-        if os.environ.get("DJANGO_AUTORELOAD_ENV"):
+        # Prevent double initialisation. AppConfig.ready() can be called more
+        # than once in some environments (e.g. Django's runserver reloader).
+        if getattr(self, "_o11y_ready", False):
             return
+        self._o11y_ready = True
 
         if config["TRACING"]["ENABLED"]:
             setup_tracing(config)
+        else:
+            logger.info("Tracing disabled")
 
         setup_instrumentation(config)
 
+        logging_config = config.get("LOGGING", {})
+        fmt = logging_config.get("FORMAT", "console")
+        logger.info("Logging configured, format=%s", fmt)
+
+        metrics_config = config.get("METRICS", {})
+        if metrics_config.get("PROMETHEUS_ENABLED", True):
+            endpoint = metrics_config.get("PROMETHEUS_ENDPOINT", "/metrics")
+            logger.info("Metrics enabled at %s", endpoint)
+
         if config.get("PROFILING", {}).get("ENABLED"):
             setup_profiling(config)
+        else:
+            logger.info("Profiling disabled")
 
         try:
             if settings.DEBUG:
@@ -79,6 +95,15 @@ class DjangoO11yConfig(AppConfig):
                 sample = tracing.get("SAMPLE_RATE", 1.0)
                 banner.append(f"✅ Tracing → {endpoint} ({sample * 100:.0f}% sampling)")
 
+            logging_config = config.get("LOGGING", {})
+            fmt = logging_config.get("FORMAT", "console")
+            banner.append(f"✅ Logging → format={fmt}")
+
+            metrics_config = config.get("METRICS", {})
+            if metrics_config.get("PROMETHEUS_ENABLED", True):
+                endpoint = metrics_config.get("PROMETHEUS_ENDPOINT", "/metrics")
+                banner.append(f"✅ Metrics → {endpoint}")
+
             if config.get("CELERY", {}).get("ENABLED"):
                 banner.append("✅ Celery → auto-instrumented")
 
@@ -86,14 +111,10 @@ class DjangoO11yConfig(AppConfig):
             if profiling.get("ENABLED"):
                 url = profiling.get("PYROSCOPE_URL", "")
                 banner.append(f"✅ Profiling → {url}")
-            else:
-                banner.append("⚠️  Profiling → disabled")
 
             banner.extend(
                 [
                     "",
-                    "Metrics: /metrics",
-                    "Health Check: python manage.py o11y check",
                     "=" * 60,
                     "",
                 ]

@@ -253,7 +253,7 @@ def check():
         summary += f", {error_count} error"
         click.secho(summary, fg="red")
         raise SystemExit(1)
-    elif warning_count > 0:  # pragma: no cover
+    if warning_count > 0:  # pragma: no cover
         click.secho(summary, fg="yellow")
     else:
         click.secho(summary, fg="green")
@@ -316,6 +316,23 @@ def _get_compose_cmd():
     return ["docker-compose"]  # pragma: no cover
 
 
+def _copy_stack_file(config_file, dest, app_url=None, app_container=None):
+    """Copy a single stack config file, substituting placeholders if needed."""
+    # For alloy-config.alloy, substitute the metrics scrape URL
+    # and the Docker container name for log scraping
+    if config_file.name == "alloy-config.alloy" and (
+        app_url or app_container
+    ):  # pragma: no cover
+        content = config_file.read_text()
+        if app_url:
+            content = content.replace('"host.docker.internal:8000"', f'"{app_url}"')
+        if app_container:
+            content = content.replace('"django-app"', f'"{app_container}"')
+        dest.write_text(content)
+    else:
+        shutil.copy(config_file, dest)
+
+
 def _get_work_dir(app_url=None, app_container=None):
     """Get or create working directory and copy stack configs."""
     work_dir = Path.home() / ".django-o11y"
@@ -331,24 +348,7 @@ def _get_work_dir(app_url=None, app_container=None):
             for config_file in stack_path.glob("*"):
                 if config_file.is_file():
                     dest = work_dir / config_file.name
-
-                    # For alloy-config.alloy, substitute the metrics scrape URL
-                    # and the Docker container name for log scraping
-                    if config_file.name == "alloy-config.alloy" and (
-                        app_url or app_container
-                    ):  # pragma: no cover
-                        content = config_file.read_text()
-                        if app_url:
-                            content = content.replace(
-                                '"host.docker.internal:8000"', f'"{app_url}"'
-                            )
-                        if app_container:
-                            content = content.replace(
-                                '"django-app"', f'"{app_container}"'
-                            )
-                        dest.write_text(content)
-                    else:
-                        shutil.copy(config_file, dest)
+                    _copy_stack_file(config_file, dest, app_url, app_container)
     except Exception as e:  # pragma: no cover
         click.secho(f"Warning: Could not copy stack files: {e}", fg="yellow")
 

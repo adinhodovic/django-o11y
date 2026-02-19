@@ -121,7 +121,9 @@ def build_logging_dict(
         },
         "loggers": {
             "django_o11y": {
+                "handlers": root_handlers,
                 "level": cfg["LEVEL"],
+                "propagate": False,
             },
             "django_structlog": {
                 "level": cfg["LEVEL"],

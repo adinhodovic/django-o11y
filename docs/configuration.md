@@ -27,7 +27,7 @@ DJANGO_O11Y = {
 
 | Setting | Type | Default | Env Var |
 |---------|------|---------|---------|
-| `TRACING.ENABLED` | bool | `True` | `DJANGO_O11Y_TRACING_ENABLED` |
+| `TRACING.ENABLED` | bool | `False` | `DJANGO_O11Y_TRACING_ENABLED` |
 | `TRACING.OTLP_ENDPOINT` | str | `"http://localhost:4317"` | `OTEL_EXPORTER_OTLP_ENDPOINT` |
 | `TRACING.SAMPLE_RATE` | float | `1.0` | `OTEL_TRACES_SAMPLER_ARG` |
 | `TRACING.CONSOLE_EXPORTER` | bool | `False` | `DJANGO_O11Y_CONSOLE_EXPORTER` |

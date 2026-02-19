@@ -1,11 +1,11 @@
 services:
   tempo:
     image: grafana/tempo:2.10.1
+    user: "10001:10001"
     command: ["-config.file=/etc/tempo.yaml"]
     volumes:
       - ./tempo-config.yaml:/etc/tempo.yaml
-    tmpfs:
-      - /tmp/tempo
+      - tempo-data:/var/tempo
     ports:
       - "3200:3200"
 

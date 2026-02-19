@@ -26,8 +26,9 @@ def setup_profiling(config: dict[str, Any]) -> None:
         )
         return
 
+    # service_name is already set via application_name; including it here
+    # produces a duplicate label that Pyroscope rejects with 400.
     tags = {
-        "service_name": config["SERVICE_NAME"],
         "service_version": os.getenv("SERVICE_VERSION", __version__),
         "environment": config.get("ENVIRONMENT", "development"),
         "host": socket.gethostname(),
@@ -41,8 +42,18 @@ def setup_profiling(config: dict[str, Any]) -> None:
     if custom_tags:
         tags.update(custom_tags)
 
-    pyroscope.configure(
-        application_name=config["SERVICE_NAME"],
-        server_address=profiling_config["PYROSCOPE_URL"],
-        tags=tags,
+    try:
+        pyroscope.configure(
+            application_name=config["SERVICE_NAME"],
+            server_address=profiling_config["PYROSCOPE_URL"],
+            tags=tags,
+        )
+    except Exception as e:
+        logger.warning("django_o11y: profiling configuration failed: %s", e)
+        raise
+
+    logger.info(
+        "Profiling configured for %s, sending to %s",
+        config["SERVICE_NAME"],
+        profiling_config["PYROSCOPE_URL"],
     )
