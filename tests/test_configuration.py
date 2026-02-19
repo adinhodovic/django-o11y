@@ -1,20 +1,19 @@
 """Tests for configuration."""
 
-import pytest
+from unittest.mock import patch
+
 from django.conf import settings
-from django.test import override_settings
-from unittest.mock import patch, MagicMock
 
 
 def test_config_loaded():
-    assert hasattr(settings, "DJANGO_OBSERVABILITY")
-    assert settings.DJANGO_OBSERVABILITY["SERVICE_NAME"] == "test-service"
+    assert hasattr(settings, "DJANGO_O11Y")
+    assert settings.DJANGO_O11Y["SERVICE_NAME"] == "test-service"
 
 
-def test_get_observability_config():
-    from django_observability.conf import get_observability_config
+def test_get_o11y_config():
+    from django_o11y.conf import get_o11y_config
 
-    config = get_observability_config()
+    config = get_o11y_config()
 
     assert config is not None
     assert "SERVICE_NAME" in config
@@ -24,9 +23,9 @@ def test_get_observability_config():
 
 
 def test_config_defaults():
-    from django_observability.conf import get_observability_config
+    from django_o11y.conf import get_o11y_config
 
-    config = get_observability_config()
+    config = get_o11y_config()
 
     assert config["TRACING"]["ENABLED"] is True
     assert config["TRACING"]["SAMPLE_RATE"] == 1.0
@@ -40,7 +39,7 @@ def test_config_defaults():
 
 
 def test_setup_logging_json_format():
-    from django_observability.logging.config import setup_logging
+    from django_o11y.logging.config import setup_logging
 
     config = {
         "LOGGING": {
@@ -59,7 +58,7 @@ def test_setup_logging_json_format():
 
 
 def test_setup_logging_with_otlp_enabled():
-    from django_observability.logging.config import setup_logging
+    from django_o11y.logging.config import setup_logging
 
     config = {
         "LOGGING": {
@@ -75,8 +74,8 @@ def test_setup_logging_with_otlp_enabled():
     }
 
     with (
-        patch("django_observability.logging.otlp_handler.OTLPLogExporter"),
-        patch("django_observability.logging.otlp_handler.set_logger_provider"),
+        patch("django_o11y.logging.otlp_handler.OTLPLogExporter"),
+        patch("django_o11y.logging.otlp_handler.set_logger_provider"),
     ):
         # Drives the OTLP_ENABLED branches (lines 95-105)
         setup_logging(config)
@@ -88,12 +87,13 @@ def test_setup_logging_with_otlp_enabled():
 
 
 def test_add_open_telemetry_spans_with_parent():
-    from django_observability.logging.processors import add_open_telemetry_spans
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import SimpleSpanProcessor
     from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
         InMemorySpanExporter,
     )
+
+    from django_o11y.logging.processors import add_open_telemetry_spans
 
     provider = TracerProvider()
     provider.add_span_processor(SimpleSpanProcessor(InMemorySpanExporter()))

@@ -1,7 +1,8 @@
 """Tests for test models."""
 
-import pytest
 from decimal import Decimal
+
+import pytest
 
 
 @pytest.mark.django_db
@@ -42,8 +43,9 @@ def test_order_status_choices():
 @pytest.mark.django_db
 def test_order_unique_order_number():
     """Test that order_number must be unique."""
-    from tests.models import Order
     from django.db import IntegrityError
+
+    from tests.models import Order
 
     Order.objects.create(
         order_number="UNIQUE-001",
@@ -77,8 +79,9 @@ def test_order_str_representation():
 @pytest.mark.django_db
 def test_order_ordering():
     """Test that orders are ordered by created_at descending."""
-    from tests.models import Order
     import time
+
+    from tests.models import Order
 
     order1 = Order.objects.create(
         order_number="ORD-001",

@@ -29,7 +29,9 @@ class TestObservabilityStackE2E:
         data = None
         while time.time() < deadline:
             response = requests.get(
-                "http://localhost:9090/api/v1/query", params={"query": "up"}
+                "http://localhost:9090/api/v1/query",
+                params={"query": "up"},
+                timeout=10,
             )
             assert response.status_code == 200
             data = response.json()
@@ -51,7 +53,9 @@ class TestObservabilityStackE2E:
 
     def test_prometheus_django_metrics_available(self, observability_stack):
         """Test that Prometheus has some metrics available."""
-        response = requests.get("http://localhost:9090/api/v1/label/__name__/values")
+        response = requests.get(
+            "http://localhost:9090/api/v1/label/__name__/values", timeout=10
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -70,7 +74,9 @@ class TestObservabilityStackE2E:
         data = None
         while time.time() < deadline:
             response = requests.get(
-                "http://localhost:9090/api/v1/query", params={"query": "up"}
+                "http://localhost:9090/api/v1/query",
+                params={"query": "up"},
+                timeout=10,
             )
             assert response.status_code == 200
             data = response.json()
@@ -111,6 +117,7 @@ class TestObservabilityStackE2E:
                 "end": str(int(time.time())),
                 "limit": 10,
             },
+            timeout=10,
         )
 
         assert response.status_code == 200
@@ -119,7 +126,7 @@ class TestObservabilityStackE2E:
 
     def test_pyroscope_api_accessible(self, observability_stack):
         """Test that Pyroscope API is accessible."""
-        response = requests.get("http://localhost:4040/api/apps")
+        response = requests.get("http://localhost:4040/api/apps", timeout=10)
 
         assert response.status_code in [200, 404]
 
@@ -131,7 +138,7 @@ class TestObservabilityStackE2E:
 
     def test_grafana_accessible(self, observability_stack):
         """Test that Grafana is accessible."""
-        response = requests.get("http://localhost:3000/api/health")
+        response = requests.get("http://localhost:3000/api/health", timeout=10)
 
         assert response.status_code == 200
         data = response.json()
@@ -139,7 +146,7 @@ class TestObservabilityStackE2E:
 
     def test_grafana_datasources_configured(self, observability_stack):
         """Test that Grafana has datasources configured."""
-        response = requests.get("http://localhost:3000/api/datasources")
+        response = requests.get("http://localhost:3000/api/datasources", timeout=10)
 
         assert response.status_code == 200
         datasources = response.json()
@@ -153,7 +160,9 @@ class TestObservabilityStackE2E:
     def test_grafana_dashboards_imported(self, observability_stack):
         """Test that Grafana dashboards were imported."""
         response = requests.get(
-            "http://localhost:3000/api/search", params={"type": "dash-db"}
+            "http://localhost:3000/api/search",
+            params={"type": "dash-db"},
+            timeout=10,
         )
 
         assert response.status_code == 200

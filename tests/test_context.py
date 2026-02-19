@@ -1,7 +1,8 @@
 """Tests for context management functions."""
 
-import structlog
 from unittest.mock import patch
+
+import structlog
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
@@ -15,7 +16,7 @@ def _make_tracer():
 
 
 def test_set_custom_tags_adds_to_span():
-    from django_observability.context import set_custom_tags
+    from django_o11y.context import set_custom_tags
 
     tracer = _make_tracer()
     with tracer.start_as_current_span("test-span") as span:
@@ -29,7 +30,7 @@ def test_set_custom_tags_adds_to_span():
 
 
 def test_set_custom_tags_adds_to_log_context():
-    from django_observability.context import set_custom_tags
+    from django_o11y.context import set_custom_tags
 
     structlog.contextvars.clear_contextvars()
 
@@ -43,8 +44,9 @@ def test_set_custom_tags_adds_to_log_context():
 
 
 def test_set_custom_tags_without_recording_span():
-    from django_observability.context import set_custom_tags
     from opentelemetry import trace
+
+    from django_o11y.context import set_custom_tags
 
     non_recording_span = trace.NonRecordingSpan(trace.INVALID_SPAN_CONTEXT)
     with patch("opentelemetry.trace.get_current_span", return_value=non_recording_span):
@@ -52,7 +54,7 @@ def test_set_custom_tags_without_recording_span():
 
 
 def test_set_custom_tags_converts_values_to_strings():
-    from django_observability.context import set_custom_tags
+    from django_o11y.context import set_custom_tags
 
     tracer = _make_tracer()
     with tracer.start_as_current_span("test-span") as span:
@@ -64,7 +66,7 @@ def test_set_custom_tags_converts_values_to_strings():
 
 
 def test_add_span_attribute():
-    from django_observability.context import add_span_attribute
+    from django_o11y.context import add_span_attribute
 
     tracer = _make_tracer()
     with tracer.start_as_current_span("test-span") as span:
@@ -76,8 +78,9 @@ def test_add_span_attribute():
 
 
 def test_add_span_attribute_without_recording_span():
-    from django_observability.context import add_span_attribute
     from opentelemetry import trace
+
+    from django_o11y.context import add_span_attribute
 
     non_recording_span = trace.NonRecordingSpan(trace.INVALID_SPAN_CONTEXT)
     with patch("opentelemetry.trace.get_current_span", return_value=non_recording_span):
@@ -85,7 +88,7 @@ def test_add_span_attribute_without_recording_span():
 
 
 def test_add_log_context():
-    from django_observability.context import add_log_context
+    from django_o11y.context import add_log_context
 
     structlog.contextvars.clear_contextvars()
 
@@ -98,7 +101,7 @@ def test_add_log_context():
 
 
 def test_clear_custom_context():
-    from django_observability.context import set_custom_tags, clear_custom_context
+    from django_o11y.context import clear_custom_context, set_custom_tags
 
     set_custom_tags({"key": "value"})
     clear_custom_context()
@@ -111,7 +114,7 @@ def test_clear_custom_context():
 
 
 def test_get_current_trace_id():
-    from django_observability.context import get_current_trace_id
+    from django_o11y.context import get_current_trace_id
 
     tracer = _make_tracer()
     with tracer.start_as_current_span("test-span"):
@@ -123,8 +126,9 @@ def test_get_current_trace_id():
 
 
 def test_get_current_trace_id_no_span():
-    from django_observability.context import get_current_trace_id
     from opentelemetry import trace
+
+    from django_o11y.context import get_current_trace_id
 
     non_recording_span = trace.NonRecordingSpan(trace.INVALID_SPAN_CONTEXT)
     with patch("opentelemetry.trace.get_current_span", return_value=non_recording_span):
@@ -133,7 +137,7 @@ def test_get_current_trace_id_no_span():
 
 
 def test_get_current_span_id():
-    from django_observability.context import get_current_span_id
+    from django_o11y.context import get_current_span_id
 
     tracer = _make_tracer()
     with tracer.start_as_current_span("test-span"):
@@ -145,8 +149,9 @@ def test_get_current_span_id():
 
 
 def test_get_current_span_id_no_span():
-    from django_observability.context import get_current_span_id
     from opentelemetry import trace
+
+    from django_o11y.context import get_current_span_id
 
     non_recording_span = trace.NonRecordingSpan(trace.INVALID_SPAN_CONTEXT)
     with patch("opentelemetry.trace.get_current_span", return_value=non_recording_span):
@@ -155,12 +160,12 @@ def test_get_current_span_id_no_span():
 
 
 def test_context_workflow():
-    from django_observability.context import (
-        set_custom_tags,
-        add_span_attribute,
+    from django_o11y.context import (
         add_log_context,
-        get_current_trace_id,
+        add_span_attribute,
         clear_custom_context,
+        get_current_trace_id,
+        set_custom_tags,
     )
 
     tracer = _make_tracer()

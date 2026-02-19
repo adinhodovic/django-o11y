@@ -1,8 +1,8 @@
-# Django Observability
+# Django O11y
 
-[![Test](https://github.com/adinhodovic/django-observability/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/adinhodovic/django-observability/actions/workflows/ci-cd.yml)
-[![Supported Python versions](https://img.shields.io/pypi/pyversions/django-observability.svg)](https://pypi.org/project/django-observability/)
-[![PyPI Version](https://img.shields.io/pypi/v/django-observability.svg?style=flat)](https://pypi.org/project/django-observability/)
+[![Test](https://github.com/adinhodovic/django-o11y/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/adinhodovic/django-o11y/actions/workflows/ci-cd.yml)
+[![Supported Python versions](https://img.shields.io/pypi/pyversions/django-o11y.svg)](https://pypi.org/project/django-o11y/)
+[![PyPI Version](https://img.shields.io/pypi/v/django-o11y.svg?style=flat)](https://pypi.org/project/django-o11y/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 OpenTelemetry observability for Django with traces, logs, metrics, and profiling.
@@ -30,22 +30,22 @@ This package is based on configurations from these blog posts:
 
 **Recommended for most users:**
 ```bash
-pip install django-observability[all]
+pip install django-o11y[all]
 ```
 
 **Or choose specific features:**
 
 | Installation Command | Includes | When to Use |
 |---------------------|----------|-------------|
-| `pip install django-observability` | Core (tracing + logging) | Minimal setup |
-| `pip install django-observability[celery]` | + Celery instrumentation | Async task observability |
-| `pip install django-observability[prometheus]` | + django-prometheus | Infrastructure metrics |
-| `pip install django-observability[profiling]` | + pyroscope-io | Continuous profiling |
-| `pip install django-observability[all]` | Everything | Development & full features |
+| `pip install django-o11y` | Core (tracing + logging) | Minimal setup |
+| `pip install django-o11y[celery]` | + Celery instrumentation | Async task observability |
+| `pip install django-o11y[prometheus]` | + django-prometheus | Infrastructure metrics |
+| `pip install django-o11y[profiling]` | + pyroscope-io | Continuous profiling |
+| `pip install django-o11y[all]` | Everything | Development & full features |
 
 **Production recommendation:**
 ```bash
-pip install django-observability[celery,prometheus]
+pip install django-o11y[celery,prometheus]
 ```
 
 ### Basic setup
@@ -55,19 +55,19 @@ Add to your Django settings:
 ```python
 # settings.py
 INSTALLED_APPS = [
-    'django_observability',  # Add this
+    'django_o11y',  # Add this
     'django.contrib.admin',
     # ... other apps
 ]
 
 MIDDLEWARE = [
-    'django_observability.middleware.TracingMiddleware',  # Add this
-    'django_observability.middleware.LoggingMiddleware',  # Add this
+    'django_o11y.middleware.TracingMiddleware',  # Add this
+    'django_o11y.middleware.LoggingMiddleware',  # Add this
     # ... other middleware
 ]
 ```
 
-Django Observability will automatically:
+django-o11y will automatically:
 
 - Set up OpenTelemetry tracing
 - Configure structured logging (Structlog + OTLP)
@@ -80,7 +80,7 @@ Customize via Django settings (all optional):
 
 ```python
 # settings.py
-DJANGO_OBSERVABILITY = {
+DJANGO_O11Y = {
     'SERVICE_NAME': 'my-django-app',
     
     # Tracing
@@ -158,7 +158,7 @@ Existing Grafana dashboards from the blog posts work without modification.
 Use OpenTelemetry for custom business metrics with trace correlation:
 
 ```python
-from django_observability.metrics import counter, histogram
+from django_o11y.metrics import counter, histogram
 
 # Counter with labels
 payment_counter = counter("payments.processed", "Total payments processed")
@@ -217,7 +217,7 @@ Zero-config Celery observability. Enable it in settings:
 
 ```python
 # settings.py
-DJANGO_OBSERVABILITY = {
+DJANGO_O11Y = {
     'CELERY': {
         'ENABLED': True,  # Auto-instruments when worker starts
     },
@@ -233,13 +233,13 @@ For advanced use cases or backwards compatibility:
 ```python
 # celery_app.py
 from celery import Celery
-from django_observability.celery import setup_celery_observability
+from django_o11y.celery import setup_celery_o11y
 
 app = Celery('myapp')
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
 # Optional: Manual setup (auto-called via signals if CELERY.ENABLED=True)
-setup_celery_observability(app)
+setup_celery_o11y(app)
 ```
 
 ### What you get
@@ -271,7 +271,7 @@ def process_order(order_id):
 Check that Celery observability is working:
 
 ```bash
-python manage.py observability check
+python manage.py o11y check
 ```
 
 ## Quick local testing
@@ -279,7 +279,7 @@ python manage.py observability check
 Start the full observability stack with one command:
 
 ```bash
-python manage.py observability stack start
+python manage.py o11y stack start
 ```
 
 This starts all services with Docker Compose and automatically imports Grafana dashboards:
@@ -311,10 +311,10 @@ If your app runs in Docker or on a different port:
 
 ```bash
 # App in Docker network
-python manage.py observability stack start --app-url django-app:8000
+python manage.py o11y stack start --app-url django-app:8000
 
 # App on different port
-python manage.py observability stack start --app-url host.docker.internal:3000
+python manage.py o11y stack start --app-url host.docker.internal:3000
 ```
 
 ## Grafana dashboards
@@ -335,8 +335,8 @@ All dashboards are included in the demo project.
 
 ```bash
 # Clone repo
-git clone https://github.com/adinhodovic/django-observability
-cd django-observability
+git clone https://github.com/adinhodovic/django-o11y
+cd django-o11y
 
 # Install with uv
 uv sync --all-extras
@@ -346,7 +346,7 @@ uv run pytest
 
 # Run linting
 uv run ruff check .
-uv run pylint src/django_observability
+uv run pylint src/django_o11y
 
 # Run with tox (test matrix)
 uv run tox
@@ -369,7 +369,7 @@ Contributions are welcome! Please:
 Verify your setup with the built-in health check command:
 
 ```bash
-python manage.py observability check
+python manage.py o11y check
 ```
 
 This will:
@@ -397,10 +397,10 @@ The system will warn you at startup if this package is missing.
 
 **Solution:** Configuration is validated at startup. Read the error message carefully:
 ```
-ImproperlyConfigured: Django Observability configuration errors:
+ImproperlyConfigured: Django O11y configuration errors:
   • TRACING.SAMPLE_RATE must be between 0.0 and 1.0, got 1.5
 
-Please fix these issues in your DJANGO_OBSERVABILITY setting.
+Please fix these issues in your DJANGO_O11Y setting.
 ```
 
 Fix the issues in your settings and restart.
@@ -410,7 +410,7 @@ Fix the issues in your settings and restart.
 **Problem:** Application runs but no traces in Tempo
 
 **Check:**
-1. OTLP endpoint is reachable: `python manage.py observability check`
+1. OTLP endpoint is reachable: `python manage.py o11y check`
 2. Sampling rate isn't 0: Check `TRACING.SAMPLE_RATE`
 3. Tracing is enabled: Check `TRACING.ENABLED`
 4. OTLP receiver is running: `docker ps | grep tempo`
@@ -433,10 +433,10 @@ logger = structlog.get_logger(__name__)
 
 ### Documentation
 
-- [Integration Guide](integration.md)
-- [Configuration Reference](CONFIGURATION.md)
-- [Usage Patterns](USAGE.md)
-- [Report Issues](https://github.com/adinhodovic/django-observability/issues)
+- [Usage Guide](docs/usage.md)
+- [Configuration Reference](docs/configuration.md)
+- [Usage Patterns](docs/usage.md)
+- [Report Issues](https://github.com/adinhodovic/django-o11y/issues)
 
 ## License
 

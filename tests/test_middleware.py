@@ -1,7 +1,8 @@
 """Tests for middleware."""
 
-import pytest
 from unittest.mock import patch
+
+import pytest
 from django.http import HttpResponse
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
@@ -18,8 +19,9 @@ def _make_tracer():
 
 @pytest.mark.django_db
 def test_logging_middleware_uses_meta_header():
-    from django_observability.middleware.logging import LoggingMiddleware
     from django.test import RequestFactory
+
+    from django_o11y.middleware.logging import LoggingMiddleware
 
     rf = RequestFactory()
     request = rf.get("/", HTTP_X_REQUEST_ID="meta-request-123")
@@ -35,7 +37,7 @@ def test_logging_middleware_uses_meta_header():
 
 
 def test_tracing_middleware_adds_user_attributes(django_user_request):
-    from django_observability.middleware.tracing import TracingMiddleware
+    from django_o11y.middleware.tracing import TracingMiddleware
 
     middleware = TracingMiddleware(lambda r: HttpResponse("OK"))
 
@@ -50,8 +52,9 @@ def test_tracing_middleware_adds_user_attributes(django_user_request):
 
 
 def test_tracing_middleware_5xx_error_status():
-    from django_observability.middleware.tracing import TracingMiddleware
     from django.test import RequestFactory
+
+    from django_o11y.middleware.tracing import TracingMiddleware
 
     rf = RequestFactory()
     request = rf.get("/")
@@ -68,8 +71,9 @@ def test_tracing_middleware_5xx_error_status():
 
 
 def test_tracing_middleware_records_exception():
-    from django_observability.middleware.tracing import TracingMiddleware
     from django.test import RequestFactory
+
+    from django_o11y.middleware.tracing import TracingMiddleware
 
     rf = RequestFactory()
     request = rf.get("/")
@@ -89,9 +93,10 @@ def test_tracing_middleware_records_exception():
 
 
 def test_tracing_middleware_anonymous_user():
-    from django_observability.middleware.tracing import TracingMiddleware
-    from django.test import RequestFactory
     from django.contrib.auth.models import AnonymousUser
+    from django.test import RequestFactory
+
+    from django_o11y.middleware.tracing import TracingMiddleware
 
     rf = RequestFactory()
     request = rf.get("/")

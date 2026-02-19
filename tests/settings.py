@@ -9,13 +9,13 @@ ALLOWED_HOSTS = ["*"]
 INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
-    "django_observability",
+    "django_o11y",
     "tests",
 ]
 
 MIDDLEWARE = [
-    "django_observability.middleware.TracingMiddleware",
-    "django_structlog.middlewares.RequestMiddleware",  # Use django-structlog's middleware
+    "django_o11y.middleware.TracingMiddleware",
+    "django_structlog.middlewares.RequestMiddleware",
     "django.middleware.common.CommonMiddleware",
 ]
 
@@ -28,10 +28,10 @@ DATABASES = {
 
 ROOT_URLCONF = "tests.urls"
 
-# Django Observability configuration with sane defaults
+# django-o11y configuration with sane defaults
 # All features enabled by default - tests should reflect production behavior
 # Use environment variables to override for specific test scenarios
-DJANGO_OBSERVABILITY = {
+DJANGO_O11Y = {
     "SERVICE_NAME": os.getenv("OTEL_SERVICE_NAME", "test-service"),
     "ENVIRONMENT": os.getenv("ENVIRONMENT", "test"),
     "NAMESPACE": os.getenv("SERVICE_NAMESPACE", ""),

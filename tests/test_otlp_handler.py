@@ -3,16 +3,12 @@
 import logging
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 
 def test_otlp_handler_initialization():
-    from django_observability.logging.otlp_handler import OTLPHandler
+    from django_o11y.logging.otlp_handler import OTLPHandler
 
-    with patch(
-        "django_observability.logging.otlp_handler.OTLPLogExporter"
-    ) as mock_exporter:
-        with patch("django_observability.logging.otlp_handler.set_logger_provider"):
+    with patch("django_o11y.logging.otlp_handler.OTLPLogExporter") as mock_exporter:
+        with patch("django_o11y.logging.otlp_handler.set_logger_provider"):
             mock_exporter.return_value = MagicMock()
 
             handler = OTLPHandler(
@@ -26,12 +22,10 @@ def test_otlp_handler_initialization():
 
 
 def test_otlp_handler_default_service_name():
-    from django_observability.logging.otlp_handler import OTLPHandler
+    from django_o11y.logging.otlp_handler import OTLPHandler
 
-    with patch(
-        "django_observability.logging.otlp_handler.OTLPLogExporter"
-    ) as mock_exporter:
-        with patch("django_observability.logging.otlp_handler.set_logger_provider"):
+    with patch("django_o11y.logging.otlp_handler.OTLPLogExporter") as mock_exporter:
+        with patch("django_o11y.logging.otlp_handler.set_logger_provider"):
             mock_exporter.return_value = MagicMock()
 
             handler = OTLPHandler(endpoint="http://localhost:4317")
@@ -41,15 +35,11 @@ def test_otlp_handler_default_service_name():
 
 
 def test_otlp_handler_creates_resource_with_service_name():
-    from django_observability.logging.otlp_handler import OTLPHandler
+    from django_o11y.logging.otlp_handler import OTLPHandler
 
-    with patch(
-        "django_observability.logging.otlp_handler.OTLPLogExporter"
-    ) as mock_exporter:
-        with patch(
-            "django_observability.logging.otlp_handler.Resource"
-        ) as mock_resource:
-            with patch("django_observability.logging.otlp_handler.set_logger_provider"):
+    with patch("django_o11y.logging.otlp_handler.OTLPLogExporter") as mock_exporter:
+        with patch("django_o11y.logging.otlp_handler.Resource") as mock_resource:
+            with patch("django_o11y.logging.otlp_handler.set_logger_provider"):
                 mock_exporter.return_value = MagicMock()
                 mock_resource.return_value = MagicMock()
 
@@ -65,15 +55,11 @@ def test_otlp_handler_creates_resource_with_service_name():
 
 
 def test_otlp_handler_creates_logger_provider():
-    from django_observability.logging.otlp_handler import OTLPHandler
+    from django_o11y.logging.otlp_handler import OTLPHandler
 
-    with patch(
-        "django_observability.logging.otlp_handler.OTLPLogExporter"
-    ) as mock_exporter:
-        with patch(
-            "django_observability.logging.otlp_handler.LoggerProvider"
-        ) as mock_provider:
-            with patch("django_observability.logging.otlp_handler.set_logger_provider"):
+    with patch("django_o11y.logging.otlp_handler.OTLPLogExporter") as mock_exporter:
+        with patch("django_o11y.logging.otlp_handler.LoggerProvider") as mock_provider:
+            with patch("django_o11y.logging.otlp_handler.set_logger_provider"):
                 mock_exporter.return_value = MagicMock()
                 mock_provider_instance = MagicMock()
                 mock_provider.return_value = mock_provider_instance
@@ -86,15 +72,13 @@ def test_otlp_handler_creates_logger_provider():
 
 
 def test_otlp_handler_adds_batch_processor():
-    from django_observability.logging.otlp_handler import OTLPHandler
+    from django_o11y.logging.otlp_handler import OTLPHandler
 
-    with patch(
-        "django_observability.logging.otlp_handler.OTLPLogExporter"
-    ) as mock_exporter:
+    with patch("django_o11y.logging.otlp_handler.OTLPLogExporter") as mock_exporter:
         with patch(
-            "django_observability.logging.otlp_handler.BatchLogRecordProcessor"
+            "django_o11y.logging.otlp_handler.BatchLogRecordProcessor"
         ) as mock_processor:
-            with patch("django_observability.logging.otlp_handler.set_logger_provider"):
+            with patch("django_o11y.logging.otlp_handler.set_logger_provider"):
                 mock_exporter_instance = MagicMock()
                 mock_exporter.return_value = mock_exporter_instance
                 mock_processor.return_value = MagicMock()
@@ -106,13 +90,11 @@ def test_otlp_handler_adds_batch_processor():
 
 
 def test_otlp_handler_sets_global_logger_provider():
-    from django_observability.logging.otlp_handler import OTLPHandler
+    from django_o11y.logging.otlp_handler import OTLPHandler
 
-    with patch(
-        "django_observability.logging.otlp_handler.OTLPLogExporter"
-    ) as mock_exporter:
+    with patch("django_o11y.logging.otlp_handler.OTLPLogExporter") as mock_exporter:
         with patch(
-            "django_observability.logging.otlp_handler.set_logger_provider"
+            "django_o11y.logging.otlp_handler.set_logger_provider"
         ) as mock_set_provider:
             mock_exporter.return_value = MagicMock()
 
@@ -123,19 +105,18 @@ def test_otlp_handler_sets_global_logger_provider():
 
 
 def test_otlp_handler_inherits_from_logging_handler():
-    from django_observability.logging.otlp_handler import OTLPHandler
     from opentelemetry.sdk._logs import LoggingHandler
+
+    from django_o11y.logging.otlp_handler import OTLPHandler
 
     assert issubclass(OTLPHandler, LoggingHandler)
 
 
 def test_otlp_handler_accepts_additional_kwargs():
-    from django_observability.logging.otlp_handler import OTLPHandler
+    from django_o11y.logging.otlp_handler import OTLPHandler
 
-    with patch(
-        "django_observability.logging.otlp_handler.OTLPLogExporter"
-    ) as mock_exporter:
-        with patch("django_observability.logging.otlp_handler.set_logger_provider"):
+    with patch("django_o11y.logging.otlp_handler.OTLPLogExporter") as mock_exporter:
+        with patch("django_o11y.logging.otlp_handler.set_logger_provider"):
             mock_exporter.return_value = MagicMock()
 
             handler = OTLPHandler(

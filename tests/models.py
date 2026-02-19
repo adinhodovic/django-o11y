@@ -1,4 +1,4 @@
-"""Test models for django-observability test suite."""
+"""Test models for django-o11y test suite."""
 
 from django.db import models
 

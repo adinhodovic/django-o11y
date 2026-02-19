@@ -3,15 +3,15 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/django_observability"]
+packages = ["src/django_o11y"]
 
 [project]
-name = "django-observability"
+name = "django-o11y"
 version = "0.1.0"
 description = "Comprehensive OpenTelemetry observability for Django with traces, logs, metrics, and profiling"
 readme = "README.md"
 requires-python = ">=3.12"
-license = "MIT"
+license = "Apache-2.0"
 keywords = ["Django", "OpenTelemetry", "Observability", "Tracing", "Logging", "Metrics", "Celery"]
 authors = [
     { name = "Adin Hodovic", email = "hodovicadin@gmail.com" }
@@ -23,7 +23,7 @@ classifiers = [
     "Framework :: Django :: 5.2",
     "Framework :: Django :: 6.0",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
@@ -81,7 +81,7 @@ dev-logging = [
 
 # All features
 all = [
-    "django-observability[celery,profiling,postgres,redis,http,dev-logging]",
+    "django-o11y[celery,profiling,postgres,redis,http,dev-logging]",
 ]
 
 # Documentation
@@ -94,6 +94,7 @@ docs = [
 dev = [
     "ruff>=0.8.0",
     "tox>=4.25.0",
+    "tox-uv>=1.0.0",
     "coverage>=7.8.0",
     "django-stubs>=5.1.3",
     "mypy>=1.15.0",
@@ -116,10 +117,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/adinhodovic/django-observability"
-Documentation = "https://github.com/adinhodovic/django-observability"
-Repository = "https://github.com/adinhodovic/django-observability"
-Issues = "https://github.com/adinhodovic/django-observability/issues"
+Homepage = "https://github.com/adinhodovic/django-o11y"
+Documentation = "https://github.com/adinhodovic/django-o11y"
+Repository = "https://github.com/adinhodovic/django-o11y"
+Issues = "https://github.com/adinhodovic/django-o11y/issues"
 
 [tool.pytest.ini_options]
 addopts = "--ds=tests.settings --reuse-db"
@@ -155,7 +156,7 @@ select = [
 ignore = []
 
 [tool.ruff.lint.isort]
-known-first-party = ["django_observability"]
+known-first-party = ["django_o11y"]
 
 [tool.mypy]
 python_version = "3.13"
@@ -178,14 +179,29 @@ ignore = "manage.py"
 max-line-length = 150
 
 [tool.pylint.'MESSAGES CONTROL']
-disable = "missing-docstring,invalid-name,logging-fstring-interpolation,fixme,duplicate-code"
+disable = """
+    missing-docstring,
+    invalid-name,
+    logging-fstring-interpolation,
+    fixme,
+    duplicate-code,
+    import-outside-toplevel,
+    too-few-public-methods,
+    broad-exception-caught,
+    global-statement,
+    redefined-outer-name,
+    not-context-manager,
+    unused-argument,
+    imported-auth-user,
+    protected-access
+"""
 
 [tool.pylint.'DESIGN']
 max-parents = 13
 
 [tool.coverage.run]
 branch = true
-source = ["django_observability"]
+source = ["django_o11y"]
 omit = [
     "./.venv/*",
     "*/migrations/*",

@@ -1,36 +1,36 @@
 """Tests for profiling configuration."""
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 
 def test_profiling_disabled_by_default():
     import os
 
-    old_env = os.environ.get("DJANGO_OBSERVABILITY_PROFILING_ENABLED")
+    old_env = os.environ.get("DJANGO_O11Y_PROFILING_ENABLED")
 
     try:
-        if "DJANGO_OBSERVABILITY_PROFILING_ENABLED" in os.environ:
-            del os.environ["DJANGO_OBSERVABILITY_PROFILING_ENABLED"]
+        if "DJANGO_O11Y_PROFILING_ENABLED" in os.environ:
+            del os.environ["DJANGO_O11Y_PROFILING_ENABLED"]
 
-        from django_observability.conf import _get_bool_env
+        from django_o11y.conf import _get_bool_env
 
-        default_value = _get_bool_env("DJANGO_OBSERVABILITY_PROFILING_ENABLED", False)
+        default_value = _get_bool_env("DJANGO_O11Y_PROFILING_ENABLED", False)
         assert default_value is False
     finally:
         if old_env is not None:
-            os.environ["DJANGO_OBSERVABILITY_PROFILING_ENABLED"] = old_env
+            os.environ["DJANGO_O11Y_PROFILING_ENABLED"] = old_env
 
 
 def test_profiling_url_default():
-    from django_observability.conf import get_observability_config
+    from django_o11y.conf import get_o11y_config
 
-    config = get_observability_config()
+    config = get_o11y_config()
 
     assert config["PROFILING"]["PYROSCOPE_URL"] == "http://localhost:4040"
 
 
 def test_profiling_validation():
-    from django_observability.validation import validate_config
+    from django_o11y.validation import validate_config
 
     config = {
         "SERVICE_NAME": "test",
@@ -49,7 +49,7 @@ def test_profiling_validation():
 
 
 def test_profiling_validation_invalid_url():
-    from django_observability.validation import validate_config
+    from django_o11y.validation import validate_config
 
     config = {
         "SERVICE_NAME": "test",
@@ -69,16 +69,16 @@ def test_profiling_validation_invalid_url():
 
 
 def test_profiling_can_be_enabled():
-    from django_observability.conf import get_observability_config
+    from django_o11y.conf import get_o11y_config
 
-    config = get_observability_config()
+    config = get_o11y_config()
 
     assert config["PROFILING"]["ENABLED"] is True
     assert config["PROFILING"]["PYROSCOPE_URL"] == "http://localhost:4040"
 
 
 def test_setup_profiling_when_disabled():
-    from django_observability.profiling import setup_profiling
+    from django_o11y.profiling import setup_profiling
 
     config = {
         "SERVICE_NAME": "test-service",
@@ -89,7 +89,7 @@ def test_setup_profiling_when_disabled():
 
 
 def test_setup_profiling_with_namespace():
-    from django_observability.profiling import setup_profiling
+    from django_o11y.profiling import setup_profiling
 
     mock_pyroscope = MagicMock()
 
@@ -113,7 +113,7 @@ def test_setup_profiling_with_namespace():
 
 
 def test_setup_profiling_without_namespace():
-    from django_observability.profiling import setup_profiling
+    from django_o11y.profiling import setup_profiling
 
     mock_pyroscope = MagicMock()
 
@@ -135,7 +135,7 @@ def test_setup_profiling_without_namespace():
 
 
 def test_setup_profiling_with_custom_tags():
-    from django_observability.profiling import setup_profiling
+    from django_o11y.profiling import setup_profiling
 
     mock_pyroscope = MagicMock()
 
@@ -162,7 +162,7 @@ def test_setup_profiling_with_custom_tags():
 
 
 def test_setup_profiling_handles_import_error():
-    from django_observability.profiling import setup_profiling
+    from django_o11y.profiling import setup_profiling
 
     config = {
         "SERVICE_NAME": "test-service",
@@ -179,7 +179,7 @@ def test_setup_profiling_handles_import_error():
 
 
 def test_setup_profiling_handles_generic_exception():
-    from django_observability.profiling import setup_profiling
+    from django_o11y.profiling import setup_profiling
 
     mock_pyroscope = MagicMock()
     mock_pyroscope.configure.side_effect = RuntimeError("Connection failed")

@@ -1,4 +1,4 @@
-"""Shared pytest fixtures for django-observability tests."""
+"""Shared pytest fixtures for django-o11y tests."""
 
 import socket
 import time
@@ -53,7 +53,7 @@ def observability_stack():
     the stack should declare ``observability_stack`` as a parameter (or rely
     on the ``pytestmark`` set at module level).
     """
-    from django_observability.management.commands.observability import cli
+    from django_o11y.management.commands.o11y import cli
 
     runner = CliRunner()
     result = runner.invoke(cli, ["stack", "start"])
@@ -132,7 +132,7 @@ def celery_app():
         )
         return app
     except ImportError:
-        pytest.skip("Celery not installed")
+        return pytest.skip("Celery not installed")  # skip() raises Skipped
 
 
 @pytest.fixture
@@ -149,10 +149,10 @@ def django_user_request(rf):
 
 
 @pytest.fixture(autouse=True)
-def reset_observability_cache():
-    """Reset the lru_cache on get_observability_config for each test."""
-    from django_observability.conf import get_observability_config
+def reset_o11y_cache():
+    """Reset the lru_cache on get_o11y_config for each test."""
+    from django_o11y.conf import get_o11y_config
 
-    get_observability_config.cache_clear()
+    get_o11y_config.cache_clear()
     yield
-    get_observability_config.cache_clear()
+    get_o11y_config.cache_clear()
