@@ -78,7 +78,7 @@ dev-logging = ["rich>=13.0.0"]
 all = ["django-o11y[celery,profiling,postgres,redis,http,dev-logging]"]
 
 # Documentation
-docs = ["mkdocs>=1.6,<2.0", "mkdocs-material>=9.5.0"]
+docs = ["mkdocs>=1.6,<2.0", "mkdocs-material>=9.5.0", "mike>=2.0.0"]
 
 # Development dependencies
 dev = [

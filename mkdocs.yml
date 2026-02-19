@@ -3,6 +3,7 @@ site_description: OpenTelemetry observability for Django with traces, logs, metr
 site_url: https://adinhodovic.github.io/django-o11y/
 repo_url: https://github.com/adinhodovic/django-o11y
 repo_name: adinhodovic/django-o11y
+edit_uri: edit/main/docs/
 
 theme:
   name: material
@@ -24,13 +25,33 @@ theme:
     - navigation.sections
     - navigation.top
     - navigation.expand
+    - navigation.footer
+    - navigation.indexes
     - search.highlight
     - search.suggest
+    - search.share
     - content.code.copy
     - content.code.annotate
+    - content.action.edit
+    - content.action.view
+    - content.action.edit
+    - content.action.view
+
+extra:
+  version:
+    provider: mike
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/adinhodovic/django-o11y
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/django-o11y/
 
 plugins:
   - search
+  - mike:
+      alias_type: symlink
+      canonical_version: null
+      version_selector: true
 
 markdown_extensions:
   - admonition
