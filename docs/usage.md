@@ -1,11 +1,32 @@
 # Usage guide
 
-## Prometheus
+## Quick start
 
-Add `django_prometheus` and wrap your middleware:
+### Installation
+
+```bash
+pip install django-o11y
+```
+
+For all features:
+
+```bash
+pip install django-o11y[all]
+```
+
+Or pick what you need:
+
+| Extra | Adds |
+|-------|------|
+| `django-o11y[celery]` | Celery tracing and structured task logs |
+| `django-o11y[profiling]` | Pyroscope continuous profiling |
+| `django-o11y[all]` | Everything |
+
+### Basic setup
+
+Add to your Django settings:
 
 ```python
-# settings.py
 INSTALLED_APPS = [
     "django_prometheus",
     "django_o11y",
@@ -33,7 +54,17 @@ MIDDLEWARE = [
 ]
 ```
 
-Use django-prometheus database and cache backends to get query and cache metrics:
+That's it. django-o11y auto-configures tracing, logging, and metrics with sensible defaults on startup.
+
+---
+
+## Metrics
+
+Metrics use [django-prometheus](https://github.com/korfuri/django-prometheus) for infrastructure metrics and a thin wrapper around `prometheus_client` for custom business metrics.
+
+### Infrastructure metrics
+
+Wrap your database and cache backends to get query counts, latency, and cache hit rates:
 
 ```python
 DATABASES = {
@@ -51,25 +82,217 @@ CACHES = {
 }
 ```
 
-## Per-environment configuration
+Expose the metrics endpoint in your URL config:
 
 ```python
-# settings/local.py
-from .base import *
+# urls.py
+from django.urls import include, path
 
-DJANGO_O11Y["LOGGING"]["FORMAT"] = "console"
-DJANGO_O11Y["TRACING"]["SAMPLE_RATE"] = 1.0
-
-# settings/production.py
-from .base import *
-
-DJANGO_O11Y["LOGGING"]["FORMAT"] = "json"
-DJANGO_O11Y["TRACING"]["SAMPLE_RATE"] = 0.01
+urlpatterns = [
+    # ...
+    path("", include("django_prometheus.urls")),
+]
 ```
 
-## Celery
+This exposes `/metrics` for Prometheus to scrape.
 
-Install the Celery extra:
+### Custom metrics
+
+Track business events with counters and histograms. Label names must be declared upfront (Prometheus convention):
+
+```python
+from django_o11y.metrics import counter, histogram
+
+# Counter
+payment_counter = counter(
+    "payments_processed_total",
+    description="Total payments processed",
+    labelnames=["status", "method"],
+)
+payment_counter.add(1, {"status": "success", "method": "card"})
+
+# Histogram — manual observation
+payment_latency = histogram(
+    "payment_processing_seconds",
+    description="Payment processing time",
+    labelnames=["method"],
+)
+payment_latency.record(0.532, {"method": "card"})
+
+# Histogram — automatic timing via context manager
+with payment_latency.time({"method": "card"}):
+    result = process_payment()
+```
+
+Custom metrics appear on the same `/metrics` endpoint alongside infrastructure metrics.
+
+---
+
+## Logs
+
+Structured logging via [Structlog](https://www.structlog.org/) with automatic trace correlation. Every log line includes the active `trace_id` and `span_id`, so you can jump from a log entry directly to its trace in Grafana.
+
+### Usage
+
+Use `structlog.get_logger()` everywhere — not `logging.getLogger()`:
+
+```python
+import structlog
+
+logger = structlog.get_logger(__name__)
+
+logger.info("order_placed", order_id=order_id, amount=total)
+logger.error("payment_failed", error=str(e), order_id=order_id)
+```
+
+Use keyword arguments, not f-strings. This keeps logs machine-readable and queryable in Loki.
+
+### Development output (console)
+
+```
+2026-02-12T10:30:45 [info     ] order_placed    order_id=123 amount=49.99 [views.py:42]
+```
+
+### Production output (JSON)
+
+```json
+{
+  "event": "order_placed",
+  "order_id": 123,
+  "amount": 49.99,
+  "trace_id": "a1b2c3d4e5f6g7h8",
+  "span_id": "i9j0k1l2",
+  "timestamp": "2026-02-12T10:30:45.123Z",
+  "level": "info",
+  "logger": "myapp.views",
+  "filename": "views.py",
+  "lineno": 42
+}
+```
+
+The format switches automatically: `console` when `DEBUG=True`, `json` when `DEBUG=False`.
+
+### Configuration
+
+```python
+DJANGO_O11Y = {
+    "LOGGING": {
+        "FORMAT": "json",           # "console" or "json"
+        "LEVEL": "INFO",
+        "REQUEST_LEVEL": "INFO",    # django_structlog request logs
+        "DATABASE_LEVEL": "WARNING" # set to "DEBUG" to log all SQL
+    }
+}
+```
+
+### Adding context
+
+Attach extra fields to all logs within the current request or task:
+
+```python
+from django_o11y.context import add_log_context, set_custom_tags
+
+# Logs only
+add_log_context(tenant_id="acme", checkout_variant="B")
+
+# Logs + traces
+set_custom_tags({"tenant_id": "acme", "feature": "checkout_v2"})
+```
+
+---
+
+## Profiling
+
+Continuous profiling via [Pyroscope](https://pyroscope.io/). Disabled by default.
+
+### Setup
+
+Install the extra:
+
+```bash
+pip install django-o11y[profiling]
+```
+
+Enable in settings:
+
+```python
+DJANGO_O11Y = {
+    "PROFILING": {
+        "ENABLED": True,
+        "PYROSCOPE_URL": "http://localhost:4040",
+    }
+}
+```
+
+Profiles are pushed to Pyroscope automatically on startup. View them in Grafana under **Explore → Pyroscope**.
+
+### Custom tags
+
+Tag profiles with business context for filtering:
+
+```python
+DJANGO_O11Y = {
+    "PROFILING": {
+        "ENABLED": True,
+        "TAGS": {
+            "region": "us-east-1",
+            "tier": "premium",
+        },
+    }
+}
+```
+
+---
+
+## Traces
+
+Distributed tracing via [OpenTelemetry](https://opentelemetry.io/). Django requests, database queries, cache operations, and outbound HTTP calls are all instrumented automatically.
+
+### What is instrumented automatically
+
+- Every HTTP request — span per view with status code, route, and user ID
+- Database queries — span per query (requires django-prometheus DB backend)
+- Outbound HTTP — spans for `requests` and `urllib3` calls (requires `django-o11y[http]`)
+- Redis — spans for cache operations (requires `django-o11y[redis]`)
+- Celery tasks — span per task, linked to the triggering request (requires `django-o11y[celery]`)
+
+### Configuration
+
+```python
+DJANGO_O11Y = {
+    "TRACING": {
+        "OTLP_ENDPOINT": "http://localhost:4317",
+        "SAMPLE_RATE": 1.0,   # 1.0 = 100%, use 0.01 in high-traffic prod
+    }
+}
+```
+
+### Adding custom context
+
+```python
+from django_o11y.context import set_custom_tags, add_span_attribute, set_user_context
+
+def checkout_view(request):
+    # Attached to both the trace span and all logs in this request
+    set_custom_tags({"tenant_id": "acme", "experiment": "new_checkout"})
+
+    # Span only
+    add_span_attribute("cart_size", len(cart.items))
+
+    # User identity on the span (called automatically if using AuthenticationMiddleware)
+    set_user_context(user_id=str(request.user.id), username=request.user.username)
+```
+
+| Function | Trace span | Logs | Use case |
+|----------|-----------|------|----------|
+| `set_custom_tags()` | Yes | Yes | Business context |
+| `add_span_attribute()` | Yes | No | Technical span data |
+| `add_log_context()` | No | Yes | Debug info |
+| `set_user_context()` | Yes | Yes | User identity |
+
+### Celery
+
+Install the extra:
 
 ```bash
 pip install django-o11y[celery]
@@ -79,34 +302,13 @@ Enable in settings:
 
 ```python
 DJANGO_O11Y = {
-    # ...
     "CELERY": {
         "ENABLED": True,
-    },
+    }
 }
-
-CELERY_BROKER_URL = "redis://localhost:6379/0"
-CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
 ```
 
-When your Celery worker starts, observability is automatically set up via signals. For advanced use cases, you can call it manually:
-
-```python
-# config/celery.py
-import os
-from celery import Celery
-
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.local")
-
-app = Celery("myproject")
-app.config_from_object("django.conf:settings", namespace="CELERY")
-app.autodiscover_tasks()
-
-from django_o11y.celery import setup_celery_o11y
-setup_celery_o11y(app)
-```
-
-Use structlog in tasks for proper trace correlation:
+Observability is set up automatically via Celery signals when the worker starts. Tasks get a trace span linked to the request that triggered them, structured logs with `trace_id`/`span_id`, and task lifecycle metrics.
 
 ```python
 import structlog
@@ -115,147 +317,16 @@ from django_o11y.context import set_custom_tags
 
 logger = structlog.get_logger(__name__)
 
-@shared_task(bind=True)
-def process_order(self, order_id: int):
-    set_custom_tags({
-        "order_id": order_id,
-        "task_type": "order_processing",
-    })
-
+@shared_task
+def process_order(order_id: int):
+    set_custom_tags({"order_id": order_id})
     logger.info("order_processing_started", order_id=order_id)
     result = do_processing(order_id)
     logger.info("order_processing_completed", order_id=order_id)
-
     return result
 ```
 
-Logs automatically include trace context:
-
-```json
-{
-  "event": "order_processing_started",
-  "order_id": 12345,
-  "task_id": "a1b2c3d4-...",
-  "trace_id": "abc123...",
-  "span_id": "def456..."
-}
-```
-
-## Custom metrics
-
-Track business metrics using counters and histograms. Label names must be declared upfront at metric creation time (Prometheus convention).
-
-```python
-from django_o11y.metrics import counter, histogram
-
-# Counter — declare label dimensions with labelnames=
-payment_counter = counter(
-    "payments_processed_total",
-    description="Total payments processed",
-    labelnames=["status", "method"],
-)
-payment_counter.add(1, {"status": "success", "method": "card"})
-payment_counter.add(1, {"status": "failed", "method": "paypal"})
-
-# Histogram — measure durations or sizes
-payment_latency = histogram(
-    "payment_processing_seconds",
-    description="Payment processing time",
-    unit="s",
-    labelnames=["method"],
-)
-
-# Manual observation
-payment_latency.record(0.532, {"method": "card"})
-
-# Automatic timing via context manager
-with payment_latency.time({"method": "card"}):
-    result = process_payment()
-```
-
-Metrics are exposed on the standard `/metrics` endpoint alongside django-prometheus infrastructure metrics.
-
-## Custom tags and context
-
-Add business context to traces and logs:
-
-```python
-from django_o11y.context import (
-    set_custom_tags,
-    add_span_attribute,
-    add_log_context,
-    set_user_context,
-)
-
-def my_view(request):
-    set_custom_tags({"tenant_id": "acme", "feature": "checkout_v2"})
-
-    # User context (automatic if using AuthenticationMiddleware)
-    set_user_context(
-        user_id=str(request.user.id),
-        username=request.user.username,
-    )
-
-    add_span_attribute("cache_hit", True)  # Traces only
-    add_log_context(items_in_cart=5)       # Logs only
-
-    return HttpResponse("OK")
-```
-
-| Function | Traces | Logs | Use Case |
-|----------|--------|------|----------|
-| `set_custom_tags()` | Yes | Yes | Business context |
-| `add_span_attribute()` | Yes | No | Technical metrics |
-| `add_log_context()` | No | Yes | Debug info |
-| `set_user_context()` | Yes | Yes | User identification |
-
-## Common patterns
-
-### Multi-tenant applications
-
-```python
-class TenantMiddleware:
-    def __call__(self, request):
-        tenant = get_tenant_from_request(request)
-        set_custom_tags({
-            "tenant_id": tenant.id,
-            "tenant_tier": tenant.subscription_tier,
-        })
-        return self.get_response(request)
-```
-
-### Feature flags
-
-```python
-def checkout_view(request):
-    variant = get_feature_flag("new_checkout", request.user)
-    set_custom_tags({"experiment": "new_checkout", "variant": variant})
-
-    if variant == "B":
-        return new_checkout(request)
-    return old_checkout(request)
-```
-
-### Error tracking
-
-```python
-import structlog
-
-logger = structlog.get_logger(__name__)
-
-try:
-    process_payment(order)
-except PaymentError as e:
-    logger.error(
-        "payment_failed",
-        error_type=type(e).__name__,
-        error_message=str(e),
-        order_id=order.id,
-    )
-    raise
-```
-
-## Verification
+### Verification
 
 Run the built-in health check:
 
@@ -263,75 +334,4 @@ Run the built-in health check:
 python manage.py o11y check
 ```
 
-This checks configuration, tests OTLP endpoint connectivity, verifies required packages, and sends a test trace.
-
-Check the metrics endpoint:
-
-```bash
-curl http://localhost:8000/metrics
-```
-
-Check traces are being received:
-
-```bash
-curl http://localhost:8000/
-curl 'http://localhost:3200/api/search?tags=service.name=my-app' | jq
-```
-
-## Troubleshooting
-
-**No traces in Tempo**
-
-Check OTLP endpoint is reachable:
-```bash
-curl -v http://localhost:4317
-curl 'http://localhost:3200/api/search?tags=service.name=YOUR-APP-NAME'
-```
-
-**No metrics**
-
-Check the endpoint and ensure `django_prometheus` is in `INSTALLED_APPS`:
-```bash
-curl http://localhost:8000/metrics
-```
-
-**Database errors**
-
-Use django-prometheus backends:
-```python
-# Correct
-"ENGINE": "django_prometheus.db.backends.postgresql"
-
-# Wrong
-"ENGINE": "django_o11y.db.backends.postgresql"
-```
-
-**Silent Celery instrumentation failure**
-
-Install the required package:
-```bash
-pip install opentelemetry-instrumentation-celery
-```
-
-The system will warn you at startup if this package is missing.
-
-**Configuration errors**
-
-Configuration is validated at startup:
-```
-ImproperlyConfigured: django-o11y configuration errors:
-  • TRACING.SAMPLE_RATE must be between 0.0 and 1.0, got 1.5
-```
-
-**Logs not structured**
-
-Use `structlog.get_logger()` not `logging.getLogger()`, and use kwargs not f-strings:
-```python
-# Good
-logger.info("user_logged_in", user_id=user_id)
-
-# Bad
-logger.info(f"User {user_id} logged in")
-```
-
-**Keep metric tag cardinality low** (under 100 unique values per tag).
+This checks the OTLP endpoint, installed packages, and sends a test trace you can find in Tempo.

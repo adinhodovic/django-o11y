@@ -373,13 +373,13 @@ def _get_work_dir(app_url=None):
                 if config_file.is_file():
                     dest = work_dir / config_file.name
 
-                    # For prometheus.yml, customize the target URL
+                    # For alloy-config.alloy, customize the scrape target URL
                     if (
-                        config_file.name == "prometheus.yml" and app_url
+                        config_file.name == "alloy-config.alloy" and app_url
                     ):  # pragma: no cover
                         content = config_file.read_text()
                         content = content.replace(
-                            "['host.docker.internal:8000']", f"['{app_url}']"
+                            '"host.docker.internal:8000"', f'"{app_url}"'
                         )
                         dest.write_text(content)
                     else:
@@ -536,7 +536,7 @@ def _check_packages():
     ok, warn, err = 0, 0, 0
 
     packages = [
-        ("opentelemetry.api", "opentelemetry-api", "Core tracing"),
+        ("opentelemetry", "opentelemetry-api", "Core tracing"),
         (
             "opentelemetry.instrumentation.django",
             "opentelemetry-instrumentation-django",
