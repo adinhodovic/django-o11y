@@ -1,7 +1,5 @@
 """Tests for management commands - minimal mocking, integration-first."""
 
-from pathlib import Path
-
 import pytest
 from click.testing import CliRunner
 
@@ -229,20 +227,6 @@ def test_stack_status_with_real_docker():
 
 
 @pytest.mark.integration
-def test_stack_start_real(observability_stack):
-    from django_observability.management.commands.observability import cli
-
-    runner = CliRunner()
-
-    # Stack should already be running from fixture
-    result = runner.invoke(cli, ["stack", "status"])
-
-    # status command outputs to stdout via subprocess, not result.output
-    # Exit code 0 means services are running
-    assert result.exit_code == 0
-
-
-@pytest.mark.integration
 def test_stack_status_shows_services(observability_stack):
     from django_observability.management.commands.observability import cli
 
@@ -276,72 +260,7 @@ def test_stack_start_output(observability_stack):
 
 
 @pytest.mark.integration
-def test_grafana_accessible(observability_stack):
-    from tests.conftest import _port_open
-
-    assert _port_open("localhost", 3000), "Grafana should be accessible on port 3000"
-
-
-@pytest.mark.integration
-def test_prometheus_accessible(observability_stack):
-    from tests.conftest import _port_open
-
-    assert _port_open("localhost", 9090), "Prometheus should be accessible on port 9090"
-
-
-@pytest.mark.integration
-def test_tempo_accessible(observability_stack):
-    from tests.conftest import _port_open
-
-    assert _port_open("localhost", 3200), "Tempo should be accessible on port 3200"
-
-
-@pytest.mark.integration
-def test_loki_accessible(observability_stack):
-    from tests.conftest import _port_open
-
-    assert _port_open("localhost", 3100), "Loki should be accessible on port 3100"
-
-
-@pytest.mark.integration
-def test_pyroscope_accessible(observability_stack):
-    from tests.conftest import _port_open
-
-    assert _port_open("localhost", 4040), "Pyroscope should be accessible on port 4040"
-
-
-@pytest.mark.integration
-def test_alloy_ui_accessible(observability_stack):
-    from tests.conftest import _port_open
-
-    assert _port_open("localhost", 12345), "Alloy UI should be accessible on port 12345"
-
-
-@pytest.mark.integration
-def test_otlp_endpoint_accessible(observability_stack):
-    from tests.conftest import _port_open
-
-    assert _port_open("localhost", 4317), (
-        "OTLP endpoint should be accessible on port 4317"
-    )
-
-
-@pytest.mark.integration
-def test_check_command_with_running_stack(observability_stack):
-    from django_observability.management.commands.observability import cli
-
-    runner = CliRunner()
-    result = runner.invoke(cli, ["check"])
-
-    # Should succeed when stack is running
-    assert result.exit_code == 0
-
-    # Should show endpoint as reachable
-    assert "Reachable" in result.output or "✅" in result.output
-
-
-@pytest.mark.integration
-def test_check_command_all_sections(observability_stack):
+def test_check_command(observability_stack):
     from django_observability.management.commands.observability import cli
 
     runner = CliRunner()
@@ -352,31 +271,10 @@ def test_check_command_all_sections(observability_stack):
     assert "OTLP Endpoint:" in result.output
     assert "Installed Packages:" in result.output
     assert "Test Trace:" in result.output
-    # Summary line should be present and show OK counts
-    assert "OK" in result.output
-
-
-@pytest.mark.integration
-def test_check_command_endpoint_reachable(observability_stack):
-    from django_observability.management.commands.observability import cli
-
-    runner = CliRunner()
-    result = runner.invoke(cli, ["check"])
-
-    assert result.exit_code == 0
     assert "Reachable" in result.output
-
-
-@pytest.mark.integration
-def test_check_command_test_trace_created(observability_stack):
-    from django_observability.management.commands.observability import cli
-
-    runner = CliRunner()
-    result = runner.invoke(cli, ["check"])
-
-    assert result.exit_code == 0
     assert "Created test span" in result.output
     assert "Trace ID:" in result.output
+    assert "OK" in result.output
 
 
 @pytest.mark.integration

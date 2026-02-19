@@ -1,15 +1,15 @@
-"""Custom OpenTelemetry metrics helpers with exemplar support."""
+"""Custom Prometheus metrics helpers."""
 
 from contextlib import contextmanager
-from time import time
+from time import perf_counter
 from typing import Any
 
-from opentelemetry import metrics
-from opentelemetry.metrics import Counter, Histogram
+from prometheus_client import Counter, Histogram
+from prometheus_client import REGISTRY as DEFAULT_REGISTRY
 
 
 class MetricWrapper:
-    """Base wrapper for OpenTelemetry metrics."""
+    """Base wrapper for Prometheus metrics."""
 
     def __init__(self, metric: Any, name: str, description: str):
         self.metric = metric
@@ -18,48 +18,116 @@ class MetricWrapper:
 
 
 class CounterWrapper(MetricWrapper):
-    """Wrapper for Counter metrics with exemplar support."""
+    """Wrapper for Counter metrics."""
 
-    def __init__(self, counter: Counter, name: str, description: str):
+    def __init__(
+        self,
+        counter: Counter,
+        name: str,
+        description: str,
+        labelnames: tuple[str, ...] = (),
+    ):
         super().__init__(counter, name, description)
+        self.labelnames = labelnames
 
     def add(
-        self, amount: int | float, attributes: dict[str, Any] | None = None
+        self, amount: int | float = 1, attributes: dict[str, Any] | None = None
     ) -> None:
-        self.metric.add(amount, attributes=attributes or {})
+        if self.labelnames:
+            self.metric.labels(**(attributes or {})).inc(amount)
+        else:
+            self.metric.inc(amount)
 
 
 class HistogramWrapper(MetricWrapper):
     """Wrapper for Histogram metrics with timing support."""
 
-    def __init__(self, histogram: Histogram, name: str, description: str):
+    def __init__(
+        self,
+        histogram: Histogram,
+        name: str,
+        description: str,
+        labelnames: tuple[str, ...] = (),
+    ):
         super().__init__(histogram, name, description)
+        self.labelnames = labelnames
 
     def record(self, value: float, attributes: dict[str, Any] | None = None) -> None:
-        self.metric.record(value, attributes=attributes or {})
+        if self.labelnames:
+            self.metric.labels(**(attributes or {})).observe(value)
+        else:
+            self.metric.observe(value)
 
     @contextmanager
     def time(self, attributes: dict[str, Any] | None = None):
         """Context manager that records elapsed seconds."""
-        start = time()
+        start = perf_counter()
         try:
             yield
         finally:
-            duration = time() - start
+            duration = perf_counter() - start
             self.record(duration, attributes)
 
 
-def counter(name: str, description: str = "", unit: str = "") -> CounterWrapper:
-    """Create and return an OTel Counter wrapped in CounterWrapper."""
-    meter = metrics.get_meter(__name__)
-    otel_counter = meter.create_counter(name=name, description=description, unit=unit)
-    return CounterWrapper(otel_counter, name, description)
+def counter(
+    name: str,
+    description: str = "",
+    unit: str = "",
+    labelnames: tuple[str, ...] | list[str] = (),
+) -> CounterWrapper:
+    """Create and return a Prometheus Counter wrapped in CounterWrapper.
 
+    Args:
+        name: Metric name (e.g. ``"payments_total"``).
+        description: Human-readable description.
+        unit: Optional unit string (informational only).
+        labelnames: Label dimensions declared upfront
+            (e.g. ``("status", "method")``).
 
-def histogram(name: str, description: str = "", unit: str = "") -> HistogramWrapper:
-    """Create and return an OTel Histogram wrapped in HistogramWrapper."""
-    meter = metrics.get_meter(__name__)
-    otel_histogram = meter.create_histogram(
-        name=name, description=description, unit=unit
+    Example::
+
+        orders = counter("orders_total", labelnames=["status"])
+        orders.add(1, {"status": "success"})
+    """
+    label_tuple = tuple(labelnames)
+    prom_counter = Counter(
+        name,
+        description,
+        labelnames=label_tuple,
+        registry=DEFAULT_REGISTRY,
     )
-    return HistogramWrapper(otel_histogram, name, description)
+    return CounterWrapper(prom_counter, name, description, label_tuple)
+
+
+def histogram(
+    name: str,
+    description: str = "",
+    unit: str = "",
+    labelnames: tuple[str, ...] | list[str] = (),
+    buckets: tuple[float, ...] = Histogram.DEFAULT_BUCKETS,
+) -> HistogramWrapper:
+    """Create and return a Prometheus Histogram wrapped in HistogramWrapper.
+
+    Args:
+        name: Metric name (e.g. ``"request_duration_seconds"``).
+        description: Human-readable description.
+        unit: Optional unit string (informational only).
+        labelnames: Label dimensions declared upfront
+            (e.g. ``("region", "method")``).
+        buckets: Custom bucket boundaries. Defaults to Prometheus defaults.
+
+    Example::
+
+        latency = histogram("order_latency_seconds", labelnames=["region"])
+        with latency.time({"region": "us-east"}):
+            process_order()
+    """
+    label_tuple = tuple(labelnames)
+    prom_histogram = Histogram(
+        name,
+        description,
+        labelnames=label_tuple,
+        buckets=buckets,
+        registry=DEFAULT_REGISTRY,
+    )
+    return HistogramWrapper(prom_histogram, name, description, label_tuple)

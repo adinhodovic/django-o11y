@@ -1,6 +1,5 @@
 """Configuration validation for Django Observability."""
 
-import logging
 from typing import Any
 
 
@@ -29,10 +28,6 @@ def validate_config(config: dict[str, Any]) -> list[str]:
     logging_config = config.get("LOGGING", {})
     if logging_config:
         errors.extend(_validate_logging(logging_config))
-
-    metrics = config.get("METRICS", {})
-    if metrics:
-        errors.extend(_validate_metrics(metrics))
 
     profiling = config.get("PROFILING", {})
     if profiling:
@@ -95,28 +90,6 @@ def _validate_logging(logging_config: dict[str, Any]) -> list[str]:
         endpoint = logging_config.get("OTLP_ENDPOINT")
         if endpoint:
             errors.extend(_validate_endpoint(endpoint, "LOGGING.OTLP_ENDPOINT"))
-
-    return errors
-
-
-def _validate_metrics(metrics: dict[str, Any]) -> list[str]:
-    """Validate metrics configuration."""
-    errors = []
-
-    interval = metrics.get("EXPORT_INTERVAL")
-    if interval is not None:
-        if not isinstance(interval, int):
-            errors.append(
-                f"METRICS.EXPORT_INTERVAL must be an integer (seconds), "
-                f"got {type(interval).__name__}"
-            )
-        elif interval < 1:
-            errors.append(f"METRICS.EXPORT_INTERVAL must be >= 1, got {interval}")
-
-    if metrics.get("OTLP_ENABLED"):
-        endpoint = metrics.get("OTLP_ENDPOINT")
-        if endpoint:
-            errors.extend(_validate_endpoint(endpoint, "METRICS.OTLP_ENDPOINT"))
 
     return errors
 

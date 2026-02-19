@@ -433,9 +433,9 @@ logger = structlog.get_logger(__name__)
 
 ### Documentation
 
-- [Integration Guide](INTEGRATION.md)
-- [Configuration Reference](docs/CONFIGURATION.md)
-- [Usage Patterns](docs/USAGE.md)
+- [Integration Guide](integration.md)
+- [Configuration Reference](CONFIGURATION.md)
+- [Usage Patterns](USAGE.md)
 - [Report Issues](https://github.com/adinhodovic/django-observability/issues)
 
 ## License

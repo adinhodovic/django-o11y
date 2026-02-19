@@ -66,15 +66,6 @@ def get_config() -> dict[str, Any]:
             "PROMETHEUS_ENDPOINT": os.getenv(
                 "DJANGO_OBSERVABILITY_PROMETHEUS_ENDPOINT", "/metrics"
             ),
-            "OTLP_ENABLED": _get_bool_env(
-                "DJANGO_OBSERVABILITY_METRICS_OTLP_ENABLED", False
-            ),
-            "OTLP_ENDPOINT": os.getenv(
-                "OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317"
-            ),
-            "EXPORT_INTERVAL": int(
-                os.getenv("DJANGO_OBSERVABILITY_METRICS_INTERVAL", "60")
-            ),
         },
         "CELERY": {
             "ENABLED": _get_bool_env("DJANGO_OBSERVABILITY_CELERY_ENABLED", False),

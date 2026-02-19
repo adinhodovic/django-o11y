@@ -245,6 +245,6 @@ These are normal. Alloy tries to scrape Go pprof endpoints but Python apps don't
 
 ## Reference
 
-See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for all options.
+See [CONFIGURATION.md](CONFIGURATION.md) for all options.
 
-See [docs/USAGE.md](docs/USAGE.md) for usage patterns.
+See [USAGE.md](USAGE.md) for usage patterns.

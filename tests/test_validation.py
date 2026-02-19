@@ -9,7 +9,7 @@ def test_valid_config():
     config = {
         "TRACING": {"SAMPLE_RATE": 0.5},
         "LOGGING": {"FORMAT": "json", "LEVEL": "INFO"},
-        "METRICS": {"EXPORT_INTERVAL": 15},
+        "METRICS": {"PROMETHEUS_ENABLED": True},
     }
 
     errors = validate_config(config)
@@ -80,29 +80,16 @@ def test_invalid_otlp_endpoint():
     assert "http://" in errors[0]
 
 
-def test_invalid_export_interval():
-    from django_observability.validation import validate_config
-
-    config = {
-        "METRICS": {"EXPORT_INTERVAL": 0},
-    }
-
-    errors = validate_config(config)
-    assert len(errors) == 1
-    assert "EXPORT_INTERVAL" in errors[0]
-
-
 def test_multiple_validation_errors():
     from django_observability.validation import validate_config
 
     config = {
         "TRACING": {"SAMPLE_RATE": 2.0},
         "LOGGING": {"FORMAT": "yaml", "LEVEL": "INVALID"},
-        "METRICS": {"EXPORT_INTERVAL": -1},
     }
 
     errors = validate_config(config)
-    assert len(errors) == 4
+    assert len(errors) == 3
 
 
 def test_empty_config():
@@ -134,28 +121,6 @@ def test_logging_otlp_endpoint_validated_when_enabled():
         }
     )
     assert any("LOGGING.OTLP_ENDPOINT" in e for e in errors)
-
-
-def test_metrics_export_interval_not_int():
-    from django_observability.validation import validate_config
-
-    errors = validate_config({"METRICS": {"EXPORT_INTERVAL": 1.5}})
-    assert len(errors) == 1
-    assert "integer" in errors[0]
-
-
-def test_metrics_otlp_endpoint_validated_when_enabled():
-    from django_observability.validation import validate_config
-
-    errors = validate_config(
-        {
-            "METRICS": {
-                "OTLP_ENABLED": True,
-                "OTLP_ENDPOINT": "grpc://localhost:4317",
-            }
-        }
-    )
-    assert any("METRICS.OTLP_ENDPOINT" in e for e in errors)
 
 
 def test_profiling_pyroscope_url_validated():

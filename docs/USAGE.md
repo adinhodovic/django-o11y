@@ -45,53 +45,40 @@ def my_view(request):
 
 ## Custom metrics
 
-Track business metrics with automatic trace correlation:
+Track business metrics using Prometheus counters and histograms. Label names must be
+declared upfront at metric creation time (Prometheus convention).
 
 ```python
-from django_observability.metrics import counter, histogram, gauge
+from django_observability.metrics import counter, histogram
 
-# Counter
+# Counter — declare label dimensions with labelnames=
 payment_counter = counter(
-    "payments.processed",
-    description="Total payments processed"
+    "payments_processed_total",
+    description="Total payments processed",
+    labelnames=["status", "method"],
 )
 payment_counter.add(1, {"status": "success", "method": "card"})
+payment_counter.add(1, {"status": "failed", "method": "paypal"})
 
-# Histogram (links to traces via exemplars)
+# Histogram — measure durations or sizes
 payment_latency = histogram(
-    "payments.latency",
+    "payment_processing_seconds",
     description="Payment processing time",
-    unit="s"
+    unit="s",
+    labelnames=["method"],
 )
 
-# Manual
+# Manual observation
 payment_latency.record(0.532, {"method": "card"})
 
-# Or automatic
+# Automatic timing via context manager
 with payment_latency.time({"method": "card"}):
     result = process_payment()
-
-# Gauge
-active_connections = gauge(
-    "db.connections.active",
-    description="Active database connections"
-)
-active_connections.set(42)
 ```
 
-### Decorators
-
-```python
-from django_observability.metrics import track_counter, track_histogram
-
-@track_counter("api.calls", {"endpoint": "checkout"})
-def checkout_api(request):
-    return process_checkout(request)
-
-@track_histogram("task.duration", {"task": "email"})
-def send_email_task():
-    send_email()
-```
+Metrics are exposed on the standard `/metrics` endpoint alongside
+django-prometheus infrastructure metrics (HTTP request counts, DB query
+durations, etc.).
 
 ## Middleware order
 

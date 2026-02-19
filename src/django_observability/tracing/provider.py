@@ -56,16 +56,3 @@ def setup_tracing(config: dict[str, Any]) -> TracerProvider:
 
     trace.set_tracer_provider(provider)
     return provider
-
-
-def get_tracer(name: str = "django_observability") -> trace.Tracer:
-    """
-    Get a tracer instance.
-
-    Args:
-        name: Name of the tracer (typically module name)
-
-    Returns:
-        Tracer instance
-    """
-    return trace.get_tracer(name)

@@ -36,10 +36,9 @@ def setup_celery_observability(
         _setup_celery_tracing()
 
     if celery_config.get("LOGGING_ENABLED", True):
-        _setup_celery_logging(app)
+        from django_observability.celery.signals import setup_celery_signals
 
-    if celery_config.get("METRICS_ENABLED", True):
-        _setup_celery_metrics(app)
+        setup_celery_signals(app)
 
     _instrumented = True
 
@@ -59,18 +58,6 @@ def _setup_celery_tracing() -> None:
             UserWarning,
             stacklevel=3,
         )
-
-
-def _setup_celery_logging(app: Celery) -> None:
-    """Set up structured logging for Celery tasks via django-structlog signals."""
-    from django_observability.celery.signals import setup_celery_signals
-
-    setup_celery_signals(app)
-
-
-def _setup_celery_metrics(app: Celery) -> None:
-    """Set up metrics for Celery tasks."""
-    pass
 
 
 def _auto_setup_on_worker_init(sender, **kwargs) -> None:

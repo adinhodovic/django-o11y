@@ -1,8 +1,4 @@
-"""Celery signal handlers that extend django-structlog with OpenTelemetry integration.
-
-This module wraps django-structlog's CeleryReceiver to provide comprehensive
-Celery task logging with additional OpenTelemetry tracing integration.
-"""
+"""Celery signal handlers that wire django-structlog's CeleryReceiver to task signals."""
 
 import structlog
 from celery import Celery
@@ -20,15 +16,9 @@ from celery.signals import (
 )
 
 
-class ObservabilityCeleryReceiver(CeleryReceiver):
-    """django-structlog CeleryReceiver subclass, reserved for future OTel-specific hooks."""
-
-    pass
-
-
 def setup_celery_signals(app: Celery) -> None:
     """Connect django-structlog's CeleryReceiver to all Celery task lifecycle signals."""
-    receiver = ObservabilityCeleryReceiver()
+    receiver = CeleryReceiver()
 
     before_task_publish.connect(receiver.receiver_before_task_publish)
     after_task_publish.connect(receiver.receiver_after_task_publish)

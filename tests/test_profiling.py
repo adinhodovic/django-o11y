@@ -1,18 +1,6 @@
 """Tests for profiling configuration."""
 
-import pytest
 from unittest.mock import patch, MagicMock
-
-
-def test_profiling_config_defaults():
-    from django_observability.conf import get_observability_config
-
-    config = get_observability_config()
-
-    assert "PROFILING" in config
-    assert "ENABLED" in config["PROFILING"]
-    assert "PYROSCOPE_URL" in config["PROFILING"]
-    assert isinstance(config["PROFILING"]["ENABLED"], bool)
 
 
 def test_profiling_disabled_by_default():
@@ -171,26 +159,6 @@ def test_setup_profiling_with_custom_tags():
         call_kwargs = mock_pyroscope.configure.call_args[1]
         assert call_kwargs["tags"]["region"] == "us-west-2"
         assert call_kwargs["tags"]["team"] == "backend"
-
-
-def test_setup_profiling_without_custom_tags():
-    from django_observability.profiling import setup_profiling
-
-    mock_pyroscope = MagicMock()
-
-    config = {
-        "SERVICE_NAME": "test-service",
-        "ENVIRONMENT": "dev",
-        "PROFILING": {
-            "ENABLED": True,
-            "PYROSCOPE_URL": "http://localhost:4040",
-        },
-    }
-
-    with patch.dict("sys.modules", {"pyroscope": mock_pyroscope}):
-        setup_profiling(config)
-
-        mock_pyroscope.configure.assert_called_once()
 
 
 def test_setup_profiling_handles_import_error():

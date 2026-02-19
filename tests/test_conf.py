@@ -1,8 +1,5 @@
 """Tests for configuration module."""
 
-import pytest
-from unittest.mock import patch
-
 
 def test_get_observability_config_returns_config():
     from django_observability.conf import get_observability_config
@@ -63,7 +60,7 @@ def test_config_metrics_defaults():
 
     assert "METRICS" in config
     assert "PROMETHEUS_ENABLED" in config["METRICS"]
-    assert "OTLP_ENABLED" in config["METRICS"]
+    assert "OTLP_ENABLED" not in config["METRICS"]
 
 
 def test_config_celery_defaults():
