@@ -172,6 +172,22 @@ Use keyword arguments, not f-strings. This keeps logs machine-readable and query
 
 The format switches automatically: `console` when `DEBUG=True`, `json` when `DEBUG=False`.
 
+### Log file (dev only)
+
+When `DEBUG=True`, logs are also written as JSON to `/tmp/django-o11y/django.log` in addition to stdout. The local dev stack (`o11y stack start`) tails this file with Alloy and ships it to Loki, so logs show up in Grafana even when OTLP push is disabled.
+
+The path can be changed via env var:
+
+```bash
+DJANGO_O11Y_LOG_FILE_PATH=/var/log/myapp/django.log
+```
+
+Or disabled entirely:
+
+```bash
+DJANGO_O11Y_LOG_FILE_ENABLED=false
+```
+
 ### Configuration
 
 ```python
