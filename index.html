@@ -399,56 +399,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Quick start
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Quick start">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Installation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#basic-setup" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Basic setup
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Configuration
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#local-development-stack" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -464,28 +414,6 @@
     <span class="md-ellipsis">
       
         Grafana dashboards
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#development" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Development
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#license" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        License
       
     </span>
   </a>
@@ -603,56 +531,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Quick start
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Quick start">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Installation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#basic-setup" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Basic setup
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Configuration
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#local-development-stack" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -668,28 +546,6 @@
     <span class="md-ellipsis">
       
         Grafana dashboards
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#development" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Development
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#license" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        License
       
     </span>
   </a>
@@ -732,8 +588,8 @@
 <a href="https://pypi.org/project/django-o11y/"><img alt="Supported Python versions" src="https://img.shields.io/pypi/pyversions/django-o11y.svg" /></a>
 <a href="https://pypi.org/project/django-o11y/"><img alt="PyPI Version" src="https://img.shields.io/pypi/v/django-o11y.svg?style=flat" /></a>
 <a href="https://opensource.org/licenses/MIT"><img alt="License" src="https://img.shields.io/badge/License-MIT-blue.svg" /></a></p>
-<p>OpenTelemetry observability for Django with traces, logs, metrics, and profiling.</p>
-<p>This package is based on configurations from these blog posts:</p>
+<p>Observability for Django. Traces, logs, metrics, and profiling with minimal setup.</p>
+<p>This package bundles the patterns from these blog posts into an installable library:</p>
 <ul>
 <li><a href="https://hodovi.cc/blog/django-monitoring-with-prometheus-and-grafana/">Django Monitoring with Prometheus and Grafana</a></li>
 <li><a href="https://hodovi.cc/blog/django-development-and-production-logging/">Django Development and Production Logging</a></li>
@@ -741,148 +597,72 @@
 </ul>
 <h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Distributed Tracing</strong> - OpenTelemetry traces for requests, database, cache, and Celery tasks</li>
-<li><strong>Structured Logging</strong> - Structlog with colorized dev logs, JSON prod logs, and OTLP export</li>
-<li><strong>Hybrid Metrics</strong> - django-prometheus (infrastructure) + OpenTelemetry (business metrics with exemplars)</li>
-<li><strong>Profiling</strong> - Pyroscope continuous profiling (optional)</li>
-<li><strong>Celery Integration</strong> - Full observability for async tasks with tracing, logging, and metrics</li>
-<li><strong>Grafana Dashboards</strong> - Pre-built dashboards from blog posts work without changes</li>
-<li><strong>Zero config</strong> - Works with sensible defaults, customizable via Django settings</li>
-<li><strong>Trace correlation</strong> - Automatic trace_id and span_id injection in logs</li>
+<li>OpenTelemetry traces for requests, database queries, cache, and Celery tasks</li>
+<li>Structlog with colorized dev output, JSON production logs, and automatic trace correlation</li>
+<li>django-prometheus for infrastructure metrics and a simple API for custom business metrics</li>
+<li>Pyroscope continuous profiling (optional)</li>
+<li>Full Celery observability: tracing, structured logs, and metrics</li>
+<li>Pre-built Grafana dashboards from the blog posts</li>
+<li>Sensible defaults, overridable via Django settings or environment variables</li>
 </ul>
-<h2 id="quick-start">Quick start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
-<h3 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h3>
-<p><strong>Recommended for most users:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>django-o11y<span class="o">[</span>all<span class="o">]</span>
-</code></pre></div></p>
-<p><strong>Or choose specific features:</strong></p>
+<h2 id="local-development-stack">Local development stack<a class="headerlink" href="#local-development-stack" title="Permanent link">&para;</a></h2>
+<p>Start the full observability stack with one command:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>python<span class="w"> </span>manage.py<span class="w"> </span>o11y<span class="w"> </span>stack<span class="w"> </span>start
+</code></pre></div>
+<p>This starts all services via Docker Compose and imports the Grafana dashboards:</p>
 <table>
 <thead>
 <tr>
-<th>Installation Command</th>
-<th>Includes</th>
-<th>When to Use</th>
+<th>Service</th>
+<th>URL</th>
+<th>Purpose</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>pip install django-o11y</code></td>
-<td>Core (tracing + logging)</td>
-<td>Minimal setup</td>
+<td>Grafana</td>
+<td>http://localhost:3000</td>
+<td>Dashboards (no login required)</td>
 </tr>
 <tr>
-<td><code>pip install django-o11y[celery]</code></td>
-<td>+ Celery instrumentation</td>
-<td>Async task observability</td>
+<td>Prometheus</td>
+<td>http://localhost:9090</td>
+<td>Metrics</td>
 </tr>
 <tr>
-<td><code>pip install django-o11y[prometheus]</code></td>
-<td>+ django-prometheus</td>
-<td>Infrastructure metrics</td>
+<td>Tempo</td>
+<td>http://localhost:3200</td>
+<td>Distributed traces</td>
 </tr>
 <tr>
-<td><code>pip install django-o11y[profiling]</code></td>
-<td>+ pyroscope-io</td>
+<td>Loki</td>
+<td>http://localhost:3100</td>
+<td>Logs</td>
+</tr>
+<tr>
+<td>Pyroscope</td>
+<td>http://localhost:4040</td>
 <td>Continuous profiling</td>
 </tr>
 <tr>
-<td><code>pip install django-o11y[all]</code></td>
-<td>Everything</td>
-<td>Development &amp; full features</td>
+<td>Alloy</td>
+<td>http://localhost:12345</td>
+<td>OTLP receiver + log scraping</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Production recommendation:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>django-o11y<span class="o">[</span>celery,prometheus<span class="o">]</span>
-</code></pre></div></p>
-<h3 id="basic-setup">Basic setup<a class="headerlink" href="#basic-setup" title="Permanent link">&para;</a></h3>
-<p>Add to your Django settings:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># settings.py</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">INSTALLED_APPS</span> <span class="o">=</span> <span class="p">[</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="s1">&#39;django_o11y&#39;</span><span class="p">,</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="c1"># ... other apps</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="p">]</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">MIDDLEWARE</span> <span class="o">=</span> <span class="p">[</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="s1">&#39;django_o11y.middleware.TracingMiddleware&#39;</span><span class="p">,</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="s1">&#39;django_o11y.middleware.LoggingMiddleware&#39;</span><span class="p">,</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="c1"># ... other middleware</span>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="p">]</span>
+<p>If your app runs in Docker or on a non-default port:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python<span class="w"> </span>manage.py<span class="w"> </span>o11y<span class="w"> </span>stack<span class="w"> </span>start<span class="w"> </span>--app-url<span class="w"> </span>host.docker.internal:8080
 </code></pre></div>
-<p>django-o11y will automatically:</p>
-<ul>
-<li>Set up OpenTelemetry tracing</li>
-<li>Configure structured logging (Structlog + OTLP)</li>
-<li>Instrument Django, database, cache, and HTTP clients</li>
-<li>Export traces and logs to <code>http://localhost:4317</code> (OTLP)</li>
-</ul>
-<p>See the <a href="usage/">Usage Guide</a> for Prometheus, Celery, and database backend setup.</p>
-<h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h3>
-<p>All settings are optional. See the <a href="configuration/">Configuration Reference</a> for the full list.</p>
-<p>Quick example:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># settings.py</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">DJANGO_O11Y</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="s1">&#39;SERVICE_NAME&#39;</span><span class="p">:</span> <span class="s1">&#39;my-django-app&#39;</span><span class="p">,</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="s1">&#39;TRACING&#39;</span><span class="p">:</span> <span class="p">{</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>        <span class="s1">&#39;OTLP_ENDPOINT&#39;</span><span class="p">:</span> <span class="s1">&#39;http://localhost:4317&#39;</span><span class="p">,</span>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>        <span class="s1">&#39;SAMPLE_RATE&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>  <span class="c1"># 10% in prod</span>
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="p">},</span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="s1">&#39;LOGGING&#39;</span><span class="p">:</span> <span class="p">{</span>
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>        <span class="s1">&#39;FORMAT&#39;</span><span class="p">:</span> <span class="s1">&#39;json&#39;</span><span class="p">,</span>
-<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>        <span class="s1">&#39;LEVEL&#39;</span><span class="p">:</span> <span class="s1">&#39;INFO&#39;</span><span class="p">,</span>
-<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>    <span class="p">},</span>
-<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="p">}</span>
-</code></pre></div>
-<h2 id="local-development-stack">Local development stack<a class="headerlink" href="#local-development-stack" title="Permanent link">&para;</a></h2>
-<p>Start the full observability stack with one command:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>python<span class="w"> </span>manage.py<span class="w"> </span>o11y<span class="w"> </span>stack<span class="w"> </span>start
-</code></pre></div>
-<p>This starts all services with Docker Compose and automatically imports Grafana dashboards:</p>
-<ul>
-<li><strong>Grafana</strong> (http://localhost:3000) - Pre-configured dashboards</li>
-<li><strong>Tempo</strong> - Distributed tracing backend</li>
-<li><strong>Loki</strong> - Log aggregation</li>
-<li><strong>Prometheus</strong> - Metrics collection</li>
-<li><strong>Pyroscope</strong> - Continuous profiling</li>
-<li><strong>Alloy</strong> - OTLP receiver (port 4317)</li>
-</ul>
-<p>Then start your Django app and explore in Grafana:</p>
-<ul>
-<li><strong>Dashboards</strong> → Django Overview, Django Requests, Celery Tasks</li>
-<li><strong>Explore</strong> → Tempo (view traces)</li>
-<li><strong>Explore</strong> → Loki (view logs with trace correlation)</li>
-<li>Click on a log → "Tempo" button → See the full trace</li>
-<li>Click on a metric spike → See linked traces via exemplars</li>
-</ul>
 <h2 id="grafana-dashboards">Grafana dashboards<a class="headerlink" href="#grafana-dashboards" title="Permanent link">&para;</a></h2>
-<p>This package works with dashboards from the blog posts:</p>
+<p>The following dashboards are imported automatically:</p>
 <ol>
-<li><strong><a href="https://grafana.com/grafana/dashboards/17617">Django Overview</a></strong> - Request metrics, database ops, cache hit rate</li>
-<li><strong><a href="https://grafana.com/grafana/dashboards/17616">Django Requests Overview</a></strong> - Per-view breakdown, error rates</li>
-<li><strong><a href="https://grafana.com/grafana/dashboards/17613">Django Requests by View</a></strong> - Detailed per-view latency analysis</li>
-<li><strong><a href="https://grafana.com/grafana/dashboards/17509">Celery Tasks Overview</a></strong> - Task states, queue length, worker status</li>
-<li><strong><a href="https://grafana.com/grafana/dashboards/17508">Celery Tasks by Task</a></strong> - Per-task metrics and failures</li>
+<li><a href="https://grafana.com/grafana/dashboards/17617">Django Overview</a> — request metrics, database ops, cache hit rate</li>
+<li><a href="https://grafana.com/grafana/dashboards/17616">Django Requests Overview</a> — per-view breakdown, error rates</li>
+<li><a href="https://grafana.com/grafana/dashboards/17613">Django Requests by View</a> — per-view latency analysis</li>
+<li><a href="https://grafana.com/grafana/dashboards/17509">Celery Tasks Overview</a> — task states, queue length, worker status</li>
+<li><a href="https://grafana.com/grafana/dashboards/17508">Celery Tasks by Task</a> — per-task metrics and failures</li>
 </ol>
-<h2 id="development">Development<a class="headerlink" href="#development" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Clone repo</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/adinhodovic/django-o11y
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="nb">cd</span><span class="w"> </span>django-o11y
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="c1"># Install with uv</span>
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>uv<span class="w"> </span>sync<span class="w"> </span>--all-extras
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>
-<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="c1"># Run tests</span>
-<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>uv<span class="w"> </span>run<span class="w"> </span>pytest
-<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>
-<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="c1"># Run linting</span>
-<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>uv<span class="w"> </span>run<span class="w"> </span>ruff<span class="w"> </span>check<span class="w"> </span>.
-<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>uv<span class="w"> </span>run<span class="w"> </span>pylint<span class="w"> </span>src/django_o11y
-<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>
-<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="c1"># Run with tox (test matrix)</span>
-<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>uv<span class="w"> </span>run<span class="w"> </span>tox
-</code></pre></div>
-<h2 id="license">License<a class="headerlink" href="#license" title="Permanent link">&para;</a></h2>
-<p>MIT License - see <a href="LICENSE">LICENSE</a></p>
 <h2 id="acknowledgments">Acknowledgments<a class="headerlink" href="#acknowledgments" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="https://github.com/open-telemetry/opentelemetry-python">OpenTelemetry Python</a></li>
