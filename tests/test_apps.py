@@ -1,30 +1,29 @@
 """Tests for Django app configuration."""
 
 import pytest
-from django.test import override_settings
 from django.core.exceptions import ImproperlyConfigured
+from django.test import override_settings
 
 
 def test_app_config_name():
-    from django_observability.apps import DjangoObservabilityConfig
+    from django_o11y.apps import DjangoO11yConfig
 
-    assert DjangoObservabilityConfig.name == "django_observability"
+    assert DjangoO11yConfig.name == "django_o11y"
 
 
 def test_app_config_default_auto_field():
-    from django_observability.apps import DjangoObservabilityConfig
+    from django_o11y.apps import DjangoO11yConfig
 
-    assert (
-        DjangoObservabilityConfig.default_auto_field == "django.db.models.BigAutoField"
-    )
+    assert DjangoO11yConfig.default_auto_field == "django.db.models.BigAutoField"
 
 
 def test_app_ready_initializes_tracing():
     from opentelemetry import trace
-    from django_observability.conf import get_observability_config
 
-    get_observability_config.cache_clear()
-    config = get_observability_config()
+    from django_o11y.conf import get_o11y_config
+
+    get_o11y_config.cache_clear()
+    config = get_o11y_config()
 
     if config["TRACING"]["ENABLED"]:
         tracer_provider = trace.get_tracer_provider()
@@ -46,18 +45,18 @@ def test_app_ready_initializes_logging():
 
 
 def test_app_ready_raises_on_invalid_config():
-    from django_observability.conf import get_observability_config
+    from django_o11y.conf import get_o11y_config
 
     with override_settings(
-        DJANGO_OBSERVABILITY={"SERVICE_NAME": "test", "TRACING": {"SAMPLE_RATE": 2.0}}
+        DJANGO_O11Y={"SERVICE_NAME": "test", "TRACING": {"SAMPLE_RATE": 2.0}}
     ):
-        get_observability_config.cache_clear()
+        get_o11y_config.cache_clear()
 
         with pytest.raises(ImproperlyConfigured) as exc_info:
-            get_observability_config()
-            from django_observability.validation import validate_config
+            get_o11y_config()
+            from django_o11y.validation import validate_config
 
-            errors = validate_config(get_observability_config())
+            errors = validate_config(get_o11y_config())
             if errors:
                 raise ImproperlyConfigured("\n".join(errors))
 

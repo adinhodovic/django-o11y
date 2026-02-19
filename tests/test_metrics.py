@@ -15,14 +15,14 @@ def registry():
 @pytest.fixture(autouse=True)
 def patch_registry(registry, monkeypatch):
     """Patch the DEFAULT_REGISTRY used by counter() and histogram() factories."""
-    import django_observability.metrics.custom as custom_mod
+    import django_o11y.metrics.custom as custom_mod
 
     monkeypatch.setattr(custom_mod, "DEFAULT_REGISTRY", registry)
     return registry
 
 
 def test_counter_creation(registry):
-    from django_observability.metrics.custom import counter
+    from django_o11y.metrics.custom import counter
 
     payment_counter = counter("payments_processed_total", "Total payments processed")
 
@@ -32,7 +32,7 @@ def test_counter_creation(registry):
 
 
 def test_counter_add(registry):
-    from django_observability.metrics.custom import counter
+    from django_o11y.metrics.custom import counter
 
     test_counter = counter("test_counter_total", "Test counter")
 
@@ -44,7 +44,7 @@ def test_counter_add(registry):
 
 
 def test_counter_add_with_attributes(registry):
-    from django_observability.metrics.custom import counter
+    from django_o11y.metrics.custom import counter
 
     payment_counter = counter(
         "payments_count_total", "Payment count", labelnames=["status", "method"]
@@ -68,7 +68,7 @@ def test_counter_add_with_attributes(registry):
 
 
 def test_counter_add_with_none_attributes(registry):
-    from django_observability.metrics.custom import counter
+    from django_o11y.metrics.custom import counter
 
     test_counter = counter("test_none_attrs_total", "Test")
     test_counter.add(1, None)
@@ -77,7 +77,7 @@ def test_counter_add_with_none_attributes(registry):
 
 
 def test_histogram_creation(registry):
-    from django_observability.metrics.custom import histogram
+    from django_o11y.metrics.custom import histogram
 
     latency_histogram = histogram("api_latency_seconds", "API request latency", "s")
 
@@ -87,7 +87,7 @@ def test_histogram_creation(registry):
 
 
 def test_histogram_record(registry):
-    from django_observability.metrics.custom import histogram
+    from django_o11y.metrics.custom import histogram
 
     latency = histogram("request_latency_seconds", "Request duration", "s")
 
@@ -99,7 +99,7 @@ def test_histogram_record(registry):
 
 
 def test_histogram_record_with_attributes(registry):
-    from django_observability.metrics.custom import histogram
+    from django_o11y.metrics.custom import histogram
 
     latency = histogram(
         "endpoint_latency_seconds",
@@ -128,7 +128,7 @@ def test_histogram_record_with_attributes(registry):
 
 
 def test_histogram_record_with_none_attributes(registry):
-    from django_observability.metrics.custom import histogram
+    from django_o11y.metrics.custom import histogram
 
     test_histogram = histogram("test_histogram_seconds", "Test")
     test_histogram.record(1.23, None)
@@ -137,7 +137,7 @@ def test_histogram_record_with_none_attributes(registry):
 
 
 def test_histogram_time_context_manager(registry):
-    from django_observability.metrics.custom import histogram
+    from django_o11y.metrics.custom import histogram
 
     latency = histogram(
         "operation_duration_seconds",
@@ -160,7 +160,7 @@ def test_histogram_time_context_manager(registry):
 
 
 def test_histogram_time_without_attributes(registry):
-    from django_observability.metrics.custom import histogram
+    from django_o11y.metrics.custom import histogram
 
     latency = histogram("simple_duration_seconds", "Duration")
 
@@ -172,7 +172,7 @@ def test_histogram_time_without_attributes(registry):
 
 
 def test_histogram_time_with_exception(registry):
-    from django_observability.metrics.custom import histogram
+    from django_o11y.metrics.custom import histogram
 
     latency = histogram(
         "error_duration_seconds", "Duration with error", labelnames=["status"]
@@ -192,7 +192,7 @@ def test_histogram_time_with_exception(registry):
 
 
 def test_multiple_counters(registry):
-    from django_observability.metrics.custom import counter
+    from django_o11y.metrics.custom import counter
 
     counter1 = counter("metric_one_total", "First metric")
     counter2 = counter("metric_two_total", "Second metric")
@@ -206,7 +206,7 @@ def test_multiple_counters(registry):
 
 
 def test_multiple_histograms(registry):
-    from django_observability.metrics.custom import histogram
+    from django_o11y.metrics.custom import histogram
 
     hist1 = histogram("duration_one_seconds", "First duration", "s")
     hist2 = histogram("duration_two_seconds", "Second duration", "s")
@@ -220,7 +220,7 @@ def test_multiple_histograms(registry):
 
 
 def test_counter_and_histogram_together(registry):
-    from django_observability.metrics.custom import counter, histogram
+    from django_o11y.metrics.custom import counter, histogram
 
     request_counter = counter(
         "requests_total", "Total requests", labelnames=["endpoint"]
@@ -249,14 +249,14 @@ def test_counter_and_histogram_together(registry):
 
 
 def test_counter_labelnames_stored(registry):
-    from django_observability.metrics.custom import counter
+    from django_o11y.metrics.custom import counter
 
     c = counter("labeled_counter_total", "Labeled", labelnames=["env", "region"])
     assert c.labelnames == ("env", "region")
 
 
 def test_histogram_labelnames_stored(registry):
-    from django_observability.metrics.custom import histogram
+    from django_o11y.metrics.custom import histogram
 
     h = histogram("labeled_histogram_seconds", "Labeled", labelnames=["env"])
     assert h.labelnames == ("env",)
@@ -264,7 +264,7 @@ def test_histogram_labelnames_stored(registry):
 
 def test_counter_no_labels_simple_inc(registry):
     """Counter with no labelnames uses plain .inc() without label lookup."""
-    from django_observability.metrics.custom import counter
+    from django_o11y.metrics.custom import counter
 
     c = counter("simple_counter_total", "No labels")
     c.add(7)
@@ -272,7 +272,7 @@ def test_counter_no_labels_simple_inc(registry):
 
 
 def test_histogram_custom_buckets(registry):
-    from django_observability.metrics.custom import histogram
+    from django_o11y.metrics.custom import histogram
 
     h = histogram(
         "custom_buckets_seconds",

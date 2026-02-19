@@ -1,8 +1,8 @@
 site_name: Django Observability
 site_description: OpenTelemetry observability for Django with traces, logs, metrics, and profiling
-site_url: https://adinhodovic.github.io/django-observability/
-repo_url: https://github.com/adinhodovic/django-observability
-repo_name: adinhodovic/django-observability
+site_url: https://adinhodovic.github.io/django-o11y/
+repo_url: https://github.com/adinhodovic/django-o11y
+repo_name: adinhodovic/django-o11y
 
 theme:
   name: material
@@ -48,7 +48,5 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - Integration Guide: integration.md
-  - Configuration Reference: CONFIGURATION.md
-  - Usage Guide: USAGE.md
-  - Contributing: contributing.md
+  - Usage Guide: usage.md
+  - Configuration Reference: configuration.md

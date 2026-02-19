@@ -2,7 +2,7 @@ include MANIFEST.in
 include LICENSE
 include README.md
 include CHANGELOG.md
-recursive-include src/django_observability *.py
+recursive-include src/django_o11y *.py
 global-exclude __pycache__
 global-exclude *.py[co]
 global-exclude .mypy_cache
