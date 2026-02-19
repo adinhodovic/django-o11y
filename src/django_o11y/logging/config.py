@@ -7,6 +7,7 @@ Based on the blog post: https://hodovi.cc/blog/django-development-and-production
 import logging
 import logging.config
 import sys
+from pathlib import Path
 from typing import Any
 
 import structlog
@@ -111,15 +112,38 @@ def _configure_python_logging(logging_config: dict[str, Any]) -> None:
     else:
         logger.debug("django_o11y: OTLP log exporter disabled")
 
+    if logging_config.get("FILE_ENABLED", False):
+        log_path = Path(logging_config["FILE_PATH"])
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        # Always write JSON to the file so Alloy can parse it regardless of FORMAT
+        handlers["file"] = {
+            "class": "logging.FileHandler",
+            "formatter": "json",
+            "filename": str(log_path),
+            "encoding": "utf-8",
+        }
+        logger.debug(
+            "django_o11y: file log handler enabled",
+            extra={"path": str(log_path)},
+        )
+
     root_handlers = ["console"]
     if logging_config.get("OTLP_ENABLED", False):
         root_handlers.append("otlp")
+    if logging_config.get("FILE_ENABLED", False):
+        root_handlers.append("file")
+
+    json_formatter = {
+        "()": structlog.stdlib.ProcessorFormatter,
+        "processor": structlog.processors.JSONRenderer(),
+    }
 
     logging_dict = {
         "version": 1,
         "disable_existing_loggers": False,
         "formatters": {
             "default": formatter,
+            "json": json_formatter,
         },
         "handlers": handlers,
         "root": {

@@ -54,6 +54,12 @@ def get_config() -> dict[str, Any]:
             "OTLP_ENDPOINT": os.getenv(
                 "OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317"
             ),
+            "FILE_ENABLED": _get_bool_env(
+                "DJANGO_O11Y_LOG_FILE_ENABLED", settings.DEBUG
+            ),
+            "FILE_PATH": os.getenv(
+                "DJANGO_O11Y_LOG_FILE_PATH", "/tmp/django-o11y/django.log"
+            ),
         },
         "METRICS": {
             "PROMETHEUS_ENABLED": _get_bool_env("DJANGO_O11Y_PROMETHEUS_ENABLED", True),

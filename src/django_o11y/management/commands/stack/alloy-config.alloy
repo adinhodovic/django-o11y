@@ -90,6 +90,20 @@ loki.process "django" {
   forward_to = [loki.write.default.receiver]
 }
 
+// ============================================================
+// Logs: host file tail → Loki
+// For runserver on the host (DEBUG=True). Django writes JSON
+// logs to /tmp/django-o11y/django.log; Alloy tails it here.
+// ============================================================
+
+loki.source.file "django_host" {
+  targets = [{
+    __path__     = "/tmp/django-o11y/django.log",
+    service_name = "django-app",
+  }]
+  forward_to = [loki.process.django.receiver]
+}
+
 loki.write "default" {
   endpoint {
     url = "http://loki:3100/loki/api/v1/push"
