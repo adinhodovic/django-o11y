@@ -63,7 +63,13 @@ def stack():
     help="URL where Django app exposes /metrics endpoint",
     show_default=True,
 )
-def start(app_url):
+@click.option(
+    "--app-container",
+    default="django-app",
+    help="Docker container name to scrape logs from",
+    show_default=True,
+)
+def start(app_url, app_container):
     """Start the o11y stack using Docker Compose.
 
     Examples:
@@ -71,27 +77,16 @@ def start(app_url):
       # App running on host (default)
       python manage.py o11y stack start
 
-      # App running on localhost
-      python manage.py o11y stack start --app-url localhost:8000
-
-      # App running in Docker
-      python manage.py o11y stack start --app-url django-app:8000
+      # App running in Docker with a custom container name
+      python manage.py o11y stack start --app-url django-app:8000 --app-container django-app
     """
     if not _check_docker_compose():  # pragma: no cover
         raise SystemExit(1)
 
-    click.secho("=" * 60, fg="cyan")
-    click.secho("Starting Observability Stack", fg="cyan", bold=True)
-    click.secho("=" * 60, fg="cyan")
-    click.echo()
-
-    work_dir = _get_work_dir(app_url)
+    work_dir = _get_work_dir(app_url, app_container)
     cmd = _get_compose_cmd()
 
-    click.echo(f"Using configs from: {work_dir}")
-    if app_url:  # pragma: no branch
-        click.echo(f"Prometheus will scrape metrics from: {app_url}")
-    click.echo("Starting Docker containers...")
+    click.echo(f"Starting stack (configs: {work_dir})...")
 
     try:
         subprocess.run(
@@ -103,12 +98,9 @@ def start(app_url):
         click.secho(f"Failed to start services: {e}", fg="red", err=True)
         raise SystemExit(1) from e
 
-    click.echo()
-    click.secho("Observability stack started!", fg="green", bold=True)
+    click.secho("Stack started.", fg="green")
     click.echo()
     _print_service_urls()
-    click.echo()
-    _print_next_steps()
 
 
 @stack.command()
@@ -141,13 +133,19 @@ def stop():
     help="URL where Django app exposes /metrics endpoint",
     show_default=True,
 )
-def restart(app_url):
+@click.option(
+    "--app-container",
+    default="django-app",
+    help="Docker container name to scrape logs from",
+    show_default=True,
+)
+def restart(app_url, app_container):
     """Restart the observability stack."""
     if not _check_docker_compose():  # pragma: no cover
         raise SystemExit(1)
 
     click.echo("Restarting observability stack...")
-    work_dir = _get_work_dir(app_url)
+    work_dir = _get_work_dir(app_url, app_container)
     cmd = _get_compose_cmd()
 
     try:
@@ -239,65 +237,45 @@ def check():
       - Required packages are installed
       - Creates a test trace to verify tracing works
     """
-    click.secho("=" * 60, fg="cyan")
-    click.secho("Django O11y Health Check", fg="cyan", bold=True)
-    click.secho("=" * 60, fg="cyan")
-    click.echo()
-
     ok_count = 0
     warning_count = 0
     error_count = 0
 
-    # Check 1: Configuration
     click.secho("Configuration:", fg="cyan", bold=True)
     result = _check_configuration()
     ok_count += result[0]
     warning_count += result[1]
     error_count += result[2]
-    click.echo()
 
-    # Check 2: OTLP Endpoint
     click.secho("OTLP Endpoint:", fg="cyan", bold=True)
     result = _check_otlp_endpoint()
     ok_count += result[0]
     warning_count += result[1]
     error_count += result[2]
-    click.echo()
 
-    # Check 3: Installed Packages
     click.secho("Installed Packages:", fg="cyan", bold=True)
     result = _check_packages()
     ok_count += result[0]
     warning_count += result[1]
     error_count += result[2]
-    click.echo()
 
-    # Check 4: Test Trace
     click.secho("Test Trace:", fg="cyan", bold=True)
     result = _test_trace()
     ok_count += result[0]
     warning_count += result[1]
     error_count += result[2]
-    click.echo()
 
-    # Summary
-    click.secho("=" * 60, fg="cyan")
-    summary = f"Summary: {ok_count} OK"
+    summary = f"{ok_count} OK"
     if warning_count > 0:  # pragma: no cover
-        summary += f", {warning_count} WARNING"
+        summary += f", {warning_count} warning"
     if error_count > 0:  # pragma: no cover
-        summary += f", {error_count} ERROR"
-
-    if error_count > 0:  # pragma: no cover
-        click.secho(summary, fg="red", bold=True)
-        click.secho("=" * 60, fg="cyan")
+        summary += f", {error_count} error"
+        click.secho(summary, fg="red")
         raise SystemExit(1)
-    if warning_count > 0:  # pragma: no cover
-        click.secho(summary, fg="yellow", bold=True)
+    elif warning_count > 0:  # pragma: no cover
+        click.secho(summary, fg="yellow")
     else:
-        click.secho(summary, fg="green", bold=True)
-
-    click.secho("=" * 60, fg="cyan")
+        click.secho(summary, fg="green")
 
 
 # =============================================================================
@@ -357,7 +335,7 @@ def _get_compose_cmd():
     return ["docker-compose"]  # pragma: no cover
 
 
-def _get_work_dir(app_url=None):
+def _get_work_dir(app_url=None, app_container=None):
     """Get or create working directory and copy stack configs."""
     work_dir = Path.home() / ".django-o11y"
     work_dir.mkdir(exist_ok=True)
@@ -373,14 +351,20 @@ def _get_work_dir(app_url=None):
                 if config_file.is_file():
                     dest = work_dir / config_file.name
 
-                    # For alloy-config.alloy, customize the scrape target URL
-                    if (
-                        config_file.name == "alloy-config.alloy" and app_url
+                    # For alloy-config.alloy, substitute the metrics scrape URL
+                    # and the Docker container name for log scraping
+                    if config_file.name == "alloy-config.alloy" and (
+                        app_url or app_container
                     ):  # pragma: no cover
                         content = config_file.read_text()
-                        content = content.replace(
-                            '"host.docker.internal:8000"', f'"{app_url}"'
-                        )
+                        if app_url:
+                            content = content.replace(
+                                '"host.docker.internal:8000"', f'"{app_url}"'
+                            )
+                        if app_container:
+                            content = content.replace(
+                                '"django-app"', f'"{app_container}"'
+                            )
                         dest.write_text(content)
                     else:
                         shutil.copy(config_file, dest)
@@ -392,39 +376,12 @@ def _get_work_dir(app_url=None):
 
 def _print_service_urls():
     """Print URLs for accessing services."""
-    click.secho("Service URLs:", fg="cyan", bold=True)
-    click.echo("  Grafana:    http://localhost:3000 (no login required)")
+    click.echo("  Grafana:    http://localhost:3000")
     click.echo("  Prometheus: http://localhost:9090")
     click.echo("  Tempo:      http://localhost:3200")
     click.echo("  Loki:       http://localhost:3100")
     click.echo("  Pyroscope:  http://localhost:4040")
-    click.echo("  Alloy UI:   http://localhost:12345")
-
-
-def _print_next_steps():
-    """Print next steps for user."""
-    click.secho("Next Steps:", fg="cyan", bold=True)
-    click.echo()
-    click.echo("1. Wait ~10 seconds for dashboards to import automatically")
-    click.echo()
-    click.echo("2. Your app should export OTLP to http://localhost:4317")
-    click.echo("   (This is the default in django-o11y)")
-    click.echo()
-    click.echo("3. Start your Django application:")
-    click.echo("   python manage.py runserver")
-    click.echo()
-    click.echo("4. Generate some traffic:")
-    click.echo("   curl http://localhost:8000/")
-    click.echo()
-    click.echo("5. Verify setup:")
-    click.echo("   python manage.py o11y check")
-    click.echo()
-    click.echo("6. Open Grafana to see dashboards & explore!")
-    click.echo("   http://localhost:3000")
-    click.echo("   Dashboards: Django Overview, Django Requests, Celery Tasks")
-    click.echo()
-    click.echo("7. To stop:")
-    click.echo("   python manage.py o11y stack stop")
+    click.echo("  Alloy:      http://localhost:12345")
 
 
 def _check_configuration():

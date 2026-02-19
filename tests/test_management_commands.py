@@ -53,11 +53,10 @@ def test_get_work_dir_with_custom_app_url():
     assert work_dir is not None
     assert work_dir.exists()
 
-    # Check if prometheus.yml was customized
-    prometheus_yml = work_dir / "prometheus.yml"
-    if prometheus_yml.exists():
-        content = prometheus_yml.read_text()
-        # Should contain the custom app URL if it was processed
+    # alloy-config.alloy should have the custom scrape target
+    alloy_config = work_dir / "alloy-config.alloy"
+    if alloy_config.exists():
+        content = alloy_config.read_text()
         assert "myapp:8080" in content or "host.docker.internal:8000" in content
 
 
@@ -190,7 +189,6 @@ def test_helper_functions_dont_crash():
         _check_packages,
         _get_compose_cmd,
         _get_work_dir,
-        _print_next_steps,
         _print_service_urls,
         _test_trace,
     )
@@ -204,7 +202,6 @@ def test_helper_functions_dont_crash():
     _check_otlp_endpoint()
     _test_trace()
     _print_service_urls()
-    _print_next_steps()
 
 
 # =============================================================================
@@ -250,13 +247,10 @@ def test_stack_start_output(observability_stack):
     result = runner.invoke(cli, ["stack", "start"])
 
     assert result.exit_code == 0
-    assert "Observability stack started!" in result.output
-    # Service URLs are printed
+    assert "Stack started." in result.output
     assert "localhost:3000" in result.output
     assert "localhost:9090" in result.output
     assert "localhost:3200" in result.output
-    # Next steps are printed
-    assert "o11y stack stop" in result.output
 
 
 @pytest.mark.integration

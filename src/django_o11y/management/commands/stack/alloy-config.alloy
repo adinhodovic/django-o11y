@@ -38,14 +38,30 @@ otelcol.exporter.loki "otlp" {
 // Django writes JSON logs to stdout; Alloy tails them here.
 // ============================================================
 
-loki.source.docker "django" {
-  host       = "unix:///var/run/docker.sock"
-  targets    = discovery.docker.containers.targets
-  forward_to = [loki.process.django.receiver]
+discovery.docker "django" {
+  host = "unix:///var/run/docker.sock"
+
+  filter {
+    name   = "name"
+    values = ["django-app"]
+  }
 }
 
-discovery.docker "containers" {
-  host = "unix:///var/run/docker.sock"
+discovery.relabel "django" {
+  targets = discovery.docker.django.targets
+
+  // Strip the leading "/" from the container name (e.g. "/django-app" → "django-app")
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "service_name"
+  }
+}
+
+loki.source.docker "django" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.django.output
+  forward_to = [loki.process.django.receiver]
 }
 
 loki.process "django" {
@@ -60,8 +76,9 @@ loki.process "django" {
 
   stage.labels {
     values = {
-      level  = "level",
-      logger = "logger",
+      level        = "level",
+      logger       = "logger",
+      service_name = "service_name",
     }
   }
 
