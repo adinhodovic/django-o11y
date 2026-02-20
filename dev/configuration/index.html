@@ -545,17 +545,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#environment-variables" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Environment variables
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#examples" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -734,17 +723,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#environment-variables" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Environment variables
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#examples" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -833,10 +811,12 @@
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">DJANGO_O11Y</span> <span class="o">=</span> <span class="p">{</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="s2">&quot;SERVICE_NAME&quot;</span><span class="p">:</span> <span class="s2">&quot;my-app&quot;</span><span class="p">,</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="s2">&quot;TRACING&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;ENABLED&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="s2">&quot;LOGGING&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;ENABLED&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">}</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">}</span>
 </code></pre></div>
 <h2 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h2>
+<p>Every setting can be overridden by an environment variable. All custom env vars use the
+<code>DJANGO_O11Y_&lt;SECTION&gt;_&lt;KEY&gt;</code> pattern. The three standard OpenTelemetry env vars are also
+honoured where they naturally map.</p>
 <h3 id="core">Core<a class="headerlink" href="#core" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -844,7 +824,7 @@
 <th>Setting</th>
 <th>Type</th>
 <th>Default</th>
-<th>Env Var</th>
+<th>Env var</th>
 </tr>
 </thead>
 <tbody>
@@ -858,13 +838,13 @@
 <td><code>ENVIRONMENT</code></td>
 <td>str</td>
 <td><code>"development"</code></td>
-<td><code>ENVIRONMENT</code></td>
+<td><code>DJANGO_O11Y_ENVIRONMENT</code></td>
 </tr>
 <tr>
 <td><code>NAMESPACE</code></td>
 <td>str</td>
 <td><code>""</code></td>
-<td><code>SERVICE_NAMESPACE</code></td>
+<td><code>DJANGO_O11Y_NAMESPACE</code></td>
 </tr>
 <tr>
 <td><code>RESOURCE_ATTRIBUTES</code></td>
@@ -887,7 +867,7 @@
 <th>Setting</th>
 <th>Type</th>
 <th>Default</th>
-<th>Env Var</th>
+<th>Env var</th>
 </tr>
 </thead>
 <tbody>
@@ -913,7 +893,7 @@
 <td><code>TRACING.CONSOLE_EXPORTER</code></td>
 <td>bool</td>
 <td><code>False</code></td>
-<td><code>DJANGO_O11Y_CONSOLE_EXPORTER</code></td>
+<td><code>DJANGO_O11Y_TRACING_CONSOLE_EXPORTER</code></td>
 </tr>
 </tbody>
 </table>
@@ -924,7 +904,7 @@
 <th>Setting</th>
 <th>Type</th>
 <th>Default</th>
-<th>Env Var</th>
+<th>Env var</th>
 </tr>
 </thead>
 <tbody>
@@ -932,55 +912,67 @@
 <td><code>LOGGING.FORMAT</code></td>
 <td>str</td>
 <td><code>"console"</code> (DEBUG=True) / <code>"json"</code> (DEBUG=False)</td>
-<td><code>DJANGO_LOG_FORMAT</code></td>
+<td><code>DJANGO_O11Y_LOGGING_FORMAT</code></td>
 </tr>
 <tr>
 <td><code>LOGGING.LEVEL</code></td>
 <td>str</td>
 <td><code>"INFO"</code></td>
-<td><code>DJANGO_LOG_LEVEL</code></td>
+<td><code>DJANGO_O11Y_LOGGING_LEVEL</code></td>
 </tr>
 <tr>
 <td><code>LOGGING.REQUEST_LEVEL</code></td>
 <td>str</td>
 <td><code>"INFO"</code></td>
-<td><code>DJANGO_REQUEST_LOG_LEVEL</code></td>
+<td><code>DJANGO_O11Y_LOGGING_REQUEST_LEVEL</code></td>
 </tr>
 <tr>
 <td><code>LOGGING.DATABASE_LEVEL</code></td>
 <td>str</td>
 <td><code>"WARNING"</code></td>
-<td><code>DJANGO_DATABASE_LOG_LEVEL</code></td>
+<td><code>DJANGO_O11Y_LOGGING_DATABASE_LEVEL</code></td>
 </tr>
 <tr>
 <td><code>LOGGING.CELERY_LEVEL</code></td>
 <td>str</td>
 <td><code>"INFO"</code></td>
-<td><code>DJANGO_CELERY_LOG_LEVEL</code></td>
+<td><code>DJANGO_O11Y_LOGGING_CELERY_LEVEL</code></td>
 </tr>
 <tr>
 <td><code>LOGGING.COLORIZED</code></td>
 <td>bool</td>
-<td>Same as <code>DEBUG</code></td>
-<td><code>DJANGO_LOG_COLORIZED</code></td>
+<td><code>True</code> when <code>DEBUG=True</code>, <code>False</code> otherwise</td>
+<td><code>DJANGO_O11Y_LOGGING_COLORIZED</code></td>
 </tr>
 <tr>
 <td><code>LOGGING.RICH_EXCEPTIONS</code></td>
 <td>bool</td>
-<td>Same as <code>DEBUG</code></td>
-<td><code>DJANGO_LOG_RICH_EXCEPTIONS</code></td>
+<td><code>True</code> when <code>DEBUG=True</code>, <code>False</code> otherwise</td>
+<td><code>DJANGO_O11Y_LOGGING_RICH_EXCEPTIONS</code></td>
 </tr>
 <tr>
 <td><code>LOGGING.OTLP_ENABLED</code></td>
 <td>bool</td>
-<td><code>True</code></td>
-<td><code>DJANGO_O11Y_LOG_OTLP_ENABLED</code></td>
+<td><code>False</code></td>
+<td><code>DJANGO_O11Y_LOGGING_OTLP_ENABLED</code></td>
 </tr>
 <tr>
 <td><code>LOGGING.OTLP_ENDPOINT</code></td>
 <td>str</td>
 <td><code>"http://localhost:4317"</code></td>
 <td><code>OTEL_EXPORTER_OTLP_ENDPOINT</code></td>
+</tr>
+<tr>
+<td><code>LOGGING.FILE_ENABLED</code></td>
+<td>bool</td>
+<td>Same as <code>DEBUG</code></td>
+<td><code>DJANGO_O11Y_LOGGING_FILE_ENABLED</code></td>
+</tr>
+<tr>
+<td><code>LOGGING.FILE_PATH</code></td>
+<td>str</td>
+<td><code>"/tmp/django-o11y/django.log"</code></td>
+<td><code>DJANGO_O11Y_LOGGING_FILE_PATH</code></td>
 </tr>
 </tbody>
 </table>
@@ -991,7 +983,7 @@
 <th>Setting</th>
 <th>Type</th>
 <th>Default</th>
-<th>Env Var</th>
+<th>Env var</th>
 </tr>
 </thead>
 <tbody>
@@ -999,13 +991,13 @@
 <td><code>METRICS.PROMETHEUS_ENABLED</code></td>
 <td>bool</td>
 <td><code>True</code></td>
-<td><code>DJANGO_O11Y_PROMETHEUS_ENABLED</code></td>
+<td><code>DJANGO_O11Y_METRICS_PROMETHEUS_ENABLED</code></td>
 </tr>
 <tr>
 <td><code>METRICS.PROMETHEUS_ENDPOINT</code></td>
 <td>str</td>
 <td><code>"/metrics"</code></td>
-<td><code>DJANGO_O11Y_PROMETHEUS_ENDPOINT</code></td>
+<td><code>DJANGO_O11Y_METRICS_PROMETHEUS_ENDPOINT</code></td>
 </tr>
 </tbody>
 </table>
@@ -1016,7 +1008,7 @@
 <th>Setting</th>
 <th>Type</th>
 <th>Default</th>
-<th>Env Var</th>
+<th>Env var</th>
 </tr>
 </thead>
 <tbody>
@@ -1053,7 +1045,7 @@
 <th>Setting</th>
 <th>Type</th>
 <th>Default</th>
-<th>Env Var</th>
+<th>Env var</th>
 </tr>
 </thead>
 <tbody>
@@ -1067,7 +1059,7 @@
 <td><code>PROFILING.PYROSCOPE_URL</code></td>
 <td>str</td>
 <td><code>"http://localhost:4040"</code></td>
-<td><code>PYROSCOPE_SERVER_ADDRESS</code></td>
+<td><code>DJANGO_O11Y_PROFILING_PYROSCOPE_URL</code></td>
 </tr>
 <tr>
 <td><code>PROFILING.TAGS</code></td>
@@ -1077,40 +1069,32 @@
 </tr>
 </tbody>
 </table>
-<h2 id="environment-variables">Environment variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">OTEL_SERVICE_NAME</span><span class="o">=</span><span class="s2">&quot;my-app&quot;</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ENVIRONMENT</span><span class="o">=</span><span class="s2">&quot;production&quot;</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nb">export</span><span class="w"> </span><span class="nv">OTEL_EXPORTER_OTLP_ENDPOINT</span><span class="o">=</span><span class="s2">&quot;http://localhost:4317&quot;</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="nb">export</span><span class="w"> </span><span class="nv">OTEL_TRACES_SAMPLER_ARG</span><span class="o">=</span><span class="s2">&quot;0.1&quot;</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nb">export</span><span class="w"> </span><span class="nv">DJANGO_LOG_LEVEL</span><span class="o">=</span><span class="s2">&quot;INFO&quot;</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nb">export</span><span class="w"> </span><span class="nv">DJANGO_LOG_FORMAT</span><span class="o">=</span><span class="s2">&quot;json&quot;</span>
-</code></pre></div>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <h3 id="development">Development<a class="headerlink" href="#development" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">DJANGO_O11Y</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="s2">&quot;SERVICE_NAME&quot;</span><span class="p">:</span> <span class="s2">&quot;my-app-dev&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="s2">&quot;TRACING&quot;</span><span class="p">:</span> <span class="p">{</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>        <span class="s2">&quot;SAMPLE_RATE&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>        <span class="s2">&quot;CONSOLE_EXPORTER&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>  <span class="c1"># Print traces to stdout</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="p">},</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="s2">&quot;LOGGING&quot;</span><span class="p">:</span> <span class="p">{</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>        <span class="s2">&quot;FORMAT&quot;</span><span class="p">:</span> <span class="s2">&quot;console&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>        <span class="s2">&quot;COLORIZED&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>        <span class="s2">&quot;DATABASE_LEVEL&quot;</span><span class="p">:</span> <span class="s2">&quot;DEBUG&quot;</span><span class="p">,</span>  <span class="c1"># Log all SQL queries</span>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="p">},</span>
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">DJANGO_O11Y</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="s2">&quot;SERVICE_NAME&quot;</span><span class="p">:</span> <span class="s2">&quot;my-app-dev&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="s2">&quot;TRACING&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>        <span class="s2">&quot;SAMPLE_RATE&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        <span class="s2">&quot;CONSOLE_EXPORTER&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="p">},</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="s2">&quot;LOGGING&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>        <span class="s2">&quot;FORMAT&quot;</span><span class="p">:</span> <span class="s2">&quot;console&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>        <span class="s2">&quot;COLORIZED&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>        <span class="s2">&quot;DATABASE_LEVEL&quot;</span><span class="p">:</span> <span class="s2">&quot;DEBUG&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="p">},</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="p">}</span>
 </code></pre></div>
 <h3 id="production">Production<a class="headerlink" href="#production" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">DJANGO_O11Y</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="s2">&quot;SERVICE_NAME&quot;</span><span class="p">:</span> <span class="s2">&quot;my-app&quot;</span><span class="p">,</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="s2">&quot;ENVIRONMENT&quot;</span><span class="p">:</span> <span class="s2">&quot;production&quot;</span><span class="p">,</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="s2">&quot;TRACING&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;SAMPLE_RATE&quot;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">},</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="s2">&quot;LOGGING&quot;</span><span class="p">:</span> <span class="p">{</span>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>        <span class="s2">&quot;FORMAT&quot;</span><span class="p">:</span> <span class="s2">&quot;json&quot;</span><span class="p">,</span>
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>        <span class="s2">&quot;COLORIZED&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="p">},</span>
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    <span class="s2">&quot;CELERY&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;ENABLED&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
-<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">DJANGO_O11Y</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="s2">&quot;SERVICE_NAME&quot;</span><span class="p">:</span> <span class="s2">&quot;my-app&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="s2">&quot;ENVIRONMENT&quot;</span><span class="p">:</span> <span class="s2">&quot;production&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="s2">&quot;TRACING&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;SAMPLE_RATE&quot;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">},</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="s2">&quot;LOGGING&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        <span class="s2">&quot;FORMAT&quot;</span><span class="p">:</span> <span class="s2">&quot;json&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>        <span class="s2">&quot;COLORIZED&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="p">},</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="s2">&quot;CELERY&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;ENABLED&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="p">}</span>
 </code></pre></div>
 <h2 id="automatic-attributes">Automatic attributes<a class="headerlink" href="#automatic-attributes" title="Permanent link">&para;</a></h2>
 <p>Added to all traces:</p>
