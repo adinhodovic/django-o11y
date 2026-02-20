@@ -6,21 +6,15 @@ import pytest
 
 
 def test_profiling_disabled_by_default():
-    import os
 
-    old_env = os.environ.get("DJANGO_O11Y_PROFILING_ENABLED")
+    # The hardcoded default for PROFILING.ENABLED is False
+    import django.test.utils
 
-    try:
-        if "DJANGO_O11Y_PROFILING_ENABLED" in os.environ:
-            del os.environ["DJANGO_O11Y_PROFILING_ENABLED"]
+    with django.test.utils.override_settings(DJANGO_O11Y={}):
+        from django_o11y.conf import get_config as _get_config
 
-        from django_o11y.conf import _get_bool_env
-
-        default_value = _get_bool_env("DJANGO_O11Y_PROFILING_ENABLED", False)
-        assert default_value is False
-    finally:
-        if old_env is not None:
-            os.environ["DJANGO_O11Y_PROFILING_ENABLED"] = old_env
+        config = _get_config()
+        assert config["PROFILING"]["ENABLED"] is False
 
 
 def test_profiling_url_default():

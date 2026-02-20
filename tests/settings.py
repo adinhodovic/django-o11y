@@ -1,7 +1,5 @@
 """Django settings for tests."""
 
-import os
-
 SECRET_KEY = "test-secret-key"
 DEBUG = True
 ALLOWED_HOSTS = ["*"]
@@ -28,44 +26,31 @@ DATABASES = {
 
 ROOT_URLCONF = "tests.urls"
 
-# django-o11y configuration with sane defaults
-# All features enabled by default - tests should reflect production behavior
-# Use environment variables to override for specific test scenarios
 DJANGO_O11Y = {
-    "SERVICE_NAME": os.getenv("OTEL_SERVICE_NAME", "test-service"),
-    "ENVIRONMENT": os.getenv("ENVIRONMENT", "test"),
-    "NAMESPACE": os.getenv("SERVICE_NAMESPACE", ""),
+    "SERVICE_NAME": "test-service",
+    "ENVIRONMENT": "test",
     "TRACING": {
         "ENABLED": True,
-        "OTLP_ENDPOINT": os.getenv("OTLP_ENDPOINT", ""),  # No collector in tests
-        "SAMPLE_RATE": float(os.getenv("OTEL_TRACE_SAMPLE_RATE", "1.0")),
-        "CONSOLE_EXPORTER": False,  # Too noisy in tests
+        "OTLP_ENDPOINT": "",  # No collector in tests
+        "CONSOLE_EXPORTER": False,
     },
     "LOGGING": {
-        "ENABLED": True,
-        "FORMAT": "console",  # Human-readable in tests
-        "LEVEL": os.getenv("LOG_LEVEL", "WARNING"),  # Reduce noise (was INFO)
+        "FORMAT": "console",
+        "LEVEL": "WARNING",
         "COLORIZED": False,
         "RICH_EXCEPTIONS": False,
-        "OTLP_ENABLED": False,  # Disabled in tests - no network calls
+        "OTLP_ENABLED": False,
     },
     "METRICS": {
         "PROMETHEUS_ENABLED": True,
     },
     "CELERY": {
-        "ENABLED": True,  # Always instrument, even if not used in all tests
+        "ENABLED": True,
     },
     "PROFILING": {
-        "ENABLED": True,  # Enabled - gracefully skips if pyroscope-io not installed
-        "PYROSCOPE_URL": os.getenv("PYROSCOPE_URL", "http://localhost:4040"),
-        "MODE": "push",
+        "ENABLED": True,  # Gracefully skips if pyroscope-io not installed
+        "PYROSCOPE_URL": "http://localhost:4040",
         "TAGS": {},
-    },
-    "RESOURCE_ATTRIBUTES": {
-        # Additional resource attributes for testing
-    },
-    "CUSTOM_TAGS": {
-        # Custom business tags for testing
     },
 }
 

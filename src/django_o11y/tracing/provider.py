@@ -31,7 +31,7 @@ def setup_tracing(config: dict[str, Any]) -> TracerProvider:
 
     resource_attrs = {
         SERVICE_NAME: service_name,
-        "service.version": os.getenv("SERVICE_VERSION", __version__),
+        "service.version": __version__,
         "deployment.environment": config.get("ENVIRONMENT", "development"),
         "host.name": socket.gethostname(),
         "process.pid": os.getpid(),

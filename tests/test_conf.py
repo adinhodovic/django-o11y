@@ -48,7 +48,6 @@ def test_config_logging_defaults():
     config = get_o11y_config()
 
     assert "LOGGING" in config
-    assert "ENABLED" in config["LOGGING"]
     assert "FORMAT" in config["LOGGING"]
     assert "LEVEL" in config["LOGGING"]
 
