@@ -9,6 +9,9 @@ from urllib.parse import urlparse
 import click
 from django.core.management.base import BaseCommand
 
+CELERY_EXPORTER_COMPOSE_FILE = "docker-compose.celery-exporter.yml"
+CELERY_EXPORTER_PORT = 9808
+
 
 class Command(BaseCommand):
     """Manage o11y stack and verify setup."""
@@ -85,12 +88,13 @@ def start(app_url, app_container):
 
     work_dir = _get_work_dir(app_url, app_container)
     cmd = _get_compose_cmd()
+    compose_files = _get_compose_files(work_dir)
 
     click.echo(f"Starting stack (configs: {work_dir})...")
 
     try:
         subprocess.run(
-            cmd + ["-f", "docker-compose.yml", "up", "-d"],
+            cmd + compose_files + ["up", "-d"],
             cwd=work_dir,
             check=True,
         )
@@ -100,7 +104,7 @@ def start(app_url, app_container):
 
     click.secho("Stack started.", fg="green")
     click.echo()
-    _print_service_urls()
+    _print_service_urls(work_dir)
 
 
 @stack.command()
@@ -113,10 +117,11 @@ def stop():
 
     work_dir = _get_work_dir()
     cmd = _get_compose_cmd()
+    compose_files = _get_compose_files(work_dir)
 
     try:
         subprocess.run(
-            cmd + ["-f", "docker-compose.yml", "down"],
+            cmd + compose_files + ["down"],
             cwd=work_dir,
             check=True,
         )
@@ -135,10 +140,11 @@ def restart():
     click.echo("Restarting observability stack...")
     work_dir = _get_work_dir()
     cmd = _get_compose_cmd()
+    compose_files = _get_compose_files(work_dir)
 
     try:
         subprocess.run(
-            cmd + ["-f", "docker-compose.yml", "restart"],
+            cmd + compose_files + ["restart"],
             cwd=work_dir,
             check=True,
         )
@@ -156,10 +162,11 @@ def status():
 
     work_dir = _get_work_dir()
     cmd = _get_compose_cmd()
+    compose_files = _get_compose_files(work_dir)
 
     try:
         subprocess.run(
-            cmd + ["-f", "docker-compose.yml", "ps"],
+            cmd + compose_files + ["ps"],
             cwd=work_dir,
             check=True,
         )
@@ -189,8 +196,9 @@ def logs(follow, tail):
 
     work_dir = _get_work_dir()
     cmd = _get_compose_cmd()
+    compose_files = _get_compose_files(work_dir)
 
-    args = cmd + ["-f", "docker-compose.yml", "logs", f"--tail={tail}"]
+    args = cmd + compose_files + ["logs", f"--tail={tail}"]
     if follow:  # pragma: no cover
         args.append("-f")
 
@@ -262,6 +270,95 @@ def check():
 # =============================================================================
 # Helper Functions
 # =============================================================================
+
+
+def _get_broker_url() -> str | None:
+    """Detect the Celery broker URL from Django or Celery settings."""
+    from django.conf import settings
+
+    # Check Django-style Celery settings first (CELERY_BROKER_URL)
+    broker_url = getattr(settings, "CELERY_BROKER_URL", None)
+    if broker_url:
+        return broker_url
+
+    # Check lowercase celery config (broker_url in CELERY dict or celeryconfig)
+    celery_config = getattr(settings, "CELERY", {})
+    if isinstance(celery_config, dict):
+        broker_url = celery_config.get("broker_url")
+        if broker_url:
+            return broker_url
+
+    # Try reading from the Celery app if it's already configured
+    try:
+        import celery as celery_module
+
+        app = celery_module.current_app
+        broker_url = app.conf.broker_url
+        if broker_url and broker_url != "amqp://guest:guest@localhost//":
+            return broker_url
+    except Exception:  # pylint: disable=broad-exception-caught
+        pass
+
+    return None
+
+
+def _is_celery_enabled() -> bool:
+    """Check if Celery is enabled in django-o11y settings."""
+    try:
+        from django_o11y.conf import get_o11y_config
+
+        config = get_o11y_config()
+        return bool(config.get("CELERY", {}).get("ENABLED"))
+    except Exception:  # pylint: disable=broad-exception-caught
+        return False
+
+
+def _write_celery_exporter_override(work_dir: Path, broker_url: str) -> None:
+    """Write a docker-compose override that adds celery-exporter."""
+    compose_content = f"""\
+services:
+  celery-exporter:
+    image: danihodovic/celery-exporter:latest
+    command: --broker-url={broker_url}
+    ports:
+      - "{CELERY_EXPORTER_PORT}:{CELERY_EXPORTER_PORT}"
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+"""
+    (work_dir / CELERY_EXPORTER_COMPOSE_FILE).write_text(compose_content)
+
+    # Append a Prometheus scrape block to the Alloy config
+    alloy_config = work_dir / "alloy-config.alloy"
+    if alloy_config.exists():
+        existing = alloy_config.read_text()
+        scrape_block = f"""
+// ============================================================
+// Metrics: scrape celery-exporter /metrics → Prometheus
+// ============================================================
+
+prometheus.scrape "celery_exporter" {{
+  targets = [
+    {{
+      "__address__" = "celery-exporter:{CELERY_EXPORTER_PORT}",
+      "job"         = "celery-exporter",
+    }},
+  ]
+  metrics_path    = "/metrics"
+  scrape_interval = "15s"
+  forward_to      = [prometheus.remote_write.default.receiver]
+}}
+"""
+        if "celery_exporter" not in existing:
+            alloy_config.write_text(existing + scrape_block)
+
+
+def _get_compose_files(work_dir: Path) -> list[str]:
+    """Return the list of -f flags for docker compose commands."""
+    files = ["-f", "docker-compose.yml"]
+    if (work_dir / CELERY_EXPORTER_COMPOSE_FILE).exists():
+        files += ["-f", CELERY_EXPORTER_COMPOSE_FILE]
+    return files
 
 
 def _check_docker_compose():
@@ -352,17 +449,31 @@ def _get_work_dir(app_url=None, app_container=None):
     except Exception as e:  # pragma: no cover
         click.secho(f"Warning: Could not copy stack files: {e}", fg="yellow")
 
+    # Conditionally add celery-exporter when Celery is enabled and broker is configured
+    if _is_celery_enabled():
+        broker_url = _get_broker_url()
+        if broker_url:
+            _write_celery_exporter_override(work_dir, broker_url)
+            click.echo(f"  celery-exporter: broker {broker_url}")
+        else:
+            # Remove stale override if broker is no longer configured
+            override = work_dir / CELERY_EXPORTER_COMPOSE_FILE
+            if override.exists():
+                override.unlink()
+
     return work_dir
 
 
-def _print_service_urls():
+def _print_service_urls(work_dir: Path | None = None):
     """Print URLs for accessing services."""
-    click.echo("  Grafana:    http://localhost:3000")
-    click.echo("  Prometheus: http://localhost:9090")
-    click.echo("  Tempo:      http://localhost:3200")
-    click.echo("  Loki:       http://localhost:3100")
-    click.echo("  Pyroscope:  http://localhost:4040")
-    click.echo("  Alloy:      http://localhost:12345")
+    click.echo("  Grafana:          http://localhost:3000")
+    click.echo("  Prometheus:       http://localhost:9090")
+    click.echo("  Tempo:            http://localhost:3200")
+    click.echo("  Loki:             http://localhost:3100")
+    click.echo("  Pyroscope:        http://localhost:4040")
+    click.echo("  Alloy:            http://localhost:12345")
+    if work_dir and (work_dir / CELERY_EXPORTER_COMPOSE_FILE).exists():
+        click.echo(f"  celery-exporter:  http://localhost:{CELERY_EXPORTER_PORT}")
 
 
 def _check_configuration():

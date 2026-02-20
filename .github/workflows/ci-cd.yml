@@ -35,6 +35,15 @@ jobs:
       - name: Pylint with tox
         run: uv run tox -e pylint
 
+      - name: Markdownlint
+        uses: DavidAnson/markdownlint-cli2-action@v19
+        with:
+          globs: |
+            **/*.md
+            !.venv/**
+            !.tox/**
+            !site/**
+
   test:
     runs-on: ubuntu-latest
     strategy:

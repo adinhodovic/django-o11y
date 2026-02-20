@@ -23,7 +23,7 @@ uv sync --all-extras
 
 ### Project structure
 
-```
+```text
 django-o11y/
 ├── src/django_o11y/        # Main package
 │   ├── apps.py                      # Django app config
@@ -60,11 +60,13 @@ uv run pytest
 ### Test categories
 
 **Unit tests** - No external dependencies:
+
 ```bash
 uv run pytest -m "not integration"
 ```
 
 **Integration tests** - Requires observability stack running:
+
 ```bash
 # Start stack first
 python manage.py o11y stack start
@@ -79,6 +81,7 @@ python manage.py o11y stack stop
 ### Test configuration
 
 Tests use `tests/settings.py` with sane defaults:
+
 - All instrumentation enabled by default (tests should reflect production)
 - File-based SQLite database (not :memory:) for manual testing
 - Shared fixtures in `tests/conftest.py`
@@ -101,6 +104,7 @@ mypy src/
 ### Pre-commit checks
 
 Before committing, ensure:
+
 1. All tests pass: `uv run pytest`
 2. Code is formatted: `uv run ruff format .`
 3. No linting errors: `uv run ruff check .`

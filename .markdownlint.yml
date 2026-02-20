@@ -1,0 +1,9 @@
+---
+default: true
+
+# Line length — disabled, URLs cannot be wrapped
+MD013: false
+
+# Table column style — require spaces around pipes
+MD060:
+  style: "compact"

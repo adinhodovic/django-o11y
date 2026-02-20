@@ -17,10 +17,10 @@ This package bundles the patterns from these blog posts into an installable libr
 
 - OpenTelemetry traces for requests, database queries, cache, and Celery tasks
 - Structlog with colorized dev output, JSON production logs, and automatic trace correlation
-- django-prometheus for infrastructure metrics and a simple API for custom business metrics
+- django-prometheus for infrastructure metrics and a thin API for custom business metrics
 - Pyroscope continuous profiling (optional)
-- Full Celery observability: tracing, structured logs, and metrics
-- Pre-built Grafana dashboards from the blog posts
+- Celery tracing, structured task logs, and metrics via celery-exporter
+- Grafana dashboards and alerts from django-mixin and celery-mixin
 - Sensible defaults, overridable via Django settings or environment variables
 
 ## Local development stack
@@ -34,13 +34,13 @@ python manage.py o11y stack start
 This starts all services via Docker Compose and imports the Grafana dashboards:
 
 | Service | URL | Purpose |
-|---------|-----|---------|
-| Grafana | http://localhost:3000 | Dashboards (no login required) |
-| Prometheus | http://localhost:9090 | Metrics |
-| Tempo | http://localhost:3200 | Distributed traces |
-| Loki | http://localhost:3100 | Logs |
-| Pyroscope | http://localhost:4040 | Continuous profiling |
-| Alloy | http://localhost:12345 | OTLP receiver + log scraping |
+| ------- | --- | ------- |
+| Grafana | <http://localhost:3000> | Dashboards (no login required) |
+| Prometheus | <http://localhost:9090> | Metrics |
+| Tempo | <http://localhost:3200> | Distributed traces |
+| Loki | <http://localhost:3100> | Logs |
+| Pyroscope | <http://localhost:4040> | Continuous profiling |
+| Alloy | <http://localhost:12345> | OTLP receiver + log scraping |
 
 If your app runs in Docker or on a non-default port:
 
@@ -64,4 +64,6 @@ The following dashboards are imported automatically:
 - [Structlog](https://github.com/hynek/structlog)
 - [django-structlog](https://github.com/jrobichaud/django-structlog)
 - [django-prometheus](https://github.com/korfuri/django-prometheus)
+- [django-mixin](https://github.com/adinhodovic/django-mixin)
+- [celery-exporter](https://github.com/danihodovic/celery-exporter)
 - [Grafana](https://grafana.com/)
