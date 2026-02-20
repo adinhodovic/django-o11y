@@ -7,7 +7,6 @@ Usage in settings.py:
 
     from django_o11y.logging.config import build_logging_dict
 
-    LOGGING_CONFIG = None
     LOGGING = build_logging_dict()
 """
 
@@ -27,9 +26,7 @@ def build_logging_dict(
     """
     Build and return a Django-compatible LOGGING dict wired up for structlog.
 
-    Call this in settings.py and assign the result to LOGGING. Set
-    LOGGING_CONFIG = None alongside it so Django does not apply its own
-    DEFAULT_LOGGING before the dict takes effect.
+    Call this in settings.py and assign the result to LOGGING.
 
     Args:
         logging_config: The LOGGING sub-dict from DJANGO_O11Y config. When

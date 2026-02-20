@@ -6,9 +6,13 @@ contextual information that's relevant to your application.
 
 Example usage:
 
-    from django_o11y.context import set_custom_tags, add_span_attribute
+    from django_o11y.context import get_logger, set_custom_tags, add_span_attribute
+
+    logger = get_logger()
 
     def my_view(request):
+        logger.info("order_placed", order_id=order_id, amount=total)
+
         # Add custom tags that appear in both traces and logs
         set_custom_tags({
             "tenant_id": request.tenant.id,
@@ -23,10 +27,28 @@ Example usage:
         return HttpResponse("OK")
 """
 
+import sys
 from typing import Any
 
 import structlog
 from opentelemetry import trace
+
+
+def get_logger() -> structlog.BoundLoggerBase:
+    """Return a structlog logger bound to the caller's module name.
+
+    Equivalent to ``structlog.get_logger(__name__)`` but infers the name
+    automatically, so callers don't need to pass ``__name__`` explicitly::
+
+        from django_o11y.context import get_logger
+
+        logger = get_logger()
+
+        logger.info("order_placed", order_id=order_id, amount=total)
+    """
+    frame = sys._getframe(1)
+    name: str = frame.f_globals.get("__name__", __name__)
+    return structlog.get_logger(name)
 
 
 def set_custom_tags(tags: dict[str, Any]) -> None:

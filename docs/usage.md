@@ -33,7 +33,6 @@ Add to your Django settings:
 ```python
 from django_o11y.logging.config import build_logging_dict
 
-LOGGING_CONFIG = None
 LOGGING = build_logging_dict()
 
 INSTALLED_APPS = [
@@ -202,14 +201,11 @@ Structured logging via [Structlog](https://www.structlog.org/). Every log line i
 
 Call `build_logging_dict()` in each settings file. The defaults are keyed off `DEBUG`, so most of the difference between environments is handled automatically.
 
-`LOGGING_CONFIG = None` is required in every settings file. Without it Django applies its own default handlers at startup, which causes duplicate access logs and Werkzeug's color handler showing up alongside structlog output.
-
 **`settings/local.py`**
 
 ```python
 from django_o11y.logging.config import build_logging_dict
 
-LOGGING_CONFIG = None
 LOGGING = build_logging_dict()
 # DEBUG=True: console format, colorized, file output to /tmp/django-o11y/django.log
 ```
@@ -219,7 +215,6 @@ LOGGING = build_logging_dict()
 ```python
 from django_o11y.logging.config import build_logging_dict
 
-LOGGING_CONFIG = None
 LOGGING = build_logging_dict()
 # DEBUG=False: JSON format, no file output
 ```
@@ -229,25 +224,22 @@ LOGGING = build_logging_dict()
 ```python
 from django_o11y.logging.config import build_logging_dict
 
-LOGGING_CONFIG = None
 LOGGING = build_logging_dict({"LEVEL": "WARNING", "FILE_ENABLED": False})
 # Quiet in tests regardless of DEBUG
 ```
 
 ### Usage
 
-Use `structlog.get_logger()` everywhere — not `logging.getLogger()`:
-
 ```python
-import structlog
+from django_o11y.context import get_logger
 
-logger = structlog.get_logger(__name__)
+logger = get_logger()
 
 logger.info("order_placed", order_id=order_id, amount=total)
 logger.error("payment_failed", error=str(e), order_id=order_id)
 ```
 
-Use keyword arguments, not f-strings. This keeps logs machine-readable and queryable in Loki.
+`get_logger()` infers the module name automatically — no need to pass `__name__`. Use keyword arguments, not f-strings. This keeps logs machine-readable and queryable in Loki.
 
 ### Output formats
 
@@ -305,7 +297,6 @@ Pass `extra` to deep-merge additional loggers or handlers into the base dict:
 ```python
 from django_o11y.logging.config import build_logging_dict
 
-LOGGING_CONFIG = None
 LOGGING = build_logging_dict(extra={
     "loggers": {
         "myapp": {"level": "DEBUG"},
