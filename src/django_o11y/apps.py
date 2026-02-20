@@ -44,6 +44,11 @@ class DjangoO11yConfig(AppConfig):
             return
         self._o11y_ready = True
 
+        # Sync METRICS.EXPORT_MIGRATIONS into the django-prometheus setting it
+        # reads directly. We always set it so our config is the single source
+        # of truth, overriding whatever the user may have set elsewhere.
+        settings.PROMETHEUS_EXPORT_MIGRATIONS = config["METRICS"]["EXPORT_MIGRATIONS"]
+
         if config["TRACING"]["ENABLED"]:
             setup_tracing(config)
         else:

@@ -44,14 +44,13 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django_prometheus.middleware.PrometheusBeforeMiddleware",
 
-    # Django middleware
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
 
-    # Observability (after auth so request.user is available)
+    # After auth so request.user is available
     "django_o11y.middleware.TracingMiddleware",
     "django_o11y.middleware.LoggingMiddleware",
 
@@ -123,6 +122,14 @@ python manage.py o11y check
 
 Django metrics are provided by [django-prometheus](https://github.com/korfuri/django-prometheus). It instruments request/response cycles, database queries, cache operations, and model saves. The Grafana dashboards and alerts are sourced from [django-mixin](https://github.com/adinhodovic/django-mixin).
 
+Migration metrics (`django_migrations_applied_total`, `django_migrations_unapplied_total`) are enabled automatically. They power the migrations panel in the Django Overview dashboard and the `DjangoMigrationsUnapplied` alert. To disable them:
+
+```python
+DJANGO_O11Y = {
+    "METRICS": {"EXPORT_MIGRATIONS": False},
+}
+```
+
 Wrap your database and cache backends to get query counts, latency, and cache hit rates:
 
 ```python
@@ -145,15 +152,14 @@ Expose the metrics endpoint in your URL config:
 
 ```python
 # urls.py
-from django.urls import include, path
+from django_o11y import get_urls
 
 urlpatterns = [
     # ...
-    path("", include("django_prometheus.urls")),
-]
+] + get_urls()
 ```
 
-This exposes `/metrics` for Prometheus to scrape.
+`get_urls()` adds the Prometheus metrics endpoint at the path configured by `METRICS.PROMETHEUS_ENDPOINT` (default `/metrics`). Returns an empty list when `METRICS.PROMETHEUS_ENABLED` is `False`.
 
 ### Celery metrics
 
