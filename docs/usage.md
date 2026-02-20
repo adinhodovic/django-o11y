@@ -17,9 +17,13 @@ pip install django-o11y[all]
 Or pick what you need:
 
 | Extra | Adds |
-|-------|------|
+| ----- | ---- |
 | `django-o11y[celery]` | Celery tracing and structured task logs |
 | `django-o11y[profiling]` | Pyroscope continuous profiling |
+| `django-o11y[postgres]` | OpenTelemetry traces for psycopg2 queries |
+| `django-o11y[redis]` | OpenTelemetry traces for Redis/cache operations |
+| `django-o11y[http]` | OpenTelemetry traces for outbound `requests` and `urllib3` calls |
+| `django-o11y[dev-logging]` | Rich exception formatting in dev logs |
 | `django-o11y[all]` | Everything |
 
 ### Basic setup
@@ -61,11 +65,64 @@ MIDDLEWARE = [
 
 ---
 
+## Management command
+
+The `o11y` management command has two subcommand groups: `stack` for running the local observability stack, and `check` for verifying your setup.
+
+### stack
+
+Starts a Docker Compose stack and imports the Grafana dashboards. Stack configs are written to `~/.django-o11y/` on first run.
+
+| Service | Image | Purpose |
+| ------- | ----- | ------- |
+| Grafana | `grafana/grafana` | Dashboards — auto-imported from Grafana.com on startup, no login required |
+| Prometheus | `prom/prometheus` | Scrapes `/metrics` from your app; native histograms and exemplar storage enabled |
+| Tempo | `grafana/tempo` | Receives OTLP traces from Alloy |
+| Loki | `grafana/loki` | Receives logs from Alloy |
+| Pyroscope | `grafana/pyroscope` | Receives continuous profiling data |
+| Alloy | `grafana/alloy` | OTLP receiver (ports 4317/4318), forwards to Tempo/Loki/Pyroscope; also tails the dev log file and Docker container logs |
+| celery-exporter | `danihodovic/celery-exporter` | Added automatically when `CELERY.ENABLED` is `True` and a broker URL is detected in Django or Celery settings |
+
+```bash
+# Start
+python manage.py o11y stack start
+
+# App running in Docker with a custom container name
+python manage.py o11y stack start --app-url django-app:8000 --app-container myapp
+
+# Stop
+python manage.py o11y stack stop
+
+# Restart without recreating containers
+python manage.py o11y stack restart
+
+# Show running services
+python manage.py o11y stack status
+
+# Tail logs (last 50 lines)
+python manage.py o11y stack logs
+
+# Follow log output
+python manage.py o11y stack logs --follow
+```
+
+`--app-url` controls where Prometheus scrapes `/metrics` (default: `host.docker.internal:8000`). `--app-container` sets the Docker container name Alloy tails for logs (default: `django-app`).
+
+### check
+
+Checks your configuration, tests the OTLP endpoint, verifies installed packages, and sends a test trace.
+
+```bash
+python manage.py o11y check
+```
+
+---
+
 ## Metrics
 
-Metrics use [django-prometheus](https://github.com/korfuri/django-prometheus) for infrastructure metrics and a thin wrapper around `prometheus_client` for custom business metrics.
+### Django metrics
 
-### Infrastructure metrics
+Django metrics are provided by [django-prometheus](https://github.com/korfuri/django-prometheus). It instruments request/response cycles, database queries, cache operations, and model saves. The Grafana dashboards and alerts are sourced from [django-mixin](https://github.com/adinhodovic/django-mixin).
 
 Wrap your database and cache backends to get query counts, latency, and cache hit rates:
 
@@ -98,6 +155,12 @@ urlpatterns = [
 ```
 
 This exposes `/metrics` for Prometheus to scrape.
+
+### Celery metrics
+
+Celery metrics are exported by [celery-exporter](https://github.com/danihodovic/celery-exporter), a standalone Prometheus exporter that connects to your broker and exposes task state, queue length, and worker status. The Grafana dashboards and alerts are sourced from the [celery-mixin](https://github.com/danihodovic/celery-exporter/tree/master/celery-mixin) bundled within celery-exporter.
+
+celery-exporter is added to the local dev stack automatically when `CELERY.ENABLED` is `True` and a broker URL is found in your Django or Celery settings (`CELERY_BROKER_URL` or `broker_url`). See the [celery-exporter docs](https://github.com/danihodovic/celery-exporter) for production deployment.
 
 ### Custom metrics
 
@@ -133,7 +196,7 @@ Custom metrics appear on the same `/metrics` endpoint alongside infrastructure m
 
 ## Logs
 
-Structured logging via [Structlog](https://www.structlog.org/) with automatic trace correlation. Every log line includes `trace_id` and `span_id`, so you can jump from a log entry directly to its trace in Grafana.
+Structured logging via [Structlog](https://www.structlog.org/). Every log line includes `trace_id` and `span_id`, so you can jump from a log entry directly to the trace in Grafana.
 
 ### Setup
 
@@ -190,7 +253,7 @@ Use keyword arguments, not f-strings. This keeps logs machine-readable and query
 
 Development (`DEBUG=True`) — colorized console:
 
-```
+```text
 2026-02-12T10:30:45 [info     ] order_placed    order_id=123 amount=49.99 [views.py:42]
 ```
 
@@ -273,7 +336,7 @@ set_custom_tags({"tenant_id": "acme", "feature": "checkout_v2"})
 
 Continuous profiling via [Pyroscope](https://pyroscope.io/). Disabled by default. The Python SDK only supports push mode.
 
-### Setup
+### Enable
 
 Install the extra:
 
@@ -314,15 +377,15 @@ DJANGO_O11Y = {
 
 ## Traces
 
-Distributed tracing via [OpenTelemetry](https://opentelemetry.io/). Django requests, database queries, cache operations, and outbound HTTP calls are instrumented automatically.
+Distributed tracing via [OpenTelemetry](https://opentelemetry.io/). Requests, database queries, cache operations, and outbound HTTP calls are all instrumented without any code changes.
 
 ### What gets instrumented
 
-- Every HTTP request — span per view with status code, route, and user ID
-- Database queries — span per query (requires django-prometheus DB backend)
-- Outbound HTTP — spans for `requests` and `urllib3` calls (requires `django-o11y[http]`)
-- Redis — spans for cache operations (requires `django-o11y[redis]`)
-- Celery tasks — span per task, linked to the request that triggered it (requires `django-o11y[celery]`)
+- Every HTTP request: span per view with status code, route, and user ID
+- Database queries: span per query (requires django-prometheus DB backend)
+- Outbound HTTP: spans for `requests` and `urllib3` calls (requires `django-o11y[http]`)
+- Redis: spans for cache operations (requires `django-o11y[redis]`)
+- Celery tasks: span per task, linked to the request that triggered it (requires `django-o11y[celery]`)
 
 ### Configuration
 
@@ -355,7 +418,7 @@ def checkout_view(request):
 ```
 
 | Function | Trace span | Logs | Use case |
-|----------|-----------|------|----------|
+| -------- | ---------- | ---- | -------- |
 | `set_custom_tags()` | Yes | Yes | Business context |
 | `add_span_attribute()` | Yes | No | Technical span data |
 | `add_log_context()` | No | Yes | Debug info |
@@ -379,7 +442,7 @@ DJANGO_O11Y = {
 }
 ```
 
-Observability is set up via Celery signals when the worker starts. Each task gets a trace span linked to the request that triggered it, structured logs with `trace_id`/`span_id`, and task lifecycle metrics.
+Celery signals wire everything up when the worker starts. Each task gets a trace span linked to the originating request, and structured logs with `trace_id`/`span_id`.
 
 ```python
 import structlog
