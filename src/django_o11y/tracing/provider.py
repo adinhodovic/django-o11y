@@ -7,11 +7,14 @@ from typing import Any
 
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from opentelemetry.sdk.resources import SERVICE_NAME, Resource
+from opentelemetry.sdk.resources import (
+    SERVICE_INSTANCE_ID,
+    SERVICE_NAME,
+    SERVICE_VERSION,
+    Resource,
+)
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
-
-from django_o11y import __version__
 
 logger = logging.getLogger("django_o11y.tracing")
 
@@ -29,9 +32,18 @@ def setup_tracing(config: dict[str, Any]) -> TracerProvider:
     service_name = config["SERVICE_NAME"]
     tracing_config = config["TRACING"]
 
+    # SERVICE_INSTANCE_ID: use the explicit value from config/env if set,
+    # otherwise compute hostname:pid fresh at call time.  Calling os.getpid()
+    # here (rather than reading a cached config value) means forked workers
+    # automatically get their own pid after _reinit_after_fork() calls us.
+    instance_id = config.get("SERVICE_INSTANCE_ID") or (
+        f"{os.getenv('HOSTNAME', socket.gethostname())}:{os.getpid()}"
+    )
+
     resource_attrs = {
         SERVICE_NAME: service_name,
-        "service.version": __version__,
+        SERVICE_VERSION: config.get("SERVICE_VERSION", "unknown"),
+        SERVICE_INSTANCE_ID: instance_id,
         "deployment.environment": config.get("ENVIRONMENT", "development"),
         "host.name": socket.gethostname(),
         "process.pid": os.getpid(),
@@ -64,4 +76,20 @@ def setup_tracing(config: dict[str, Any]) -> TracerProvider:
         tracing_config["OTLP_ENDPOINT"],
         tracing_config.get("SAMPLE_RATE", 1.0) * 100,
     )
+
+    profiling_config = config.get("PROFILING", {})
+    if profiling_config.get("ENABLED"):
+        try:
+            from pyroscope.otel import PyroscopeSpanProcessor
+
+            provider.add_span_processor(PyroscopeSpanProcessor())
+            logger.info(
+                "Pyroscope span processor added for profile-to-trace correlation"
+            )
+        except ImportError:
+            logger.debug(
+                "django_o11y: pyroscope-otel not installed, skipping profile-trace "
+                "correlation. Install with: pip install django-o11y[profiling]"
+            )
+
     return provider

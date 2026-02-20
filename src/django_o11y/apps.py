@@ -51,6 +51,9 @@ class DjangoO11yConfig(AppConfig):
 
         if config["TRACING"]["ENABLED"]:
             setup_tracing(config)
+            from django_o11y.fork import register_post_fork_handler
+
+            register_post_fork_handler()
         else:
             logger.info("Tracing disabled")
 

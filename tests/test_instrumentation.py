@@ -67,7 +67,7 @@ def test_instrument_http_clients_requests():
             "opentelemetry.instrumentation.urllib3": MagicMock(),
         },
     ):
-        _instrument_http_clients()
+        _instrument_http_clients({})
 
     mock_inst.instrument.assert_called_once()
 
@@ -76,7 +76,7 @@ def test_instrument_http_clients_handles_import_error():
     from django_o11y.instrumentation.setup import _instrument_http_clients
 
     with patch("builtins.__import__", side_effect=ImportError("requests not found")):
-        _instrument_http_clients()
+        _instrument_http_clients({})
 
 
 def test_instrument_http_clients_urllib3():
@@ -96,6 +96,6 @@ def test_instrument_http_clients_urllib3():
             "opentelemetry.instrumentation.urllib3": mock_urllib3_module,
         },
     ):
-        _instrument_http_clients()
+        _instrument_http_clients({})
 
     mock_urllib3_inst.instrument.assert_called_once()

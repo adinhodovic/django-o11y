@@ -46,16 +46,28 @@ def build_logging_dict(
 
         logging_config = get_config()["LOGGING"]
 
-    cfg: dict[str, Any] = logging_config  # type: ignore[assignment]
+    assert logging_config is not None
+    cfg: dict[str, Any] = logging_config
 
     _configure_structlog(cfg)
 
     if cfg["FORMAT"] == "console":
+        console_renderer_kwargs: dict[str, Any] = {"colors": cfg["COLORIZED"]}
+        if cfg.get("RICH_EXCEPTIONS", False):
+            try:
+                import importlib.util
+
+                if importlib.util.find_spec("rich") is None:
+                    raise ImportError("rich not installed")
+                console_renderer_kwargs["exception_formatter"] = (
+                    structlog.dev.RichTracebackFormatter()
+                )
+            except ImportError:
+                pass  # Rich not installed — silently skip
+
         default_formatter: dict[str, Any] = {
             "()": structlog.stdlib.ProcessorFormatter,
-            "processor": structlog.dev.ConsoleRenderer(
-                colors=cfg["COLORIZED"],
-            ),
+            "processor": structlog.dev.ConsoleRenderer(**console_renderer_kwargs),
         }
     else:
         default_formatter = {

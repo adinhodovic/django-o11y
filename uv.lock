@@ -435,13 +435,21 @@ dependencies = [
 [package.optional-dependencies]
 all = [
     { name = "celery" },
+    { name = "opentelemetry-instrumentation-botocore" },
     { name = "opentelemetry-instrumentation-celery" },
+    { name = "opentelemetry-instrumentation-httpx" },
+    { name = "opentelemetry-instrumentation-psycopg" },
     { name = "opentelemetry-instrumentation-psycopg2" },
     { name = "opentelemetry-instrumentation-redis" },
     { name = "opentelemetry-instrumentation-requests" },
+    { name = "opentelemetry-instrumentation-urllib" },
     { name = "opentelemetry-instrumentation-urllib3" },
     { name = "pyroscope-io" },
+    { name = "pyroscope-otel" },
     { name = "rich" },
+]
+aws = [
+    { name = "opentelemetry-instrumentation-botocore" },
 ]
 celery = [
     { name = "celery" },
@@ -480,14 +488,18 @@ docs = [
     { name = "mkdocs-material" },
 ]
 http = [
+    { name = "opentelemetry-instrumentation-httpx" },
     { name = "opentelemetry-instrumentation-requests" },
+    { name = "opentelemetry-instrumentation-urllib" },
     { name = "opentelemetry-instrumentation-urllib3" },
 ]
 postgres = [
+    { name = "opentelemetry-instrumentation-psycopg" },
     { name = "opentelemetry-instrumentation-psycopg2" },
 ]
 profiling = [
     { name = "pyroscope-io" },
+    { name = "pyroscope-otel" },
 ]
 redis = [
     { name = "opentelemetry-instrumentation-redis" },
@@ -500,7 +512,7 @@ requires-dist = [
     { name = "click", specifier = ">=8.0.0" },
     { name = "coverage", marker = "extra == 'dev'", specifier = ">=7.8.0" },
     { name = "django", specifier = ">=5.2" },
-    { name = "django-o11y", extras = ["celery", "profiling", "postgres", "redis", "http", "dev-logging"], marker = "extra == 'all'" },
+    { name = "django-o11y", extras = ["celery", "profiling", "postgres", "redis", "http", "aws", "dev-logging"], marker = "extra == 'all'" },
     { name = "django-prometheus", specifier = ">=2.3.0" },
     { name = "django-prometheus", marker = "extra == 'dev'", specifier = ">=2.3.0" },
     { name = "django-structlog", specifier = ">=5.0.0" },
@@ -511,13 +523,17 @@ requires-dist = [
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.15.0" },
     { name = "opentelemetry-api", specifier = ">=1.20.0" },
     { name = "opentelemetry-exporter-otlp-proto-grpc", specifier = ">=1.20.0" },
+    { name = "opentelemetry-instrumentation-botocore", marker = "extra == 'aws'", specifier = ">=0.41b0" },
     { name = "opentelemetry-instrumentation-celery", marker = "extra == 'celery'", specifier = ">=0.41b0" },
     { name = "opentelemetry-instrumentation-django", specifier = ">=0.41b0" },
+    { name = "opentelemetry-instrumentation-httpx", marker = "extra == 'http'", specifier = ">=0.41b0" },
+    { name = "opentelemetry-instrumentation-psycopg", marker = "extra == 'postgres'", specifier = ">=0.41b0" },
     { name = "opentelemetry-instrumentation-psycopg2", marker = "extra == 'postgres'", specifier = ">=0.41b0" },
     { name = "opentelemetry-instrumentation-redis", marker = "extra == 'dev'", specifier = ">=0.41b0" },
     { name = "opentelemetry-instrumentation-redis", marker = "extra == 'redis'", specifier = ">=0.41b0" },
     { name = "opentelemetry-instrumentation-requests", marker = "extra == 'dev'", specifier = ">=0.41b0" },
     { name = "opentelemetry-instrumentation-requests", marker = "extra == 'http'", specifier = ">=0.41b0" },
+    { name = "opentelemetry-instrumentation-urllib", marker = "extra == 'http'", specifier = ">=0.41b0" },
     { name = "opentelemetry-instrumentation-urllib3", marker = "extra == 'dev'", specifier = ">=0.41b0" },
     { name = "opentelemetry-instrumentation-urllib3", marker = "extra == 'http'", specifier = ">=0.41b0" },
     { name = "opentelemetry-sdk", specifier = ">=1.20.0" },
@@ -526,6 +542,7 @@ requires-dist = [
     { name = "pylint", marker = "extra == 'dev'", specifier = ">=3.3.6" },
     { name = "pylint-django", marker = "extra == 'dev'", specifier = ">=2.6.1" },
     { name = "pyroscope-io", marker = "extra == 'profiling'", specifier = ">=0.8.0" },
+    { name = "pyroscope-otel", marker = "extra == 'profiling'", specifier = ">=0.4.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.5" },
     { name = "pytest-clarity", marker = "extra == 'dev'", specifier = ">=1.0.1" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=6.1.0" },
@@ -540,7 +557,7 @@ requires-dist = [
     { name = "tox-uv", marker = "extra == 'dev'", specifier = ">=1.0.0" },
     { name = "urllib3", marker = "extra == 'dev'", specifier = ">=1.26.0" },
 ]
-provides-extras = ["celery", "profiling", "postgres", "redis", "http", "dev-logging", "all", "docs", "dev"]
+provides-extras = ["celery", "profiling", "postgres", "redis", "http", "aws", "dev-logging", "all", "docs", "dev"]
 
 [[package]]
 name = "django-prometheus"
@@ -1106,6 +1123,21 @@ wheels = [
 ]
 
 [[package]]
+name = "opentelemetry-instrumentation-botocore"
+version = "0.60b1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-instrumentation" },
+    { name = "opentelemetry-propagator-aws-xray" },
+    { name = "opentelemetry-semantic-conventions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/28/52/f4f3ffae9b83fc388ea4eb520d32605a8047216b523ce75a5766510e4464/opentelemetry_instrumentation_botocore-0.60b1.tar.gz", hash = "sha256:198e7d74b78b1b19ea47a5f2191171227557c37bfc4f49076958d129f848a8ed", size = 120933, upload-time = "2025-12-11T13:36:51.551Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b3/6d/0d37f8756f6a27f3ecc6956d78813993bacce037aa799b447b6fdea5af96/opentelemetry_instrumentation_botocore-0.60b1-py3-none-any.whl", hash = "sha256:b5cb1e267545cdd96a81a1bef690b1d00c20497ac4d815ef7c79fb3c572d6fc6", size = 38136, upload-time = "2025-12-11T13:35:50.59Z" },
+]
+
+[[package]]
 name = "opentelemetry-instrumentation-celery"
 version = "0.60b1"
 source = { registry = "https://pypi.org/simple" }
@@ -1148,6 +1180,36 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/56/dc/a42fb5ff5c4ea8128d7c61a322e0cfbeae0fd204fc63a679f73caeec266e/opentelemetry_instrumentation_django-0.60b1.tar.gz", hash = "sha256:765b69c7ccdea7e9ebfd0b9e68387956b8f74816f3e39775d5b06a20f16b0522", size = 26599, upload-time = "2025-12-11T13:36:56.293Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/bc/05/6b348ea989f7a9e1e6311fa653e113bd39f4506771323e27a639c2a1ea54/opentelemetry_instrumentation_django-0.60b1-py3-none-any.whl", hash = "sha256:3f6b4ba201eee35406dab965b254eed0c64fa1ef42e4a7b0296ad1b30e8e3f81", size = 21172, upload-time = "2025-12-11T13:35:57.365Z" },
+]
+
+[[package]]
+name = "opentelemetry-instrumentation-httpx"
+version = "0.60b1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-instrumentation" },
+    { name = "opentelemetry-semantic-conventions" },
+    { name = "opentelemetry-util-http" },
+    { name = "wrapt" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/86/08/11208bcfcab4fc2023252c3f322aa397fd9ad948355fea60f5fc98648603/opentelemetry_instrumentation_httpx-0.60b1.tar.gz", hash = "sha256:a506ebaf28c60112cbe70ad4f0338f8603f148938cb7b6794ce1051cd2b270ae", size = 20611, upload-time = "2025-12-11T13:37:01.661Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/43/59/b98e84eebf745ffc75397eaad4763795bff8a30cbf2373a50ed4e70646c5/opentelemetry_instrumentation_httpx-0.60b1-py3-none-any.whl", hash = "sha256:f37636dd742ad2af83d896ba69601ed28da51fa4e25d1ab62fde89ce413e275b", size = 15701, upload-time = "2025-12-11T13:36:04.56Z" },
+]
+
+[[package]]
+name = "opentelemetry-instrumentation-psycopg"
+version = "0.60b1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-instrumentation" },
+    { name = "opentelemetry-instrumentation-dbapi" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1c/3e/c158da3e2bd3211234c6f440ec8fb2773c63b126e9082dfb0cf03fbec396/opentelemetry_instrumentation_psycopg-0.60b1.tar.gz", hash = "sha256:c13a81a898307ebdaa8aa4a0ac17753cb308270fcb07a17a857f74b6021b5a12", size = 11524, upload-time = "2025-12-11T13:37:06.555Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/32/ff/99e333b617c19041ba2f0311ecf91b735b914fff2b29d5e85b3081e77d12/opentelemetry_instrumentation_psycopg-0.60b1-py3-none-any.whl", hash = "sha256:67fa627561f00b903020843b9254a1be6f3f8c64501033afe629a574a2325ec2", size = 11630, upload-time = "2025-12-11T13:36:12.775Z" },
 ]
 
 [[package]]
@@ -1195,6 +1257,21 @@ wheels = [
 ]
 
 [[package]]
+name = "opentelemetry-instrumentation-urllib"
+version = "0.60b1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-instrumentation" },
+    { name = "opentelemetry-semantic-conventions" },
+    { name = "opentelemetry-util-http" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8f/1d/b1ac334f36a3e7e5bf73cd26f5dde7b23909fe9a068316f9cd29388a245e/opentelemetry_instrumentation_urllib-0.60b1.tar.gz", hash = "sha256:7d6c56e45551bdbf21efc11bd463e10862e8fd04ed4a94b5695325a56440b13e", size = 13930, upload-time = "2025-12-11T13:37:18.507Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/21/70/b4c7b3bc17081725cf4bfa09286fd87e1d3a0d0589b12b35efba5db8da34/opentelemetry_instrumentation_urllib-0.60b1-py3-none-any.whl", hash = "sha256:bf36188d684ca6454b7162492a66749181955011e0cc47a2324cbe66e7f13e81", size = 12674, upload-time = "2025-12-11T13:36:31.33Z" },
+]
+
+[[package]]
 name = "opentelemetry-instrumentation-urllib3"
 version = "0.60b1"
 source = { registry = "https://pypi.org/simple" }
@@ -1223,6 +1300,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/6d/24/5632d31506a27650567fdff8f9be37fc4d98396b6331617be69bd332bf77/opentelemetry_instrumentation_wsgi-0.60b1.tar.gz", hash = "sha256:eb553eec7ebfcf2945cc10d787a265e7abadb9ed1d1ebce8b13988d44fa0cf45", size = 19167, upload-time = "2025-12-11T13:37:20.3Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/93/98/c637d9e5cab1355d6765de2304199a1d79a43aa94c33d8eddb475327d81a/opentelemetry_instrumentation_wsgi-0.60b1-py3-none-any.whl", hash = "sha256:5e7b432778ebf5a39af136227884a6ab2efc3c4e73e2dbb1d05ecf03ea196705", size = 14583, upload-time = "2025-12-11T13:36:33.164Z" },
+]
+
+[[package]]
+name = "opentelemetry-propagator-aws-xray"
+version = "1.0.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "opentelemetry-api" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f4/31/40004e9e55b1e5694ef3a7526f0b7637df44196fc68a8b7d248a3684680f/opentelemetry_propagator_aws_xray-1.0.2.tar.gz", hash = "sha256:6b2cee5479d2ef0172307b66ed2ed151f598a0fd29b3c01133ac87ca06326260", size = 10994, upload-time = "2024-08-05T17:45:57.601Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ea/89/849a0847871fd9745315896ad9e23d6479db84d90b8b36c4c26dc46e92b8/opentelemetry_propagator_aws_xray-1.0.2-py3-none-any.whl", hash = "sha256:1c99181ee228e99bddb638a0c911a297fa21f1c3a0af951f841e79919b5f1934", size = 10856, upload-time = "2024-08-05T17:45:56.492Z" },
 ]
 
 [[package]]
@@ -1469,6 +1558,20 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/ad/3a/8a9726b1163447367f9584d6d77d910003e7d5219b828021127334a497d2/pyroscope_io-1.0.1-py2.py3-none-macosx_11_0_x86_64.whl", hash = "sha256:9f39014116670aa24dacbb5faf3b4b7b0e08bd7940cf4a509878c5a12eeb6f94", size = 3342683, upload-time = "2026-02-12T12:26:14.327Z" },
     { url = "https://files.pythonhosted.org/packages/14/06/747183436738e77afdbe834bb4769d64912d4af8fa2b00ff055f2da562df/pyroscope_io-1.0.1-py2.py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:661d1bd754fc360b3772cb6a9a2b0b54c022c223e48d7cb93794c1e671b09c1c", size = 3202986, upload-time = "2026-02-12T12:26:16.406Z" },
     { url = "https://files.pythonhosted.org/packages/c5/30/a1dcc77f0f5d2c9594c8076268af767cd34807ae7b14a43d4b1a8386dfc6/pyroscope_io-1.0.1-py2.py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:8c11941fda319e8b42bd31b4498b571172902c9a9f38b6a336ed6a3d56394e72", size = 3448022, upload-time = "2026-02-12T12:26:18.59Z" },
+]
+
+[[package]]
+name = "pyroscope-otel"
+version = "0.4.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-sdk" },
+    { name = "pyroscope-io" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/88/8a/aa7b61a3f9a4f2ab9b44b790191ea85e6d4f4398b115d233f1c61b395369/pyroscope_otel-0.4.1.tar.gz", hash = "sha256:36c376c04b0408fbf8dc329f4b7198c214d0466a1e619cadb72251c38e815b57", size = 10637, upload-time = "2025-05-06T10:29:00.413Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/14/9d/5ba4dd7954d51a2384f5a4836000038593152e7fb491b6576162bff6c930/pyroscope_otel-0.4.1-py3-none-any.whl", hash = "sha256:57fa917ca5f24f8e12f3853a80f50df57081e01585f4cd2c2db7a621fde8901c", size = 10474, upload-time = "2025-05-06T10:28:59.198Z" },
 ]
 
 [[package]]

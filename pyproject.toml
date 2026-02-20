@@ -57,10 +57,16 @@ dependencies = [
 celery = ["celery>=5.0.0", "opentelemetry-instrumentation-celery>=0.41b0"]
 
 # Profiling support (push mode - optional)
-profiling = ["pyroscope-io>=0.8.0"]
+profiling = [
+    "pyroscope-io>=0.8.0",
+    "pyroscope-otel>=0.4.0",   # profile-to-trace correlation via PyroscopeSpanProcessor
+]
 
 # Database instrumentation
-postgres = ["opentelemetry-instrumentation-psycopg2>=0.41b0"]
+postgres = [
+    "opentelemetry-instrumentation-psycopg2>=0.41b0",
+    "opentelemetry-instrumentation-psycopg>=0.41b0",   # psycopg v3
+]
 
 # Cache instrumentation
 redis = ["opentelemetry-instrumentation-redis>=0.41b0"]
@@ -69,13 +75,18 @@ redis = ["opentelemetry-instrumentation-redis>=0.41b0"]
 http = [
   "opentelemetry-instrumentation-requests>=0.41b0",
   "opentelemetry-instrumentation-urllib3>=0.41b0",
+  "opentelemetry-instrumentation-urllib>=0.41b0",
+  "opentelemetry-instrumentation-httpx>=0.41b0",
 ]
+
+# AWS SDK (boto3/botocore) instrumentation — opt-in via TRACING.AWS_ENABLED
+aws = ["opentelemetry-instrumentation-botocore>=0.41b0"]
 
 # Beautiful dev logs
 dev-logging = ["rich>=13.0.0"]
 
 # All features
-all = ["django-o11y[celery,profiling,postgres,redis,http,dev-logging]"]
+all = ["django-o11y[celery,profiling,postgres,redis,http,aws,dev-logging]"]
 
 # Documentation
 docs = ["mkdocs>=1.6,<2.0", "mkdocs-material>=9.5.0", "mike>=2.0.0"]

@@ -20,9 +20,10 @@ Or pick what you need:
 | ----- | ---- |
 | `django-o11y[celery]` | Celery tracing and structured task logs |
 | `django-o11y[profiling]` | Pyroscope continuous profiling |
-| `django-o11y[postgres]` | OpenTelemetry traces for psycopg2 queries |
+| `django-o11y[postgres]` | OpenTelemetry traces for psycopg2 / psycopg (v3) queries |
 | `django-o11y[redis]` | OpenTelemetry traces for Redis/cache operations |
-| `django-o11y[http]` | OpenTelemetry traces for outbound `requests` and `urllib3` calls |
+| `django-o11y[http]` | OpenTelemetry traces for outbound `requests`, `urllib3`, `urllib`, and `httpx` calls |
+| `django-o11y[aws]` | OpenTelemetry traces for AWS SDK calls via boto3/botocore (enable via `TRACING.AWS_ENABLED`) |
 | `django-o11y[dev-logging]` | Rich exception formatting in dev logs |
 | `django-o11y[all]` | Everything |
 
@@ -380,9 +381,10 @@ Distributed tracing via [OpenTelemetry](https://opentelemetry.io/). Requests, da
 
 - Every HTTP request: span per view with status code, route, and user ID
 - Database queries: span per query (requires django-prometheus DB backend)
-- Outbound HTTP: spans for `requests` and `urllib3` calls (requires `django-o11y[http]`)
+- Outbound HTTP: spans for `requests`, `urllib3`, `urllib`, and `httpx` calls (requires `django-o11y[http]`)
 - Redis: spans for cache operations (requires `django-o11y[redis]`)
 - Celery tasks: span per task, linked to the request that triggered it (requires `django-o11y[celery]`)
+- AWS SDK: spans for boto3/botocore calls — S3, SQS, SES, etc. (requires `django-o11y[aws]` and `TRACING.AWS_ENABLED: True`)
 
 ### Configuration
 
