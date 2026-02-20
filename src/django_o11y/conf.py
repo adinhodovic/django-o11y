@@ -105,6 +105,9 @@ def get_config() -> dict[str, Any]:
             "PROMETHEUS_ENDPOINT": _env(
                 "DJANGO_O11Y_METRICS_PROMETHEUS_ENDPOINT", "/metrics"
             ),
+            "EXPORT_MIGRATIONS": _bool_env(
+                "DJANGO_O11Y_METRICS_EXPORT_MIGRATIONS", True
+            ),
         },
         "CELERY": {
             "ENABLED": _bool_env("DJANGO_O11Y_CELERY_ENABLED", False),
