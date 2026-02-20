@@ -29,7 +29,7 @@ def setup_profiling(config: dict[str, Any]) -> None:
     # service_name is already set via application_name; including it here
     # produces a duplicate label that Pyroscope rejects with 400.
     tags = {
-        "service_version": os.getenv("SERVICE_VERSION", __version__),
+        "service_version": __version__,
         "environment": config.get("ENVIRONMENT", "development"),
         "host": socket.gethostname(),
         "process_id": str(os.getpid()),

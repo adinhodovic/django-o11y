@@ -272,7 +272,7 @@ The format switches automatically based on `DEBUG`. Override it:
 LOGGING = build_logging_dict({"FORMAT": "json", "LEVEL": "INFO", ...})
 ```
 
-Or via env var: `DJANGO_LOG_FORMAT=json`.
+Or via env var: `DJANGO_O11Y_LOGGING_FORMAT=json`.
 
 ### Log file (dev only)
 
@@ -281,13 +281,13 @@ When `DEBUG=True`, logs are also written as JSON to `/tmp/django-o11y/django.log
 Override the path:
 
 ```bash
-DJANGO_O11Y_LOG_FILE_PATH=/var/log/myapp/django.log
+DJANGO_O11Y_LOGGING_FILE_PATH=/var/log/myapp/django.log
 ```
 
 Disable it:
 
 ```bash
-DJANGO_O11Y_LOG_FILE_ENABLED=false
+DJANGO_O11Y_LOGGING_FILE_ENABLED=false
 ```
 
 ### Extending the config

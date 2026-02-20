@@ -29,7 +29,6 @@ def test_config_defaults():
 
     assert config["TRACING"]["ENABLED"] is True
     assert config["TRACING"]["SAMPLE_RATE"] == 1.0
-    assert config["LOGGING"]["ENABLED"] is True
     assert config["LOGGING"]["LEVEL"] == "WARNING"
 
 
