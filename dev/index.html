@@ -621,10 +621,10 @@
 <ul>
 <li>OpenTelemetry traces for requests, database queries, cache, and Celery tasks</li>
 <li>Structlog with colorized dev output, JSON production logs, and automatic trace correlation</li>
-<li>django-prometheus for infrastructure metrics and a simple API for custom business metrics</li>
+<li>django-prometheus for infrastructure metrics and a thin API for custom business metrics</li>
 <li>Pyroscope continuous profiling (optional)</li>
-<li>Full Celery observability: tracing, structured logs, and metrics</li>
-<li>Pre-built Grafana dashboards from the blog posts</li>
+<li>Celery tracing, structured task logs, and metrics via celery-exporter</li>
+<li>Grafana dashboards and alerts from django-mixin and celery-mixin</li>
 <li>Sensible defaults, overridable via Django settings or environment variables</li>
 </ul>
 <h2 id="local-development-stack">Local development stack<a class="headerlink" href="#local-development-stack" title="Permanent link">&para;</a></h2>
@@ -643,32 +643,32 @@
 <tbody>
 <tr>
 <td>Grafana</td>
-<td>http://localhost:3000</td>
+<td><a href="http://localhost:3000">http://localhost:3000</a></td>
 <td>Dashboards (no login required)</td>
 </tr>
 <tr>
 <td>Prometheus</td>
-<td>http://localhost:9090</td>
+<td><a href="http://localhost:9090">http://localhost:9090</a></td>
 <td>Metrics</td>
 </tr>
 <tr>
 <td>Tempo</td>
-<td>http://localhost:3200</td>
+<td><a href="http://localhost:3200">http://localhost:3200</a></td>
 <td>Distributed traces</td>
 </tr>
 <tr>
 <td>Loki</td>
-<td>http://localhost:3100</td>
+<td><a href="http://localhost:3100">http://localhost:3100</a></td>
 <td>Logs</td>
 </tr>
 <tr>
 <td>Pyroscope</td>
-<td>http://localhost:4040</td>
+<td><a href="http://localhost:4040">http://localhost:4040</a></td>
 <td>Continuous profiling</td>
 </tr>
 <tr>
 <td>Alloy</td>
-<td>http://localhost:12345</td>
+<td><a href="http://localhost:12345">http://localhost:12345</a></td>
 <td>OTLP receiver + log scraping</td>
 </tr>
 </tbody>
@@ -691,6 +691,8 @@
 <li><a href="https://github.com/hynek/structlog">Structlog</a></li>
 <li><a href="https://github.com/jrobichaud/django-structlog">django-structlog</a></li>
 <li><a href="https://github.com/korfuri/django-prometheus">django-prometheus</a></li>
+<li><a href="https://github.com/adinhodovic/django-mixin">django-mixin</a></li>
+<li><a href="https://github.com/danihodovic/celery-exporter">celery-exporter</a></li>
 <li><a href="https://grafana.com/">Grafana</a></li>
 </ul>
 
