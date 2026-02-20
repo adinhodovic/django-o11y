@@ -6,7 +6,6 @@ import pytest
 
 
 def test_profiling_disabled_by_default():
-
     # The hardcoded default for PROFILING.ENABLED is False
     import django.test.utils
 

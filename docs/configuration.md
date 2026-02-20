@@ -21,6 +21,8 @@ honoured where they naturally map.
 | Setting | Type | Default | Env var |
 | ------- | ---- | ------- | ------- |
 | `SERVICE_NAME` | str | `"django-app"` | `OTEL_SERVICE_NAME` |
+| `SERVICE_VERSION` | str | `"unknown"` | `OTEL_SERVICE_VERSION` |
+| `SERVICE_INSTANCE_ID` | str | `"<hostname>:<pid>"` | `OTEL_SERVICE_INSTANCE_ID` |
 | `ENVIRONMENT` | str | `"development"` | `DJANGO_O11Y_ENVIRONMENT` |
 | `NAMESPACE` | str | `""` | `DJANGO_O11Y_NAMESPACE` |
 | `RESOURCE_ATTRIBUTES` | dict | `{}` | — |
@@ -34,6 +36,7 @@ honoured where they naturally map.
 | `TRACING.OTLP_ENDPOINT` | str | `"http://localhost:4317"` | `OTEL_EXPORTER_OTLP_ENDPOINT` |
 | `TRACING.SAMPLE_RATE` | float | `1.0` | `OTEL_TRACES_SAMPLER_ARG` |
 | `TRACING.CONSOLE_EXPORTER` | bool | `False` | `DJANGO_O11Y_TRACING_CONSOLE_EXPORTER` |
+| `TRACING.AWS_ENABLED` | bool | `False` | `DJANGO_O11Y_TRACING_AWS_ENABLED` |
 
 ### Logging
 
@@ -45,7 +48,7 @@ honoured where they naturally map.
 | `LOGGING.DATABASE_LEVEL` | str | `"WARNING"` | `DJANGO_O11Y_LOGGING_DATABASE_LEVEL` |
 | `LOGGING.CELERY_LEVEL` | str | `"INFO"` | `DJANGO_O11Y_LOGGING_CELERY_LEVEL` |
 | `LOGGING.COLORIZED` | bool | `True` when `DEBUG=True`, `False` otherwise | `DJANGO_O11Y_LOGGING_COLORIZED` |
-| `LOGGING.RICH_EXCEPTIONS` | bool | `True` when `DEBUG=True`, `False` otherwise | `DJANGO_O11Y_LOGGING_RICH_EXCEPTIONS` |
+| `LOGGING.RICH_EXCEPTIONS` | bool | `True` (requires `django-o11y[dev-logging]`) | `DJANGO_O11Y_LOGGING_RICH_EXCEPTIONS` |
 | `LOGGING.OTLP_ENABLED` | bool | `False` | `DJANGO_O11Y_LOGGING_OTLP_ENABLED` |
 | `LOGGING.OTLP_ENDPOINT` | str | `"http://localhost:4317"` | `OTEL_EXPORTER_OTLP_ENDPOINT` |
 | `LOGGING.FILE_ENABLED` | bool | Same as `DEBUG` | `DJANGO_O11Y_LOGGING_FILE_ENABLED` |
@@ -116,6 +119,7 @@ Added to all traces:
 
 - `service.name`
 - `service.version`
+- `service.instance.id`
 - `deployment.environment`
 - `host.name`
 - `process.pid`

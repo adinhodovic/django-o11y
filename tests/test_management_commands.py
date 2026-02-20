@@ -181,6 +181,20 @@ def test_work_dir_contains_stack_files():
     assert (work_dir / "prometheus.yml").exists()
 
 
+def test_celery_exporter_override_includes_ce_buckets(tmp_path):
+    """The generated celery-exporter compose file includes CE_BUCKETS."""
+    from django_o11y.management.commands.o11y import _write_celery_exporter_override
+
+    _write_celery_exporter_override(tmp_path, "redis://localhost:6379/0")
+
+    compose_file = tmp_path / "docker-compose.celery-exporter.yml"
+    assert compose_file.exists()
+    content = compose_file.read_text()
+    assert "CE_BUCKETS" in content
+    # Ensure the buckets are appropriate for long-running async tasks (seconds range)
+    assert "1,2.5,5,10,30,60" in content
+
+
 def test_helper_functions_dont_crash():
     from django_o11y.management.commands.o11y import (
         _check_configuration,

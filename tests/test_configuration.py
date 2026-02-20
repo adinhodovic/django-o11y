@@ -1,7 +1,9 @@
 """Tests for configuration."""
 
-from unittest.mock import patch
+import sys
+from unittest.mock import MagicMock, patch
 
+import structlog
 from django.conf import settings
 
 
@@ -103,3 +105,90 @@ def test_add_open_telemetry_spans_with_parent():
             assert "parent_span_id" in result
             assert "trace_id" in result
             assert "span_id" in result
+
+
+# ---------------------------------------------------------------------------
+# logging/config.py — RICH_EXCEPTIONS
+# ---------------------------------------------------------------------------
+
+
+def test_build_logging_dict_rich_exceptions_disabled():
+    """RICH_EXCEPTIONS=False produces a valid ConsoleRenderer without error.
+
+    When rich is installed structlog defaults to RichTracebackFormatter on its
+    own — that's structlog's behaviour, not ours.  Our flag only controls
+    whether we *explicitly* inject it; with False we leave the choice to
+    structlog.  We just assert the call succeeds and returns a renderer.
+    """
+    from django_o11y.logging.config import build_logging_dict
+
+    logging_config = {
+        "FORMAT": "console",
+        "LEVEL": "INFO",
+        "REQUEST_LEVEL": "INFO",
+        "DATABASE_LEVEL": "WARNING",
+        "CELERY_LEVEL": "INFO",
+        "COLORIZED": False,
+        "RICH_EXCEPTIONS": False,
+        "OTLP_ENABLED": False,
+        "FILE_ENABLED": False,
+    }
+
+    result = build_logging_dict(logging_config)
+    formatter = result["formatters"]["default"]
+    renderer = formatter["processor"]
+    assert isinstance(renderer, structlog.dev.ConsoleRenderer)
+
+
+def test_build_logging_dict_rich_exceptions_enabled_without_rich():
+    """RICH_EXCEPTIONS=True with Rich absent falls back silently to plain renderer."""
+    from django_o11y.logging.config import build_logging_dict
+
+    logging_config = {
+        "FORMAT": "console",
+        "LEVEL": "INFO",
+        "REQUEST_LEVEL": "INFO",
+        "DATABASE_LEVEL": "WARNING",
+        "CELERY_LEVEL": "INFO",
+        "COLORIZED": False,
+        "RICH_EXCEPTIONS": True,
+        "OTLP_ENABLED": False,
+        "FILE_ENABLED": False,
+    }
+
+    # Pretend Rich is not installed
+    with patch.dict(sys.modules, {"rich": None}):
+        result = build_logging_dict(logging_config)
+
+    # Should still produce a valid logging dict without raising
+    assert result["version"] == 1
+    assert "default" in result["formatters"]
+
+
+def test_build_logging_dict_rich_exceptions_enabled_with_rich():
+    """RICH_EXCEPTIONS=True with Rich present injects RichTracebackFormatter."""
+    from django_o11y.logging.config import build_logging_dict
+
+    logging_config = {
+        "FORMAT": "console",
+        "LEVEL": "INFO",
+        "REQUEST_LEVEL": "INFO",
+        "DATABASE_LEVEL": "WARNING",
+        "CELERY_LEVEL": "INFO",
+        "COLORIZED": False,
+        "RICH_EXCEPTIONS": True,
+        "OTLP_ENABLED": False,
+        "FILE_ENABLED": False,
+    }
+
+    mock_rich = MagicMock()
+    with patch.dict("sys.modules", {"rich": mock_rich}):
+        result = build_logging_dict(logging_config)
+
+    renderer = result["formatters"]["default"]["processor"]
+    # RichTracebackFormatter is injected as exception_formatter
+    assert isinstance(renderer, structlog.dev.ConsoleRenderer)
+    assert renderer._exception_formatter is not None
+    assert isinstance(
+        renderer._exception_formatter, structlog.dev.RichTracebackFormatter
+    )

@@ -32,13 +32,42 @@ def setup_celery_o11y(app: Celery, config: dict[str, Any] | None = None) -> None
     if not celery_config.get("ENABLED", False):
         return
 
+    # Enable task events so celery-exporter can receive them via the broker.
+    # worker_send_task_events enables per-task state events from the worker.
+    # task_send_sent_event additionally emits the SENT state from the client
+    # side, allowing celery-exporter to show the delta between sent and
+    # received tasks.
+    app.conf.worker_send_task_events = True
+    app.conf.task_send_sent_event = True
+
     if celery_config.get("TRACING_ENABLED", True):
         _setup_celery_tracing()
 
     if celery_config.get("LOGGING_ENABLED", True):
         setup_celery_signals(app)
+        _setup_celery_logging()
 
     _instrumented = True
+
+
+def _setup_celery_logging() -> None:
+    """Hook Celery's setup_logging signal so workers use Django's LOGGING config.
+
+    Without this, Celery configures its own logging on worker startup and the
+    worker process ends up with a different format (plain text) from the Django
+    process (structlog JSON/console).  Connecting to ``setup_logging`` and
+    calling ``dictConfig(settings.LOGGING)`` replicates the pattern described
+    in the logging blog post.
+    """
+    import logging.config as _logging_config
+
+    from celery.signals import setup_logging
+    from django.conf import settings
+
+    @setup_logging.connect(weak=False)
+    def _config_loggers(*args, **kwargs):  # pylint: disable=unused-variable
+        if hasattr(settings, "LOGGING") and settings.LOGGING:
+            _logging_config.dictConfig(settings.LOGGING)
 
 
 def _setup_celery_tracing() -> None:

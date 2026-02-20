@@ -320,6 +320,11 @@ services:
   celery-exporter:
     image: danihodovic/celery-exporter:latest
     command: --broker-url={broker_url}
+    environment:
+      # Buckets suited for async task durations (seconds → half-hours).
+      # The Prometheus defaults (0.005–10 s) are designed for HTTP requests
+      # and are too granular / too short for most Celery workloads.
+      - CE_BUCKETS=1,2.5,5,10,30,60,300,600,900,1800
     ports:
       - "{CELERY_EXPORTER_PORT}:{CELERY_EXPORTER_PORT}"
     restart: unless-stopped

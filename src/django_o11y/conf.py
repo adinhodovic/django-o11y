@@ -64,6 +64,11 @@ def get_config() -> dict[str, Any]:
 
     defaults: dict[str, Any] = {
         "SERVICE_NAME": _env("OTEL_SERVICE_NAME", "django-app"),
+        "SERVICE_VERSION": _env("OTEL_SERVICE_VERSION", "unknown"),
+        # None means "compute hostname:pid at tracing setup time so forked
+        # workers get their own pid rather than the master's".
+        # Set OTEL_SERVICE_INSTANCE_ID to fix a specific value (e.g. pod name).
+        "SERVICE_INSTANCE_ID": os.getenv("OTEL_SERVICE_INSTANCE_ID") or None,
         "ENVIRONMENT": _env("DJANGO_O11Y_ENVIRONMENT", "development"),
         "NAMESPACE": _env("DJANGO_O11Y_NAMESPACE", ""),
         "RESOURCE_ATTRIBUTES": {},
@@ -75,6 +80,7 @@ def get_config() -> dict[str, Any]:
             "CONSOLE_EXPORTER": _bool_env(
                 "DJANGO_O11Y_TRACING_CONSOLE_EXPORTER", False
             ),
+            "AWS_ENABLED": _bool_env("DJANGO_O11Y_TRACING_AWS_ENABLED", False),
         },
         "LOGGING": {
             "FORMAT": _env(
@@ -86,9 +92,7 @@ def get_config() -> dict[str, Any]:
             "DATABASE_LEVEL": _env("DJANGO_O11Y_LOGGING_DATABASE_LEVEL", "WARNING"),
             "CELERY_LEVEL": _env("DJANGO_O11Y_LOGGING_CELERY_LEVEL", "INFO"),
             "COLORIZED": _bool_env("DJANGO_O11Y_LOGGING_COLORIZED", settings.DEBUG),
-            "RICH_EXCEPTIONS": _bool_env(
-                "DJANGO_O11Y_LOGGING_RICH_EXCEPTIONS", settings.DEBUG
-            ),
+            "RICH_EXCEPTIONS": _bool_env("DJANGO_O11Y_LOGGING_RICH_EXCEPTIONS", True),
             "OTLP_ENABLED": _bool_env("DJANGO_O11Y_LOGGING_OTLP_ENABLED", False),
             "OTLP_ENDPOINT": _otlp,
             "FILE_ENABLED": _bool_env(

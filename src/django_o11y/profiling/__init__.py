@@ -5,8 +5,6 @@ import os
 import socket
 from typing import Any
 
-from django_o11y import __version__
-
 logger = logging.getLogger("django_o11y.profiling")
 
 
@@ -29,7 +27,7 @@ def setup_profiling(config: dict[str, Any]) -> None:
     # service_name is already set via application_name; including it here
     # produces a duplicate label that Pyroscope rejects with 400.
     tags = {
-        "service_version": __version__,
+        "service_version": config.get("SERVICE_VERSION", "unknown"),
         "environment": config.get("ENVIRONMENT", "development"),
         "host": socket.gethostname(),
         "process_id": str(os.getpid()),
