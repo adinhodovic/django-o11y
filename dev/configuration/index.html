@@ -835,6 +835,18 @@ honoured where they naturally map.</p>
 <td><code>OTEL_SERVICE_NAME</code></td>
 </tr>
 <tr>
+<td><code>SERVICE_VERSION</code></td>
+<td>str</td>
+<td><code>"unknown"</code></td>
+<td><code>OTEL_SERVICE_VERSION</code></td>
+</tr>
+<tr>
+<td><code>SERVICE_INSTANCE_ID</code></td>
+<td>str</td>
+<td><code>"&lt;hostname&gt;:&lt;pid&gt;"</code></td>
+<td><code>OTEL_SERVICE_INSTANCE_ID</code></td>
+</tr>
+<tr>
 <td><code>ENVIRONMENT</code></td>
 <td>str</td>
 <td><code>"development"</code></td>
@@ -895,6 +907,12 @@ honoured where they naturally map.</p>
 <td><code>False</code></td>
 <td><code>DJANGO_O11Y_TRACING_CONSOLE_EXPORTER</code></td>
 </tr>
+<tr>
+<td><code>TRACING.AWS_ENABLED</code></td>
+<td>bool</td>
+<td><code>False</code></td>
+<td><code>DJANGO_O11Y_TRACING_AWS_ENABLED</code></td>
+</tr>
 </tbody>
 </table>
 <h3 id="logging">Logging<a class="headerlink" href="#logging" title="Permanent link">&para;</a></h3>
@@ -947,7 +965,7 @@ honoured where they naturally map.</p>
 <tr>
 <td><code>LOGGING.RICH_EXCEPTIONS</code></td>
 <td>bool</td>
-<td><code>True</code> when <code>DEBUG=True</code>, <code>False</code> otherwise</td>
+<td><code>True</code> (requires <code>django-o11y[dev-logging]</code>)</td>
 <td><code>DJANGO_O11Y_LOGGING_RICH_EXCEPTIONS</code></td>
 </tr>
 <tr>
@@ -1107,6 +1125,7 @@ honoured where they naturally map.</p>
 <ul>
 <li><code>service.name</code></li>
 <li><code>service.version</code></li>
+<li><code>service.instance.id</code></li>
 <li><code>deployment.environment</code></li>
 <li><code>host.name</code></li>
 <li><code>process.pid</code></li>

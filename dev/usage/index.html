@@ -1190,7 +1190,7 @@
 </tr>
 <tr>
 <td><code>django-o11y[postgres]</code></td>
-<td>OpenTelemetry traces for psycopg2 queries</td>
+<td>OpenTelemetry traces for psycopg2 / psycopg (v3) queries</td>
 </tr>
 <tr>
 <td><code>django-o11y[redis]</code></td>
@@ -1198,7 +1198,11 @@
 </tr>
 <tr>
 <td><code>django-o11y[http]</code></td>
-<td>OpenTelemetry traces for outbound <code>requests</code> and <code>urllib3</code> calls</td>
+<td>OpenTelemetry traces for outbound <code>requests</code>, <code>urllib3</code>, <code>urllib</code>, and <code>httpx</code> calls</td>
+</tr>
+<tr>
+<td><code>django-o11y[aws]</code></td>
+<td>OpenTelemetry traces for AWS SDK calls via boto3/botocore (enable via <code>TRACING.AWS_ENABLED</code>)</td>
 </tr>
 <tr>
 <td><code>django-o11y[dev-logging]</code></td>
@@ -1498,9 +1502,10 @@
 <ul>
 <li>Every HTTP request: span per view with status code, route, and user ID</li>
 <li>Database queries: span per query (requires django-prometheus DB backend)</li>
-<li>Outbound HTTP: spans for <code>requests</code> and <code>urllib3</code> calls (requires <code>django-o11y[http]</code>)</li>
+<li>Outbound HTTP: spans for <code>requests</code>, <code>urllib3</code>, <code>urllib</code>, and <code>httpx</code> calls (requires <code>django-o11y[http]</code>)</li>
 <li>Redis: spans for cache operations (requires <code>django-o11y[redis]</code>)</li>
 <li>Celery tasks: span per task, linked to the request that triggered it (requires <code>django-o11y[celery]</code>)</li>
+<li>AWS SDK: spans for boto3/botocore calls — S3, SQS, SES, etc. (requires <code>django-o11y[aws]</code> and <code>TRACING.AWS_ENABLED: True</code>)</li>
 </ul>
 <h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="n">DJANGO_O11Y</span> <span class="o">=</span> <span class="p">{</span>
