@@ -19,7 +19,13 @@ datasources:
     jsonData:
       tracesToLogsV2:
         datasourceUid: loki
+        spanStartTimeShift: "-1m"
+        spanEndTimeShift: "1m"
         filterByTraceID: true
+        filterBySpanID: false
+      tracesToProfiles:
+        datasourceUid: pyroscope
+        profileTypeId: process_cpu:cpu:nanoseconds:cpu:nanoseconds
       serviceMap:
         datasourceUid: prometheus
       nodeGraph:
@@ -31,12 +37,14 @@ datasources:
     url: http://loki:3100
     jsonData:
       derivedFields:
-        - datasourceUid: tempo
-          matcherRegex: "trace_id=(\\w+)"
-          name: TraceID
+        - name: trace
+          datasourceUid: tempo
+          matcherRegex: '"?(?:trace_id|traceID)"?\s*[:=]\s*"?([a-fA-F0-9]+)"?'
           url: "$${__value.raw}"
+          urlDisplayLabel: View Trace
 
   - name: Pyroscope
     type: grafana-pyroscope-datasource
     access: proxy
+    uid: pyroscope
     url: http://pyroscope:4040
