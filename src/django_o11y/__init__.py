@@ -31,7 +31,8 @@ def get_urls() -> list:
             ...
         ] + get_urls()
     """
-    from django.urls import include, path
+    from django.urls import path
+    from django_prometheus import exports
 
     from django_o11y.conf import get_config
 
@@ -42,4 +43,10 @@ def get_urls() -> list:
         return []
 
     endpoint = metrics.get("PROMETHEUS_ENDPOINT", "/metrics").lstrip("/")
-    return [path(endpoint, include("django_prometheus.urls"))]
+    return [
+        path(
+            endpoint,
+            exports.ExportToDjangoView,
+            name="prometheus-django-metrics",
+        )
+    ]

@@ -1,5 +1,7 @@
 """Tests for management commands - minimal mocking, integration-first."""
 
+from types import SimpleNamespace
+
 import pytest
 from click.testing import CliRunner
 
@@ -67,6 +69,51 @@ def test_check_packages_real():
 
     assert ok > 0
     assert err == 0
+
+
+def test_check_metrics_endpoint_success(monkeypatch):
+    from django_prometheus.exports import ExportToDjangoView
+
+    from django_o11y.management.commands.o11y import _check_metrics_endpoint
+
+    monkeypatch.setattr(
+        "django_o11y.conf.get_o11y_config",
+        lambda: {
+            "METRICS": {"PROMETHEUS_ENABLED": True, "PROMETHEUS_ENDPOINT": "/metrics"}
+        },
+    )
+    monkeypatch.setattr(
+        "django_o11y.management.commands.o11y.resolve",
+        lambda _endpoint: SimpleNamespace(
+            func=ExportToDjangoView, view_name="prometheus-django-metrics"
+        ),
+    )
+
+    ok, _, err = _check_metrics_endpoint()
+    assert ok == 1
+    assert err == 0
+
+
+def test_check_metrics_endpoint_wrong_view(monkeypatch):
+    from django_o11y.management.commands.o11y import _check_metrics_endpoint
+
+    def _other_view(_request):
+        return None
+
+    monkeypatch.setattr(
+        "django_o11y.conf.get_o11y_config",
+        lambda: {
+            "METRICS": {"PROMETHEUS_ENABLED": True, "PROMETHEUS_ENDPOINT": "/metrics"}
+        },
+    )
+    monkeypatch.setattr(
+        "django_o11y.management.commands.o11y.resolve",
+        lambda _endpoint: SimpleNamespace(func=_other_view, view_name="jobs-detail"),
+    )
+
+    ok, _, err = _check_metrics_endpoint()
+    assert ok == 0
+    assert err == 1
 
 
 def test_cli_group_exists():
@@ -276,9 +323,11 @@ def test_check_command(observability_stack):
 
     assert result.exit_code == 0
     assert "Configuration:" in result.output
+    assert "Metrics Endpoint:" in result.output
     assert "OTLP Endpoint:" in result.output
     assert "Installed Packages:" in result.output
     assert "Test Trace:" in result.output
+    assert "Route exists and points to Prometheus exporter" in result.output
     assert "Reachable" in result.output
     assert "Created test span" in result.output
     assert "Trace ID:" in result.output
