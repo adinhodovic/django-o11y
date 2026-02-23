@@ -91,6 +91,8 @@ def get_config() -> dict[str, Any]:
             "REQUEST_LEVEL": _env("DJANGO_O11Y_LOGGING_REQUEST_LEVEL", "INFO"),
             "DATABASE_LEVEL": _env("DJANGO_O11Y_LOGGING_DATABASE_LEVEL", "WARNING"),
             "CELERY_LEVEL": _env("DJANGO_O11Y_LOGGING_CELERY_LEVEL", "INFO"),
+            "PARSO_LEVEL": _env("DJANGO_O11Y_LOGGING_PARSO_LEVEL", "WARNING"),
+            "AWS_LEVEL": _env("DJANGO_O11Y_LOGGING_AWS_LEVEL", "WARNING"),
             "COLORIZED": _bool_env("DJANGO_O11Y_LOGGING_COLORIZED", settings.DEBUG),
             "RICH_EXCEPTIONS": _bool_env("DJANGO_O11Y_LOGGING_RICH_EXCEPTIONS", True),
             "OTLP_ENABLED": _bool_env("DJANGO_O11Y_LOGGING_OTLP_ENABLED", False),
