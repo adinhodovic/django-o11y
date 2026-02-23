@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 
 import click
 from django.core.management.base import BaseCommand
+from django.urls import Resolver404, resolve
 
 CELERY_EXPORTER_COMPOSE_FILE = "docker-compose.celery-exporter.yml"
 CELERY_EXPORTER_PORT = 9808
@@ -232,6 +233,12 @@ def check():
 
     click.secho("Configuration:", fg="cyan", bold=True)
     result = _check_configuration()
+    ok_count += result[0]
+    warning_count += result[1]
+    error_count += result[2]
+
+    click.secho("Metrics Endpoint:", fg="cyan", bold=True)
+    result = _check_metrics_endpoint()
     ok_count += result[0]
     warning_count += result[1]
     error_count += result[2]
@@ -569,6 +576,58 @@ def _check_otlp_endpoint():
 
     except Exception as e:  # pragma: no cover
         click.secho(f"  ❌ Endpoint check failed: {e}", fg="red")
+        err += 1
+
+    return ok, warn, err
+
+
+def _check_metrics_endpoint():
+    """Check that the configured metrics endpoint is routed correctly."""
+    ok, warn, err = 0, 0, 0
+
+    try:
+        from django_o11y.conf import get_o11y_config
+
+        config = get_o11y_config()
+        metrics_config = config.get("METRICS", {})
+
+        if not metrics_config.get("PROMETHEUS_ENABLED", True):
+            click.secho("  ⚠️  Metrics disabled", fg="yellow")
+            warn += 1
+            return ok, warn, err
+
+        endpoint = metrics_config.get("PROMETHEUS_ENDPOINT", "/metrics")
+        endpoint_path = endpoint if endpoint.startswith("/") else f"/{endpoint}"
+        click.echo(f"  Endpoint: {endpoint_path}")
+
+        try:
+            match = resolve(endpoint_path)
+        except Resolver404:
+            click.secho(
+                "  ❌ Endpoint not routed\n"
+                "     Add `urlpatterns = [...] + get_urls()` in your root urls.py",
+                fg="red",
+            )
+            err += 1
+            return ok, warn, err
+
+        from django_prometheus.exports import ExportToDjangoView
+
+        if match.func is ExportToDjangoView:
+            click.secho(
+                "  ✅ Route exists and points to Prometheus exporter", fg="green"
+            )
+            ok += 1
+        else:
+            click.secho(
+                "  ❌ Endpoint is routed to a different view\n"
+                f"     Resolved view: {match.view_name or match.func.__name__}",
+                fg="red",
+            )
+            err += 1
+
+    except Exception as e:  # pragma: no cover
+        click.secho(f"  ❌ Metrics route check failed: {e}", fg="red")
         err += 1
 
     return ok, warn, err
