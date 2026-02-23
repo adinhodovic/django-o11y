@@ -55,10 +55,8 @@ def build_logging_dict(
         console_renderer_kwargs: dict[str, Any] = {"colors": cfg["COLORIZED"]}
         if cfg.get("RICH_EXCEPTIONS", False):
             try:
-                import importlib.util
+                import rich as _rich  # noqa: F401
 
-                if importlib.util.find_spec("rich") is None:
-                    raise ImportError("rich not installed")
                 console_renderer_kwargs["exception_formatter"] = (
                     structlog.dev.RichTracebackFormatter()
                 )
@@ -158,6 +156,21 @@ def build_logging_dict(
             "django.channels.server": {
                 "handlers": ["null"],
                 "propagate": False,
+            },
+            # Silence debug logging in interactive shell mode
+            # https://github.com/ipython/ipython/issues/10946#issuecomment-568336466
+            "parso": {
+                "level": cfg.get("PARSO_LEVEL", "WARNING"),
+            },
+            # Boto logs
+            "botocore": {
+                "level": cfg.get("AWS_LEVEL", "WARNING"),
+            },
+            "boto3": {
+                "level": cfg.get("AWS_LEVEL", "WARNING"),
+            },
+            "s3transfer": {
+                "level": cfg.get("AWS_LEVEL", "WARNING"),
             },
             # Level set explicitly — werkzeug attaches its own ColorStreamHandler
             # at import time if the logger level is NOTSET

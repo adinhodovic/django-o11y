@@ -67,7 +67,14 @@ def _validate_logging(logging_config: dict[str, Any]) -> list[str]:
     if log_format and log_format not in ("console", "json"):
         errors.append(f"LOGGING.FORMAT must be 'console' or 'json', got '{log_format}'")
 
-    level_keys = ["LEVEL", "REQUEST_LEVEL", "DATABASE_LEVEL", "CELERY_LEVEL"]
+    level_keys = [
+        "LEVEL",
+        "REQUEST_LEVEL",
+        "DATABASE_LEVEL",
+        "CELERY_LEVEL",
+        "PARSO_LEVEL",
+        "AWS_LEVEL",
+    ]
     valid_levels = [
         "DEBUG",
         "INFO",
