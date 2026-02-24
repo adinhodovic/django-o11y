@@ -1,8 +1,10 @@
 """OpenTelemetry tracing provider setup."""
 
 import logging
+import multiprocessing
 import os
 import socket
+from importlib import import_module
 from typing import Any
 
 from opentelemetry import trace
@@ -19,6 +21,19 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExport
 from django_o11y.tracing.pyroscope import build_pyroscope_span_processor
 
 logger = logging.getLogger("django_o11y.tracing")
+
+
+def _is_celery_fork_pool_worker() -> bool:
+    """Return True when running inside a Celery prefork pool child."""
+    process_name = multiprocessing.current_process().name
+    if process_name.startswith("ForkPoolWorker"):
+        return True
+
+    try:
+        process = import_module("billiard.process")
+        return process.current_process().name.startswith("ForkPoolWorker")
+    except Exception:
+        return False
 
 
 def setup_tracing(config: dict[str, Any]) -> TracerProvider:
@@ -81,6 +96,13 @@ def setup_tracing(config: dict[str, Any]) -> TracerProvider:
 
     profiling_config = config.get("PROFILING", {})
     if profiling_config.get("ENABLED"):
+        if _is_celery_fork_pool_worker():
+            logger.warning(
+                "Skipping Pyroscope profile-trace correlation in Celery prefork "
+                "worker; this avoids pyroscope-io fork instability"
+            )
+            return provider
+
         pyroscope_span_processor = build_pyroscope_span_processor()
         if pyroscope_span_processor is not None:
             provider.add_span_processor(pyroscope_span_processor)
