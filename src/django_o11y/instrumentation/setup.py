@@ -12,6 +12,7 @@ def setup_instrumentation(config: dict[str, Any]) -> None:
     - Psycopg2 (PostgreSQL, legacy driver)
     - Psycopg (PostgreSQL, v3 driver)
     - Redis
+    - Celery (producer-side, so traceparent headers are injected into tasks)
     - Requests library
     - urllib / urllib3
     - httpx
@@ -25,6 +26,7 @@ def setup_instrumentation(config: dict[str, Any]) -> None:
     DjangoInstrumentor().instrument()
     _instrument_database()
     _instrument_cache()
+    _instrument_celery(config)
     _instrument_http_clients(config)
 
 
@@ -33,7 +35,7 @@ def _instrument_database() -> None:
     try:
         from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
 
-        Psycopg2Instrumentor().instrument()
+        Psycopg2Instrumentor().instrument(enable_commenter=True)
     except ImportError:
         pass  # psycopg2 not installed
 
@@ -50,6 +52,30 @@ def _instrument_database() -> None:
         PyMySQLInstrumentor().instrument()
     except ImportError:
         pass  # pymysql not installed
+
+
+def _instrument_celery(config: dict[str, Any]) -> None:
+    """Instrument Celery on the producer side.
+
+    CeleryInstrumentor must be active in the process that calls
+    ``.delay()`` / ``.apply_async()`` so that it injects W3C ``traceparent``
+    headers into the task message.  Without this the worker receives tasks
+    with no parent context and each task span becomes a new root trace.
+
+    The worker side is instrumented separately by
+    ``django_o11y.celery.setup._setup_celery_tracing``.  Calling
+    ``CeleryInstrumentor().instrument()`` a second time in the same process
+    is a no-op (the SDK guards against double-instrumentation).
+    """
+    if not config.get("CELERY", {}).get("ENABLED", False):
+        return
+
+    try:
+        from opentelemetry.instrumentation.celery import CeleryInstrumentor
+
+        CeleryInstrumentor().instrument()
+    except ImportError:
+        pass  # opentelemetry-instrumentation-celery not installed
 
 
 def _instrument_cache() -> None:
