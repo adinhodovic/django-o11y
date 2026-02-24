@@ -9,7 +9,7 @@ This package provides:
 - Profiling support (Pyroscope)
 """
 
-__version__ = "0.2.5"
+__version__ = "0.2.6"
 
 default_app_config = "django_o11y.apps.DjangoO11yConfig"
 

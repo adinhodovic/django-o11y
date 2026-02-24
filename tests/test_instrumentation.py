@@ -18,6 +18,7 @@ def test_setup_instrumentation_instruments_django():
         ),
         patch("django_o11y.instrumentation.setup._instrument_database"),
         patch("django_o11y.instrumentation.setup._instrument_cache"),
+        patch("django_o11y.instrumentation.setup._instrument_celery"),
         patch("django_o11y.instrumentation.setup._instrument_http_clients"),
     ):
         setup_instrumentation(config)
@@ -99,3 +100,51 @@ def test_instrument_http_clients_urllib3():
         _instrument_http_clients({})
 
     mock_urllib3_inst.instrument.assert_called_once()
+
+
+def test_instrument_celery_when_enabled():
+    """CeleryInstrumentor is called when CELERY.ENABLED is True.
+
+    This ensures the producer process (Django web) injects W3C traceparent
+    headers into task messages so the worker can continue the trace rather
+    than starting a new root span.
+    """
+    from django_o11y.instrumentation.setup import _instrument_celery
+
+    mock_inst = MagicMock()
+    mock_celery_module = MagicMock()
+    mock_celery_module.CeleryInstrumentor.return_value = mock_inst
+
+    with patch.dict(
+        "sys.modules",
+        {"opentelemetry.instrumentation.celery": mock_celery_module},
+    ):
+        _instrument_celery({"CELERY": {"ENABLED": True}})
+
+    mock_inst.instrument.assert_called_once()
+
+
+def test_instrument_celery_skipped_when_disabled():
+    """CeleryInstrumentor is not called when CELERY.ENABLED is False."""
+    from django_o11y.instrumentation.setup import _instrument_celery
+
+    mock_inst = MagicMock()
+    mock_celery_module = MagicMock()
+    mock_celery_module.CeleryInstrumentor.return_value = mock_inst
+
+    with patch.dict(
+        "sys.modules",
+        {"opentelemetry.instrumentation.celery": mock_celery_module},
+    ):
+        _instrument_celery({"CELERY": {"ENABLED": False}})
+        _instrument_celery({})
+
+    mock_inst.instrument.assert_not_called()
+
+
+def test_instrument_celery_handles_import_error():
+    """Missing opentelemetry-instrumentation-celery is silently ignored."""
+    from django_o11y.instrumentation.setup import _instrument_celery
+
+    with patch("builtins.__import__", side_effect=ImportError("celery not found")):
+        _instrument_celery({"CELERY": {"ENABLED": True}})
