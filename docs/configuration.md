@@ -16,6 +16,12 @@ Every setting can be overridden by an environment variable. All custom env vars 
 `DJANGO_O11Y_<SECTION>_<KEY>` pattern. The three standard OpenTelemetry env vars are also
 honoured where they naturally map.
 
+Precedence (lowest to highest):
+
+1. Built-in defaults
+2. `DJANGO_O11Y` Django settings dict
+3. Environment variables
+
 ### Core
 
 | Setting | Type | Default | Env var |
