@@ -15,14 +15,38 @@ from django_o11y.tracing.provider import setup_tracing
 _instrumented_pid: int | None = None
 
 
+def _is_celery_worker_boot(argv: list[str] | None = None) -> bool:
+    """Return True when the current process is a ``celery worker`` invocation.
+
+    Handles all common forms::
+
+        celery -A proj worker
+        /usr/local/bin/celery -A proj worker
+        python -m celery -A proj worker
+    """
+    args = argv if argv is not None else sys.argv
+
+    if not args or "worker" not in args:
+        return False
+
+    cmd = os.path.basename(args[0])
+    is_celery_cmd = cmd == "celery"
+    is_python_module = any(
+        arg == "-m" and idx + 1 < len(args) and args[idx + 1] == "celery"
+        for idx, arg in enumerate(args)
+    )
+    return is_celery_cmd or is_python_module
+
+
 def _is_celery_prefork_pool(argv: list[str] | None = None) -> bool:
     """Return True when Celery worker is running with prefork pool.
 
     Celery defaults to prefork when no explicit pool is passed.
+    Returns False when the process is not a ``celery worker`` at all.
     """
     args = argv if argv is not None else sys.argv
 
-    if "worker" not in args:
+    if not _is_celery_worker_boot(args):
         return False
 
     for idx, arg in enumerate(args):
@@ -54,11 +78,6 @@ def setup_celery_o11y(app: Celery, config: dict[str, Any] | None = None) -> None
     if not celery_config.get("ENABLED", False):
         return
 
-    # Enable task events so celery-exporter can receive them via the broker.
-    # worker_send_task_events enables per-task state events from the worker.
-    # task_send_sent_event additionally emits the SENT state from the client
-    # side, allowing celery-exporter to show the delta between sent and
-    # received tasks.
     app.conf.worker_send_task_events = True
     app.conf.task_send_sent_event = True
 

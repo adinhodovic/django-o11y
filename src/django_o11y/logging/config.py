@@ -225,5 +225,4 @@ def _configure_structlog(logging_config: dict[str, Any]) -> None:
         processors=base_processors
         + [structlog.stdlib.ProcessorFormatter.wrap_for_formatter],  # type: ignore[arg-type]
         logger_factory=structlog.stdlib.LoggerFactory(),
-        cache_logger_on_first_use=True,
     )

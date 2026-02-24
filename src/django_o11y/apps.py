@@ -1,46 +1,12 @@
 """Django app configuration for django-o11y."""
 
 import logging
-import os
-import sys
 from importlib.metadata import PackageNotFoundError, version
 
 from django.apps import AppConfig
 from django.conf import settings
 
 logger = logging.getLogger("django_o11y")
-
-
-def _is_celery_prefork_worker_boot() -> bool:
-    """Return True for `celery worker` booting with prefork pool.
-
-    Celery defaults to prefork when no explicit pool is passed.
-    """
-    args = sys.argv
-
-    if "worker" not in args:
-        return False
-
-    if not args:
-        return False
-
-    cmd = os.path.basename(args[0])
-    is_celery_command = cmd == "celery"
-    is_python_module_celery = any(
-        arg == "-m" and idx + 1 < len(args) and args[idx + 1] == "celery"
-        for idx, arg in enumerate(args)
-    )
-
-    if not (is_celery_command or is_python_module_celery):
-        return False
-
-    for idx, arg in enumerate(args):
-        if arg.startswith("--pool="):
-            return arg.split("=", 1)[1] == "prefork"
-        if arg in {"-P", "--pool"} and idx + 1 < len(args):
-            return args[idx + 1] == "prefork"
-
-    return True
 
 
 class DjangoO11yConfig(AppConfig):
@@ -69,21 +35,15 @@ class DjangoO11yConfig(AppConfig):
             )
             raise ImproperlyConfigured(error_msg)
 
-        # Prevent double initialisation. AppConfig.ready() can be called more
-        # than once in some environments (e.g. Django's runserver reloader).
         if getattr(self, "_o11y_ready", False):
             return
         self._o11y_ready = True
 
-        # Sync METRICS.EXPORT_MIGRATIONS into the django-prometheus setting it
-        # reads directly. We always set it so our config is the single source
-        # of truth, overriding whatever the user may have set elsewhere.
         settings.PROMETHEUS_EXPORT_MIGRATIONS = config["METRICS"]["EXPORT_MIGRATIONS"]
 
-        defer_tracing_for_celery_prefork = _is_celery_prefork_worker_boot()
-        self._configure_tracing(config, defer_tracing_for_celery_prefork)
+        self._configure_tracing(config)
         self._configure_instrumentation_and_metrics(config)
-        self._configure_profiling(config, defer_tracing_for_celery_prefork)
+        self._configure_profiling(config)
 
         try:
             if settings.DEBUG:
@@ -91,24 +51,18 @@ class DjangoO11yConfig(AppConfig):
         except Exception:
             pass
 
-    def _configure_tracing(self, config: dict, defer_for_celery_prefork: bool) -> None:
+    def _configure_tracing(self, config: dict) -> None:
         from django_o11y.tracing.provider import setup_tracing
 
-        if config["TRACING"]["ENABLED"] and not defer_for_celery_prefork:
-            setup_tracing(config)
-            from django_o11y.fork import register_post_fork_handler
-
-            register_post_fork_handler()
+        if not config["TRACING"]["ENABLED"]:
+            logger.info("Tracing disabled")
             return
 
-        if config["TRACING"]["ENABLED"]:
-            logger.info(
-                "Tracing deferred for Celery prefork worker boot; "
-                "initialising per child process"
-            )
-            return
+        setup_tracing(config)
 
-        logger.info("Tracing disabled")
+        from django_o11y.fork import register_post_fork_handler
+
+        register_post_fork_handler()
 
     def _configure_instrumentation_and_metrics(self, config: dict) -> None:
         from django_o11y.instrumentation.setup import setup_instrumentation
@@ -124,20 +78,14 @@ class DjangoO11yConfig(AppConfig):
                 "Metrics enabled at %s", metrics.get("PROMETHEUS_ENDPOINT", "/metrics")
             )
 
-    def _configure_profiling(
-        self, config: dict, defer_for_celery_prefork: bool
-    ) -> None:
+    def _configure_profiling(self, config: dict) -> None:
         from django_o11y.profiling import setup_profiling
 
-        if config.get("PROFILING", {}).get("ENABLED") and not defer_for_celery_prefork:
-            setup_profiling(config)
+        if not config.get("PROFILING", {}).get("ENABLED"):
+            logger.info("Profiling disabled")
             return
 
-        if config.get("PROFILING", {}).get("ENABLED"):
-            logger.info("Profiling deferred for Celery prefork worker boot")
-            return
-
-        logger.info("Profiling disabled")
+        setup_profiling(config)
 
     def _print_startup_banner(self, config: dict) -> None:
         """Print startup banner showing enabled features."""
@@ -145,7 +93,7 @@ class DjangoO11yConfig(AppConfig):
             try:
                 pkg_version = version("django-o11y")
             except PackageNotFoundError:
-                pkg_version = "0.2.7"
+                pkg_version = "0.2.8"
 
             banner = [
                 "",

@@ -17,72 +17,51 @@ def test_app_config_default_auto_field():
     assert DjangoO11yConfig.default_auto_field == "django.db.models.BigAutoField"
 
 
-def test_detects_celery_prefork_worker_boot_default():
-    from django_o11y.apps import _is_celery_prefork_worker_boot
+def test_configure_tracing_calls_setup_and_registers_fork_handler():
+    """_configure_tracing always sets up the provider and registers the fork hook.
 
-    with override_settings():
-        import django_o11y.apps as apps_module
+    It must no longer skip or defer for Celery prefork; os.register_at_fork
+    handles child reinitialisation uniformly for all pre-fork servers.
+    """
+    from unittest.mock import patch
 
-        original_argv = apps_module.sys.argv
-        apps_module.sys.argv = ["celery", "-A", "proj", "worker"]
-        try:
-            assert _is_celery_prefork_worker_boot() is True
-        finally:
-            apps_module.sys.argv = original_argv
+    from django_o11y.apps import DjangoO11yConfig
 
+    config = {
+        "TRACING": {"ENABLED": True, "OTLP_ENDPOINT": None, "CONSOLE_EXPORTER": False},
+        "PROFILING": {"ENABLED": False},
+        "SERVICE_NAME": "test",
+        "SERVICE_INSTANCE_ID": None,
+        "SERVICE_VERSION": "1.0",
+        "ENVIRONMENT": "test",
+        "RESOURCE_ATTRIBUTES": {},
+    }
 
-def test_detects_celery_prefork_worker_boot_respects_pool_flag():
-    import django_o11y.apps as apps_module
-    from django_o11y.apps import _is_celery_prefork_worker_boot
+    app_config = DjangoO11yConfig("django_o11y", __import__("django_o11y"))
 
-    original_argv = apps_module.sys.argv
-    apps_module.sys.argv = ["celery", "-A", "proj", "worker", "--pool=solo"]
-    try:
-        assert _is_celery_prefork_worker_boot() is False
-    finally:
-        apps_module.sys.argv = original_argv
+    with (
+        patch("django_o11y.tracing.provider.setup_tracing") as mock_setup,
+        patch("django_o11y.fork.register_post_fork_handler") as mock_fork,
+    ):
+        app_config._configure_tracing(config)
 
-
-def test_detects_celery_prefork_worker_boot_with_absolute_celery_path():
-    import django_o11y.apps as apps_module
-    from django_o11y.apps import _is_celery_prefork_worker_boot
-
-    original_argv = apps_module.sys.argv
-    apps_module.sys.argv = ["/usr/local/bin/celery", "-A", "proj", "worker"]
-    try:
-        assert _is_celery_prefork_worker_boot() is True
-    finally:
-        apps_module.sys.argv = original_argv
+    mock_setup.assert_called_once_with(config)
+    mock_fork.assert_called_once()
 
 
-def test_detects_celery_prefork_worker_boot_with_absolute_path_pool_override():
-    import django_o11y.apps as apps_module
-    from django_o11y.apps import _is_celery_prefork_worker_boot
+def test_configure_tracing_skips_when_disabled():
+    from unittest.mock import patch
 
-    original_argv = apps_module.sys.argv
-    apps_module.sys.argv = [
-        "/usr/local/bin/celery",
-        "-A",
-        "proj",
-        "worker",
-        "--pool=solo",
-    ]
-    try:
-        assert _is_celery_prefork_worker_boot() is False
-    finally:
-        apps_module.sys.argv = original_argv
+    from django_o11y.apps import DjangoO11yConfig
 
+    config = {"TRACING": {"ENABLED": False}}
 
-def test_detects_celery_prefork_worker_boot_with_python_module_invocation():
-    import django_o11y.apps as apps_module
-    from django_o11y.apps import _is_celery_prefork_worker_boot
+    app_config = DjangoO11yConfig("django_o11y", __import__("django_o11y"))
 
-    original_argv = apps_module.sys.argv
-    apps_module.sys.argv = ["/usr/bin/python3", "-m", "celery", "-A", "proj", "worker"]
-    try:
-        assert _is_celery_prefork_worker_boot() is True
-    finally:
-        apps_module.sys.argv = original_argv
+    with patch("django_o11y.tracing.provider.setup_tracing") as mock_setup:
+        app_config._configure_tracing(config)
+
+    mock_setup.assert_not_called()
 
 
 def test_app_ready_initializes_tracing():

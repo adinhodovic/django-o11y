@@ -132,6 +132,24 @@ def test_celery_setup_does_not_set_events_when_disabled(celery_app):
         setup._instrumented_pid = original_pid
 
 
+def test_is_celery_worker_boot_detects_celery_worker():
+    from django_o11y.celery.setup import _is_celery_worker_boot
+
+    assert _is_celery_worker_boot(["celery", "-A", "proj", "worker"]) is True
+    assert _is_celery_worker_boot(["/usr/local/bin/celery", "worker"]) is True
+    assert (
+        _is_celery_worker_boot(["/usr/bin/python3", "-m", "celery", "worker"]) is True
+    )
+
+
+def test_is_celery_worker_boot_false_for_non_worker_commands():
+    from django_o11y.celery.setup import _is_celery_worker_boot
+
+    assert _is_celery_worker_boot(["celery", "-A", "proj", "beat"]) is False
+    assert _is_celery_worker_boot(["gunicorn", "myapp.wsgi"]) is False
+    assert _is_celery_worker_boot([]) is False
+
+
 def test_celery_prefork_pool_detection_defaults_to_prefork():
     from django_o11y.celery.setup import _is_celery_prefork_pool
 
@@ -149,6 +167,14 @@ def test_celery_prefork_pool_detection_honours_explicit_pool():
         _is_celery_prefork_pool(["celery", "-A", "proj", "worker", "-P", "prefork"])
         is True
     )
+
+
+def test_celery_prefork_pool_detection_false_for_non_worker():
+    """_is_celery_prefork_pool must return False for non-worker commands."""
+    from django_o11y.celery.setup import _is_celery_prefork_pool
+
+    assert _is_celery_prefork_pool(["celery", "-A", "proj", "beat"]) is False
+    assert _is_celery_prefork_pool(["gunicorn", "myapp.wsgi"]) is False
 
 
 def test_worker_init_skips_auto_setup_for_prefork(celery_app):
