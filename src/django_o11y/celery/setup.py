@@ -48,8 +48,12 @@ def setup_celery_o11y(app: Celery, config: dict[str, Any] | None = None) -> None
     if not celery_config.get("ENABLED", False):
         return
 
+    # Keep Django/structlog logging ownership in workers.
+    app.conf.worker_hijack_root_logger = False
     app.conf.worker_send_task_events = True
     app.conf.task_send_sent_event = True
+
+    _setup_django_structlog_worker_step(app)
 
     if config.get("TRACING", {}).get("ENABLED") and celery_config.get(
         "TRACING_ENABLED", True
@@ -78,10 +82,23 @@ def _setup_celery_logging() -> None:
     from celery.signals import setup_logging
     from django.conf import settings
 
-    @setup_logging.connect(weak=False)
-    def _config_loggers(*args, **kwargs):  # pylint: disable=unused-variable
+    def _apply_logging_config() -> None:
         if hasattr(settings, "LOGGING") and settings.LOGGING:
             _logging_config.dictConfig(settings.LOGGING)
+
+    @setup_logging.connect(weak=False)
+    def _config_loggers(*args, **kwargs):  # pylint: disable=unused-variable
+        _apply_logging_config()
+
+
+def _setup_django_structlog_worker_step(app: Celery) -> None:
+    """Register django-structlog worker init step when available."""
+    try:
+        from django_structlog.celery.steps import DjangoStructLogInitStep
+    except ImportError:
+        return
+
+    app.steps["worker"].add(DjangoStructLogInitStep)
 
 
 def _setup_celery_tracing() -> None:
