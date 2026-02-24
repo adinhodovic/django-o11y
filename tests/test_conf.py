@@ -1,5 +1,7 @@
 """Tests for configuration module."""
 
+from django.test import override_settings
+
 
 def test_get_o11y_config_returns_config():
     from django_o11y.conf import get_o11y_config
@@ -40,6 +42,26 @@ def test_config_tracing_defaults():
     assert "ENABLED" in config["TRACING"]
     assert "SAMPLE_RATE" in config["TRACING"]
     assert "OTLP_ENDPOINT" in config["TRACING"]
+
+
+@override_settings(DEBUG=False, DJANGO_O11Y={})
+def test_config_tracing_sample_rate_default_non_debug(monkeypatch):
+    from django_o11y.conf import get_config
+
+    monkeypatch.delenv("OTEL_TRACES_SAMPLER_ARG", raising=False)
+    config = get_config()
+
+    assert config["TRACING"]["SAMPLE_RATE"] == 0.01
+
+
+@override_settings(DEBUG=True, DJANGO_O11Y={})
+def test_config_tracing_sample_rate_default_debug(monkeypatch):
+    from django_o11y.conf import get_config
+
+    monkeypatch.delenv("OTEL_TRACES_SAMPLER_ARG", raising=False)
+    config = get_config()
+
+    assert config["TRACING"]["SAMPLE_RATE"] == 1.0
 
 
 def test_config_logging_defaults():

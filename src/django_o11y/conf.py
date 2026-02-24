@@ -62,6 +62,8 @@ def get_config() -> dict[str, Any]:
     """
     _otlp = _env("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
 
+    default_sample_rate = 1.0 if settings.DEBUG else 0.01
+
     defaults: dict[str, Any] = {
         "SERVICE_NAME": _env("OTEL_SERVICE_NAME", "django-app"),
         "SERVICE_VERSION": _env("OTEL_SERVICE_VERSION", "unknown"),
@@ -76,7 +78,7 @@ def get_config() -> dict[str, Any]:
         "TRACING": {
             "ENABLED": _bool_env("DJANGO_O11Y_TRACING_ENABLED", False),
             "OTLP_ENDPOINT": _otlp,
-            "SAMPLE_RATE": _float_env("OTEL_TRACES_SAMPLER_ARG", 1.0),
+            "SAMPLE_RATE": _float_env("OTEL_TRACES_SAMPLER_ARG", default_sample_rate),
             "CONSOLE_EXPORTER": _bool_env(
                 "DJANGO_O11Y_TRACING_CONSOLE_EXPORTER", False
             ),
