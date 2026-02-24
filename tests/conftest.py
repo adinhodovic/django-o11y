@@ -138,7 +138,9 @@ def celery_app():
 @pytest.fixture
 def django_user_request(rf):
     """Request factory with authenticated user."""
-    from django.contrib.auth.models import User
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
 
     request = rf.get("/")
     user = User(id=1, username="testuser", is_staff=False)
