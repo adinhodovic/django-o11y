@@ -1,5 +1,7 @@
 """Setup module for Celery o11y integration."""
 
+import os
+import sys
 import warnings
 from typing import Any
 
@@ -7,9 +9,29 @@ from celery import Celery
 
 from django_o11y.celery.signals import setup_celery_signals
 from django_o11y.conf import get_o11y_config
+from django_o11y.tracing.provider import setup_tracing
 
-# Track if Celery has been instrumented to prevent double-instrumentation
-_instrumented = False
+# Track instrumentation per-process to remain fork-safe.
+_instrumented_pid: int | None = None
+
+
+def _is_celery_prefork_pool(argv: list[str] | None = None) -> bool:
+    """Return True when Celery worker is running with prefork pool.
+
+    Celery defaults to prefork when no explicit pool is passed.
+    """
+    args = argv if argv is not None else sys.argv
+
+    if "worker" not in args:
+        return False
+
+    for idx, arg in enumerate(args):
+        if arg.startswith("--pool="):
+            return arg.split("=", 1)[1] == "prefork"
+        if arg in {"-P", "--pool"} and idx + 1 < len(args):
+            return args[idx + 1] == "prefork"
+
+    return True
 
 
 def setup_celery_o11y(app: Celery, config: dict[str, Any] | None = None) -> None:
@@ -19,9 +41,9 @@ def setup_celery_o11y(app: Celery, config: dict[str, Any] | None = None) -> None
     Called automatically on worker start when ``CELERY.ENABLED`` is True.
     Can also be called manually for explicit control.
     """
-    global _instrumented
+    global _instrumented_pid
 
-    if _instrumented:
+    if _instrumented_pid == os.getpid():
         return
 
     if config is None:
@@ -40,14 +62,17 @@ def setup_celery_o11y(app: Celery, config: dict[str, Any] | None = None) -> None
     app.conf.worker_send_task_events = True
     app.conf.task_send_sent_event = True
 
-    if celery_config.get("TRACING_ENABLED", True):
+    if config.get("TRACING", {}).get("ENABLED") and celery_config.get(
+        "TRACING_ENABLED", True
+    ):
+        setup_tracing(config)
         _setup_celery_tracing()
 
     if celery_config.get("LOGGING_ENABLED", True):
         setup_celery_signals(app)
         _setup_celery_logging()
 
-    _instrumented = True
+    _instrumented_pid = os.getpid()
 
 
 def _setup_celery_logging() -> None:
@@ -88,6 +113,28 @@ def _setup_celery_tracing() -> None:
 
 def _auto_setup_on_worker_init(sender, **kwargs) -> None:
     """worker_init signal handler — runs setup_celery_o11y on worker start."""
+    if _is_celery_prefork_pool():
+        return
+
+    try:
+        config = get_o11y_config()
+
+        if config.get("CELERY", {}).get("ENABLED", False):
+            setup_celery_o11y(sender, config)
+    except Exception:  # pragma: no cover
+        warnings.warn(
+            "Failed to auto-setup django-o11y for Celery. "
+            "Check your DJANGO_O11Y configuration.",
+            UserWarning,
+            stacklevel=2,
+        )
+
+
+def _auto_setup_on_worker_process_init(sender=None, **kwargs) -> None:
+    """worker_process_init handler — runs setup in prefork child workers."""
+    if not _is_celery_prefork_pool():
+        return
+
     try:
         config = get_o11y_config()
 

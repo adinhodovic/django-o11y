@@ -14,19 +14,19 @@ def test_celery_setup_when_disabled(celery_app):
 def test_celery_setup_prevents_double_instrumentation(celery_app):
     from django_o11y.celery import setup
 
-    original_flag = setup._instrumented
-    setup._instrumented = False
+    original_pid = setup._instrumented_pid
+    setup._instrumented_pid = None
 
     try:
         config = {"CELERY": {"ENABLED": True}}
 
         setup.setup_celery_o11y(celery_app, config=config)
-        assert setup._instrumented is True
+        assert setup._instrumented_pid is not None
 
         setup.setup_celery_o11y(celery_app, config=config)
-        assert setup._instrumented is True
+        assert setup._instrumented_pid is not None
     finally:
-        setup._instrumented = original_flag
+        setup._instrumented_pid = original_pid
 
 
 def test_celery_setup_warns_on_missing_package():
@@ -51,8 +51,8 @@ def test_celery_setup_connects_signals(celery_app):
     from django_o11y.celery import setup
     from django_o11y.celery.setup import setup_celery_o11y
 
-    original_flag = setup._instrumented
-    setup._instrumented = False
+    original_pid = setup._instrumented_pid
+    setup._instrumented_pid = None
 
     try:
         receivers_before = len(signals.task_prerun.receivers or [])
@@ -63,23 +63,23 @@ def test_celery_setup_connects_signals(celery_app):
         receivers_after = len(signals.task_prerun.receivers or [])
         assert receivers_after >= receivers_before
     finally:
-        setup._instrumented = original_flag
+        setup._instrumented_pid = original_pid
 
 
 def test_celery_setup_loads_config_from_django_settings(celery_app):
     from django_o11y.celery import setup
     from django_o11y.conf import get_o11y_config
 
-    original_flag = setup._instrumented
-    setup._instrumented = False
+    original_pid = setup._instrumented_pid
+    setup._instrumented_pid = None
 
     try:
         with override_settings(DJANGO_O11Y={"CELERY": {"ENABLED": False}}):
             get_o11y_config.cache_clear()
             setup.setup_celery_o11y(celery_app, config=None)
-            assert setup._instrumented is False
+            assert setup._instrumented_pid is None
     finally:
-        setup._instrumented = original_flag
+        setup._instrumented_pid = original_pid
         get_o11y_config.cache_clear()
 
 
@@ -99,8 +99,8 @@ def test_celery_setup_enables_task_events(celery_app):
     """setup_celery_o11y sets worker_send_task_events and task_send_sent_event."""
     from django_o11y.celery import setup
 
-    original_flag = setup._instrumented
-    setup._instrumented = False
+    original_pid = setup._instrumented_pid
+    setup._instrumented_pid = None
 
     try:
         config = {"CELERY": {"ENABLED": True}}
@@ -109,15 +109,15 @@ def test_celery_setup_enables_task_events(celery_app):
         assert celery_app.conf.worker_send_task_events is True
         assert celery_app.conf.task_send_sent_event is True
     finally:
-        setup._instrumented = original_flag
+        setup._instrumented_pid = original_pid
 
 
 def test_celery_setup_does_not_set_events_when_disabled(celery_app):
     """Task events are not touched when CELERY.ENABLED is False."""
     from django_o11y.celery import setup
 
-    original_flag = setup._instrumented
-    setup._instrumented = False
+    original_pid = setup._instrumented_pid
+    setup._instrumented_pid = None
     # Reset to a known baseline
     celery_app.conf.worker_send_task_events = False
     celery_app.conf.task_send_sent_event = False
@@ -129,7 +129,72 @@ def test_celery_setup_does_not_set_events_when_disabled(celery_app):
         assert celery_app.conf.worker_send_task_events is False
         assert celery_app.conf.task_send_sent_event is False
     finally:
-        setup._instrumented = original_flag
+        setup._instrumented_pid = original_pid
+
+
+def test_celery_prefork_pool_detection_defaults_to_prefork():
+    from django_o11y.celery.setup import _is_celery_prefork_pool
+
+    assert _is_celery_prefork_pool(["celery", "-A", "proj", "worker"]) is True
+
+
+def test_celery_prefork_pool_detection_honours_explicit_pool():
+    from django_o11y.celery.setup import _is_celery_prefork_pool
+
+    assert (
+        _is_celery_prefork_pool(["celery", "-A", "proj", "worker", "--pool=solo"])
+        is False
+    )
+    assert (
+        _is_celery_prefork_pool(["celery", "-A", "proj", "worker", "-P", "prefork"])
+        is True
+    )
+
+
+def test_worker_init_skips_auto_setup_for_prefork(celery_app):
+    from unittest.mock import patch
+
+    from django_o11y.celery.setup import _auto_setup_on_worker_init
+
+    with patch("django_o11y.celery.setup._is_celery_prefork_pool", return_value=True):
+        with patch("django_o11y.celery.setup.setup_celery_o11y") as mock_setup:
+            _auto_setup_on_worker_init(sender=celery_app)
+            mock_setup.assert_not_called()
+
+
+def test_worker_process_init_runs_auto_setup_for_prefork(celery_app):
+    from unittest.mock import patch
+
+    from django_o11y.celery.setup import _auto_setup_on_worker_process_init
+
+    config = {"CELERY": {"ENABLED": True}, "TRACING": {"ENABLED": False}}
+    with patch("django_o11y.celery.setup._is_celery_prefork_pool", return_value=True):
+        with patch("django_o11y.celery.setup.get_o11y_config", return_value=config):
+            with patch("django_o11y.celery.setup.setup_celery_o11y") as mock_setup:
+                _auto_setup_on_worker_process_init(sender=celery_app)
+                mock_setup.assert_called_once_with(celery_app, config)
+
+
+def test_celery_setup_configures_tracing_provider_when_enabled(celery_app):
+    from unittest.mock import patch
+
+    from django_o11y.celery import setup
+
+    original_pid = setup._instrumented_pid
+    setup._instrumented_pid = None
+
+    config = {
+        "CELERY": {"ENABLED": True, "TRACING_ENABLED": True},
+        "TRACING": {"ENABLED": True},
+    }
+
+    try:
+        with patch("django_o11y.celery.setup.setup_tracing") as mock_setup_tracing:
+            with patch("django_o11y.celery.setup._setup_celery_tracing"):
+                setup.setup_celery_o11y(celery_app, config=config)
+                mock_setup_tracing.assert_called_once_with(config)
+    finally:
+        setup._instrumented_pid = original_pid
 
 
 def test_setup_celery_logging_connects_setup_logging_signal():
