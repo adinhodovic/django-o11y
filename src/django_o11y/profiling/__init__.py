@@ -5,14 +5,29 @@ import os
 import socket
 from typing import Any
 
+from django_o11y.tracing.provider import _is_celery_fork_pool_worker
+
 logger = logging.getLogger("django_o11y.profiling")
 
 
 def setup_profiling(config: dict[str, Any]) -> None:
-    """Configure Pyroscope with standard tags (service, version, env, host, pid)."""
+    """Configure Pyroscope with standard tags (service, version, env, host, pid).
+
+    Skips ``pyroscope.configure()`` inside Celery prefork worker children to
+    avoid fork-safety issues with the pyroscope-io SDK.  Traces are still
+    emitted by the worker; only the profile→trace correlation span processor
+    is also skipped (see ``tracing.provider.setup_tracing``).
+    """
     profiling_config = config.get("PROFILING", {})
 
     if not profiling_config.get("ENABLED"):
+        return
+
+    if _is_celery_fork_pool_worker():
+        logger.info(
+            "django_o11y: skipping pyroscope.configure() in Celery prefork worker "
+            "(fork-safety); traces still active"
+        )
         return
 
     try:

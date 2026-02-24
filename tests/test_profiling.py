@@ -190,3 +190,28 @@ def test_setup_profiling_raises_on_configure_error():
     with patch.dict("sys.modules", {"pyroscope": mock_pyroscope}):
         with pytest.raises(RuntimeError, match="Connection failed"):
             setup_profiling(config)
+
+
+def test_setup_profiling_skips_pyroscope_configure_in_celery_prefork_worker():
+    """setup_profiling must not call pyroscope.configure() inside a Celery
+    prefork worker child to avoid fork-safety crashes (WorkerLostError)."""
+    from django_o11y.profiling import setup_profiling
+
+    mock_pyroscope = MagicMock()
+
+    config = {
+        "SERVICE_NAME": "test-service",
+        "PROFILING": {
+            "ENABLED": True,
+            "PYROSCOPE_URL": "http://localhost:4040",
+        },
+    }
+
+    with patch(
+        "django_o11y.profiling._is_celery_fork_pool_worker",
+        return_value=True,
+    ):
+        with patch.dict("sys.modules", {"pyroscope": mock_pyroscope}):
+            setup_profiling(config)
+
+            mock_pyroscope.configure.assert_not_called()
