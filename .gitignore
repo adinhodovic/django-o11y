@@ -137,3 +137,6 @@ tests/media
 .ruff_cache/
 
 examples/demo_project/celerybeat-schedule.*
+
+# celery filesystem broker artifacts
+control/

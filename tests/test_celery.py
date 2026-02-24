@@ -232,19 +232,19 @@ def test_celery_setup_configures_tracing_provider_when_enabled(celery_app):
 
 
 def test_setup_celery_logging_connects_setup_logging_signal():
-    """_setup_celery_logging registers a handler on celery.signals.setup_logging."""
+    """_setup_celery_logging registers a handler on setup_logging."""
     from celery.signals import setup_logging
 
     from django_o11y.celery.setup import _setup_celery_logging
 
     _setup_celery_logging()
 
-    # At least one receiver must be connected after calling _setup_celery_logging
+    # At least one receiver must be connected after calling _setup_celery_logging.
     assert len(setup_logging.receivers or []) >= 1
 
 
 def test_setup_celery_logging_applies_django_logging_config(celery_app):
-    """The setup_logging handler calls dictConfig with settings.LOGGING."""
+    """_setup_celery_logging applies config when setup_logging fires."""
     import logging.config as lc
     from unittest.mock import patch
 
@@ -256,13 +256,67 @@ def test_setup_celery_logging_applies_django_logging_config(celery_app):
         with patch.object(lc, "dictConfig") as mock_dictconfig:
             _setup_celery_logging()
 
+            # Registration should not apply config until Celery emits signal.
+            mock_dictconfig.assert_not_called()
+
             # Simulate Celery firing the setup_logging signal on worker start
             from celery.signals import setup_logging
 
             setup_logging.send(sender=None)
-
             # The handler may fire multiple times if earlier tests also
             # registered receivers (weak=False keeps them alive).  Assert
             # it was called at least once with the right config dict.
             mock_dictconfig.assert_called_with(fake_logging)
             assert mock_dictconfig.call_count >= 1
+
+
+def test_celery_setup_disables_worker_root_logger_hijack(celery_app):
+    """setup_celery_o11y disables Celery root logger hijacking."""
+    from django_o11y.celery import setup
+
+    original_pid = setup._instrumented_pid
+    setup._instrumented_pid = None
+
+    try:
+        celery_app.conf.worker_hijack_root_logger = True
+        config = {"CELERY": {"ENABLED": True}}
+        setup.setup_celery_o11y(celery_app, config=config)
+
+        assert celery_app.conf.worker_hijack_root_logger is False
+    finally:
+        setup._instrumented_pid = original_pid
+
+
+def test_registers_django_structlog_worker_step():
+    """Registers DjangoStructLogInitStep on worker steps when available."""
+    from unittest.mock import Mock
+
+    from django_o11y.celery.setup import _setup_django_structlog_worker_step
+
+    fake_worker_steps = Mock()
+    fake_app = Mock(steps={"worker": fake_worker_steps})
+
+    _setup_django_structlog_worker_step(fake_app)
+
+    fake_worker_steps.add.assert_called_once()
+
+
+def test_skips_django_structlog_step_when_unavailable():
+    """No error when django-structlog celery step cannot be imported."""
+    import importlib
+    from unittest.mock import Mock, patch
+
+    from django_o11y.celery.setup import _setup_django_structlog_worker_step
+
+    fake_worker_steps = Mock()
+    fake_app = Mock(steps={"worker": fake_worker_steps})
+
+    def mock_import(name, *args, **kwargs):
+        if name == "django_structlog.celery.steps":
+            raise ImportError("django_structlog celery extras unavailable")
+        return importlib.__import__(name, *args, **kwargs)
+
+    with patch("builtins.__import__", side_effect=mock_import):
+        _setup_django_structlog_worker_step(fake_app)
+
+    fake_worker_steps.add.assert_not_called()
