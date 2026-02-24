@@ -7,7 +7,7 @@ packages = ["src/django_o11y"]
 
 [project]
 name = "django-o11y"
-version = "0.2.2"
+version = "0.2.3"
 description = "Comprehensive OpenTelemetry observability for Django with traces, logs, metrics, and profiling"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -57,14 +57,12 @@ dependencies = [
 celery = ["celery>=5.6.2", "opentelemetry-instrumentation-celery>=0.60b1"]
 
 # Profiling support (push mode - optional)
-profiling = [
-    "pyroscope-io>=1.0.4",
-]
+profiling = ["pyroscope-io>=1.0.4", "pyroscope-otel>=1.0.0"]
 
 # Database instrumentation
 postgres = [
-    "opentelemetry-instrumentation-psycopg2>=0.60b1",
-    "opentelemetry-instrumentation-psycopg>=0.60b1",   # psycopg v3
+  "opentelemetry-instrumentation-psycopg2>=0.60b1",
+  "opentelemetry-instrumentation-psycopg>=0.60b1",  # psycopg v3
 ]
 
 # Cache instrumentation

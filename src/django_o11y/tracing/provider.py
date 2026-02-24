@@ -18,8 +18,6 @@ from opentelemetry.sdk.resources import (
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 
-from django_o11y.tracing.pyroscope import build_pyroscope_span_processor
-
 logger = logging.getLogger("django_o11y.tracing")
 
 
@@ -103,15 +101,16 @@ def setup_tracing(config: dict[str, Any]) -> TracerProvider:
             )
             return provider
 
-        pyroscope_span_processor = build_pyroscope_span_processor()
-        if pyroscope_span_processor is not None:
-            provider.add_span_processor(pyroscope_span_processor)
+        try:
+            from pyroscope.otel import PyroscopeSpanProcessor
+
+            provider.add_span_processor(PyroscopeSpanProcessor())
             logger.info(
                 "Pyroscope span processor added for profile-to-trace correlation"
             )
-        else:
+        except ImportError:
             logger.debug(
-                "django_o11y: pyroscope-io not installed, skipping profile-trace "
+                "django_o11y: pyroscope-otel not installed, skipping profile-trace "
                 "correlation. Install with: pip install django-o11y[profiling]"
             )
 

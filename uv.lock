@@ -417,7 +417,7 @@ wheels = [
 
 [[package]]
 name = "django-o11y"
-version = "0.2.1"
+version = "0.2.3"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
@@ -445,6 +445,7 @@ all = [
     { name = "opentelemetry-instrumentation-urllib" },
     { name = "opentelemetry-instrumentation-urllib3" },
     { name = "pyroscope-io" },
+    { name = "pyroscope-otel" },
     { name = "rich" },
 ]
 aws = [
@@ -498,6 +499,7 @@ postgres = [
 ]
 profiling = [
     { name = "pyroscope-io" },
+    { name = "pyroscope-otel" },
 ]
 redis = [
     { name = "opentelemetry-instrumentation-redis" },
@@ -540,6 +542,7 @@ requires-dist = [
     { name = "pylint", marker = "extra == 'dev'", specifier = ">=4.0.5" },
     { name = "pylint-django", marker = "extra == 'dev'", specifier = ">=2.7.0" },
     { name = "pyroscope-io", marker = "extra == 'profiling'", specifier = ">=1.0.4" },
+    { name = "pyroscope-otel", marker = "extra == 'profiling'", specifier = ">=1.0.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.0.2" },
     { name = "pytest-clarity", marker = "extra == 'dev'", specifier = ">=1.0.1" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=7.0.0" },
@@ -1558,6 +1561,20 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/0a/9a/86ecde7df062fa3a89774e4c6b031eea097b1d3d70f9404d4d655e316815/pyroscope_io-1.0.4-cp310-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:62c4c6de74882ab37cb91e7f8d7af35749d6513c557e2857f9f443c463713d68", size = 3873967, upload-time = "2026-02-23T11:35:15.988Z" },
     { url = "https://files.pythonhosted.org/packages/e9/18/3ae66705d5bb55598ce696559db1863393731be2a3797a4257f0894d4827/pyroscope_io-1.0.4-cp310-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:a30a950bffbc58f6a7d40d543fa2856acffa850149882bd50858c5000dead1ba", size = 4162657, upload-time = "2026-02-23T11:35:17.745Z" },
     { url = "https://files.pythonhosted.org/packages/b3/e8/b3c4a5d9e99c5e4f63cbd1eb995c06f784ff00e73de33cf4c2d848ee173e/pyroscope_io-1.0.4-cp310-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:e0a689e0b872020a3490e4eb6166da9a393750206606a6bae13c1f6ae44ec0fd", size = 3955884, upload-time = "2026-02-23T11:35:19.081Z" },
+]
+
+[[package]]
+name = "pyroscope-otel"
+version = "1.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-sdk" },
+    { name = "pyroscope-io" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d9/86/a3a65272005b72610ebc6019090e7dabbdd26d075864acdd58536040c2ce/pyroscope_otel-1.0.0.tar.gz", hash = "sha256:43de0314e8d146de3378e6add2d80f2aa118b56974e8cb99f17a50ce76573546", size = 13625, upload-time = "2026-02-24T02:35:18.945Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f6/eb/e8858a7c302a8305ff40121ba7f62d6f17dea8b7011a6de7ae9573774be3/pyroscope_otel-1.0.0-py3-none-any.whl", hash = "sha256:b4282af41cfbb7211acfe3ce21f76cb34681694d210f1a97ac941ad60ef0f35c", size = 11619, upload-time = "2026-02-24T02:35:18.033Z" },
 ]
 
 [[package]]
