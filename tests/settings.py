@@ -26,6 +26,10 @@ DATABASES = {
 
 ROOT_URLCONF = "tests.urls"
 
+CELERY_BROKER_URL = "memory://"
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True
+
 DJANGO_O11Y = {
     "SERVICE_NAME": "test-service",
     "ENVIRONMENT": "test",
