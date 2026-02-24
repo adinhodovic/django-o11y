@@ -47,10 +47,6 @@ def setup_tracing(config: dict[str, Any]) -> TracerProvider:
     service_name = config["SERVICE_NAME"]
     tracing_config = config["TRACING"]
 
-    # SERVICE_INSTANCE_ID: use the explicit value from config/env if set,
-    # otherwise compute hostname:pid fresh at call time.  Calling os.getpid()
-    # here (rather than reading a cached config value) means forked workers
-    # automatically get their own pid after _reinit_after_fork() calls us.
     instance_id = config.get("SERVICE_INSTANCE_ID") or (
         f"{os.getenv('HOSTNAME', socket.gethostname())}:{os.getpid()}"
     )

@@ -63,11 +63,6 @@ def _reinit_after_fork() -> None:
         if not config.get("TRACING", {}).get("ENABLED"):
             return
 
-        # Shut down the broken inherited provider gracefully.  This stops the
-        # dead flush thread and closes the inherited gRPC channel.
-        # get_tracer_provider() returns the API TracerProvider which has no
-        # shutdown(); the real SDK provider does — call it via hasattr so mypy
-        # is happy and we degrade gracefully if it's a no-op proxy.
         existing = trace.get_tracer_provider()
         try:
             if hasattr(existing, "shutdown"):
@@ -75,8 +70,6 @@ def _reinit_after_fork() -> None:
         except Exception:  # pylint: disable=broad-exception-caught
             pass
 
-        # setup_tracing calls os.getpid() at call time, so the new provider's
-        # Resource will carry the worker's pid — not the master's.
         setup_tracing(config)
         logger.debug(
             "django_o11y: tracing re-initialised after fork (pid=%s)", os.getpid()
