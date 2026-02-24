@@ -7,7 +7,7 @@ packages = ["src/django_o11y"]
 
 [project]
 name = "django-o11y"
-version = "0.2.8"
+version = "0.2.9"
 description = "Comprehensive OpenTelemetry observability for Django with traces, logs, metrics, and profiling"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -190,7 +190,6 @@ disable = """
     redefined-outer-name,
     not-context-manager,
     unused-argument,
-    imported-auth-user,
     protected-access
 """
 

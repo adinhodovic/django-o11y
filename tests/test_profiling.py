@@ -157,6 +157,8 @@ def test_setup_profiling_with_custom_tags():
 
 
 def test_setup_profiling_handles_import_error():
+    import importlib
+
     from django_o11y.profiling import setup_profiling
 
     config = {
@@ -167,9 +169,12 @@ def test_setup_profiling_handles_import_error():
         },
     }
 
-    with patch(
-        "builtins.__import__", side_effect=ImportError("pyroscope not installed")
-    ):
+    def mock_import(name, *args, **kwargs):
+        if name == "pyroscope":
+            raise ImportError("pyroscope not installed")
+        return importlib.__import__(name, *args, **kwargs)
+
+    with patch("builtins.__import__", side_effect=mock_import):
         setup_profiling(config)
 
 
@@ -192,9 +197,8 @@ def test_setup_profiling_raises_on_configure_error():
             setup_profiling(config)
 
 
-def test_setup_profiling_skips_pyroscope_configure_in_celery_prefork_worker():
-    """setup_profiling must not call pyroscope.configure() inside a Celery
-    prefork worker child to avoid fork-safety crashes (WorkerLostError)."""
+def test_setup_profiling_skips_pyroscope_configure_in_celery_prefork_boot():
+    """setup_profiling must skip pyroscope in celery prefork boot process."""
     from django_o11y.profiling import setup_profiling
 
     mock_pyroscope = MagicMock()
@@ -207,10 +211,7 @@ def test_setup_profiling_skips_pyroscope_configure_in_celery_prefork_worker():
         },
     }
 
-    with patch(
-        "django_o11y.profiling._is_celery_fork_pool_worker",
-        return_value=True,
-    ):
+    with patch("sys.argv", ["celery", "-A", "proj", "worker"]):
         with patch.dict("sys.modules", {"pyroscope": mock_pyroscope}):
             setup_profiling(config)
 

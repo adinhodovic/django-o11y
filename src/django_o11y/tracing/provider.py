@@ -1,10 +1,8 @@
 """OpenTelemetry tracing provider setup."""
 
 import logging
-import multiprocessing
 import os
 import socket
-from importlib import import_module
 from typing import Any
 
 from opentelemetry import trace
@@ -23,15 +21,9 @@ logger = logging.getLogger("django_o11y.tracing")
 
 def _is_celery_fork_pool_worker() -> bool:
     """Return True when running inside a Celery prefork pool child."""
-    process_name = multiprocessing.current_process().name
-    if process_name.startswith("ForkPoolWorker"):
-        return True
+    from django_o11y.celery.detection import is_celery_fork_pool_worker
 
-    try:
-        process = import_module("billiard.process")
-        return process.current_process().name.startswith("ForkPoolWorker")
-    except Exception:
-        return False
+    return is_celery_fork_pool_worker()
 
 
 def setup_tracing(config: dict[str, Any]) -> TracerProvider:
@@ -91,6 +83,8 @@ def setup_tracing(config: dict[str, Any]) -> TracerProvider:
     profiling_config = config.get("PROFILING", {})
     if profiling_config.get("ENABLED"):
         if _is_celery_fork_pool_worker():
+            # Disabled in Celery prefork workers due to known native instability.
+            # Context: https://github.com/grafana/pyroscope-rs/issues/276
             logger.warning(
                 "Skipping Pyroscope profile-trace correlation in Celery prefork "
                 "worker; this avoids pyroscope-io fork instability"

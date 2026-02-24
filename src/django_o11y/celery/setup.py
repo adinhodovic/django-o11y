@@ -1,12 +1,15 @@
 """Setup module for Celery o11y integration."""
 
 import os
-import sys
 import warnings
 from typing import Any
 
 from celery import Celery
 
+from django_o11y.celery.detection import (
+    is_celery_prefork_pool,
+    is_celery_worker_boot,
+)
 from django_o11y.celery.signals import setup_celery_signals
 from django_o11y.conf import get_o11y_config
 from django_o11y.tracing.provider import setup_tracing
@@ -16,46 +19,13 @@ _instrumented_pid: int | None = None
 
 
 def _is_celery_worker_boot(argv: list[str] | None = None) -> bool:
-    """Return True when the current process is a ``celery worker`` invocation.
-
-    Handles all common forms::
-
-        celery -A proj worker
-        /usr/local/bin/celery -A proj worker
-        python -m celery -A proj worker
-    """
-    args = argv if argv is not None else sys.argv
-
-    if not args or "worker" not in args:
-        return False
-
-    cmd = os.path.basename(args[0])
-    is_celery_cmd = cmd == "celery"
-    is_python_module = any(
-        arg == "-m" and idx + 1 < len(args) and args[idx + 1] == "celery"
-        for idx, arg in enumerate(args)
-    )
-    return is_celery_cmd or is_python_module
+    """Compatibility wrapper for shared celery worker boot detection."""
+    return is_celery_worker_boot(argv)
 
 
 def _is_celery_prefork_pool(argv: list[str] | None = None) -> bool:
-    """Return True when Celery worker is running with prefork pool.
-
-    Celery defaults to prefork when no explicit pool is passed.
-    Returns False when the process is not a ``celery worker`` at all.
-    """
-    args = argv if argv is not None else sys.argv
-
-    if not _is_celery_worker_boot(args):
-        return False
-
-    for idx, arg in enumerate(args):
-        if arg.startswith("--pool="):
-            return arg.split("=", 1)[1] == "prefork"
-        if arg in {"-P", "--pool"} and idx + 1 < len(args):
-            return args[idx + 1] == "prefork"
-
-    return True
+    """Compatibility wrapper for shared celery prefork pool detection."""
+    return is_celery_prefork_pool(argv)
 
 
 def setup_celery_o11y(app: Celery, config: dict[str, Any] | None = None) -> None:
