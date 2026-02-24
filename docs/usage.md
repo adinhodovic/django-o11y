@@ -393,7 +393,7 @@ DJANGO_O11Y = {
     "TRACING": {
         "ENABLED": True,          # default: False
         "OTLP_ENDPOINT": "http://localhost:4317",
-        "SAMPLE_RATE": 1.0,       # 1.0 = 100%, use 0.01 in high-traffic prod
+        "SAMPLE_RATE": 1.0,       # 1.0 = 100%; default is 1.0 in DEBUG, 0.01 otherwise
     }
 }
 ```

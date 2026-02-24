@@ -28,9 +28,10 @@ def test_config_defaults():
     from django_o11y.conf import get_o11y_config
 
     config = get_o11y_config()
+    expected_sample_rate = 1.0 if settings.DEBUG else 0.01
 
     assert config["TRACING"]["ENABLED"] is True
-    assert config["TRACING"]["SAMPLE_RATE"] == 1.0
+    assert config["TRACING"]["SAMPLE_RATE"] == expected_sample_rate
     assert config["LOGGING"]["LEVEL"] == "WARNING"
 
 
