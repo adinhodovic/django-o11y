@@ -146,3 +146,27 @@ def test_setup_tracing_skips_pyroscope_processor_when_unavailable():
 
                 assert provider is not None
                 mock_build.assert_called_once()
+
+
+def test_setup_tracing_skips_pyroscope_processor_in_celery_prefork_worker():
+    from django_o11y.tracing.provider import setup_tracing
+
+    config = {
+        "SERVICE_NAME": "test-service",
+        "TRACING": {"OTLP_ENDPOINT": "http://localhost:4317"},
+        "PROFILING": {"ENABLED": True},
+    }
+
+    with patch("django_o11y.tracing.provider.OTLPSpanExporter"):
+        with patch("django_o11y.tracing.provider.trace.set_tracer_provider"):
+            with patch(
+                "django_o11y.tracing.provider._is_celery_fork_pool_worker",
+                return_value=True,
+            ):
+                with patch(
+                    "django_o11y.tracing.provider.build_pyroscope_span_processor"
+                ) as mock_build:
+                    provider = setup_tracing(config)
+
+                    assert provider is not None
+                    mock_build.assert_not_called()
