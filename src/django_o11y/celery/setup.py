@@ -131,7 +131,12 @@ def _auto_setup_on_worker_init(sender, **kwargs) -> None:
 
 
 def _auto_setup_on_worker_process_init(sender=None, **kwargs) -> None:
-    """worker_process_init handler — runs setup in prefork child workers."""
+    """worker_process_init handler — runs setup in prefork child workers.
+
+    Celery always fires this signal with ``sender=None``
+    (see celery/concurrency/prefork.py).  Fall back to ``celery.current_app``
+    so that ``setup_celery_o11y`` receives a real Celery instance.
+    """
     if not _is_celery_prefork_pool():
         return
 
@@ -139,7 +144,12 @@ def _auto_setup_on_worker_process_init(sender=None, **kwargs) -> None:
         config = get_o11y_config()
 
         if config.get("CELERY", {}).get("ENABLED", False):
-            setup_celery_o11y(sender, config)
+            app = sender
+            if app is None:
+                import celery as _celery
+
+                app = _celery.current_app
+            setup_celery_o11y(app, config)
     except Exception:  # pragma: no cover
         warnings.warn(
             "Failed to auto-setup django-o11y for Celery. "

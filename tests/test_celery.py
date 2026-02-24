@@ -163,7 +163,14 @@ def test_worker_init_skips_auto_setup_for_prefork(celery_app):
 
 
 def test_worker_process_init_runs_auto_setup_for_prefork(celery_app):
+    """worker_process_init fires with sender=None in real Celery prefork workers.
+
+    The handler must fall back to ``celery.current_app`` and pass a real app
+    instance to setup_celery_o11y instead of None.
+    """
     from unittest.mock import patch
+
+    import celery as _celery
 
     from django_o11y.celery.setup import _auto_setup_on_worker_process_init
 
@@ -171,8 +178,9 @@ def test_worker_process_init_runs_auto_setup_for_prefork(celery_app):
     with patch("django_o11y.celery.setup._is_celery_prefork_pool", return_value=True):
         with patch("django_o11y.celery.setup.get_o11y_config", return_value=config):
             with patch("django_o11y.celery.setup.setup_celery_o11y") as mock_setup:
-                _auto_setup_on_worker_process_init(sender=celery_app)
-                mock_setup.assert_called_once_with(celery_app, config)
+                # sender=None mirrors what celery/concurrency/prefork.py actually sends
+                _auto_setup_on_worker_process_init(sender=None)
+                mock_setup.assert_called_once_with(_celery.current_app, config)
 
 
 def test_celery_setup_configures_tracing_provider_when_enabled(celery_app):
