@@ -15,6 +15,65 @@ import pytest
 import requests
 
 
+def _query_tempo(trace_id: str, timeout: int = 30) -> dict:
+    """Poll Tempo until the trace appears or *timeout* seconds elapse."""
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        response = requests.get(
+            f"http://localhost:3200/api/traces/{trace_id}", timeout=5
+        )
+        if response.status_code == 200:
+            return response.json()
+        time.sleep(2)
+    return pytest.fail(f"Trace {trace_id} did not appear in Tempo within {timeout}s")
+
+
+_E2E_TRACING_CONFIG = {
+    "PROFILING": {"ENABLED": False},
+    "TRACING": {"OTLP_ENDPOINT": "http://localhost:4317", "SAMPLE_RATE": 1.0},
+}
+
+
+def _fresh_tracing_provider(service_name: str):
+    """Context manager: reset the global OTel provider, call setup_tracing(),
+    yield the provider, then restore the original provider on exit.
+
+    This allows integration tests to register a real OTLP exporter without
+    fighting the ``set_tracer_provider`` once-guard that was already tripped
+    during Django app initialisation.
+    """
+    import contextlib
+
+    import opentelemetry.trace as trace_module
+
+    from django_o11y.tracing.provider import setup_tracing
+
+    @contextlib.contextmanager
+    def _ctx():
+        original_provider = trace_module._TRACER_PROVIDER
+        original_done = trace_module._TRACER_PROVIDER_SET_ONCE._done
+        try:
+            trace_module._TRACER_PROVIDER_SET_ONCE._done = False
+            trace_module._TRACER_PROVIDER = None
+            config = {"SERVICE_NAME": service_name, **_E2E_TRACING_CONFIG}
+            yield setup_tracing(config)
+        finally:
+            trace_module._TRACER_PROVIDER_SET_ONCE._done = original_done
+            trace_module._TRACER_PROVIDER = original_provider
+
+    return _ctx()
+
+
+def _span_names(data: dict) -> list:
+    """Extract all span names from a Tempo trace response."""
+    return [
+        s["name"]
+        for b in data["batches"]
+        for ss in b.get("scopeSpans", [])
+        for s in ss["spans"]
+    ]
+
+
 @pytest.mark.integration
 class TestObservabilityStackE2E:
     """E2E tests that require the full observability stack."""
@@ -182,3 +241,58 @@ class TestObservabilityStackE2E:
 
         metrics_text = response.text
         assert "# HELP" in metrics_text or "# TYPE" in metrics_text
+
+    def test_trace_reaches_tempo(self, observability_stack):
+        """Emit a real span via django-o11y's setup_tracing() and verify it
+        lands in Tempo.
+
+        This exercises the full pipeline:
+        setup_tracing() → OTLPSpanExporter → Alloy → Tempo → query API.
+        """
+        import opentelemetry.trace as trace_module
+
+        with _fresh_tracing_provider("django-o11y-e2e-test") as provider:
+            tracer = trace_module.get_tracer("e2e-test")
+            with tracer.start_as_current_span("e2e-test-span") as span:
+                trace_id = format(span.get_span_context().trace_id, "032x")
+            provider.force_flush(timeout_millis=10_000)
+
+        data = _query_tempo(trace_id)
+        service_names = [
+            attr["value"]["stringValue"]
+            for b in data["batches"]
+            for attr in b["resource"]["attributes"]
+            if attr["key"] == "service.name"
+        ]
+        assert "django-o11y-e2e-test" in service_names
+        assert "e2e-test-span" in _span_names(data)
+
+    def test_celery_trace_reaches_tempo(self, observability_stack, celery_app):
+        """Emit a Celery task span via the test project's task and verify it
+        lands in Tempo under the same trace as the parent span.
+
+        ``celery_app`` runs with ``task_always_eager=True`` so no broker is
+        needed.  CeleryInstrumentor propagates the W3C traceparent from the
+        parent span into the task, producing a child span that should appear
+        alongside the parent in Tempo.
+        """
+        import opentelemetry.trace as trace_module
+        from opentelemetry.instrumentation.celery import CeleryInstrumentor
+
+        from tests.tasks import add
+
+        CeleryInstrumentor().uninstrument()
+        with _fresh_tracing_provider("django-o11y-celery-e2e-test") as provider:
+            CeleryInstrumentor().instrument()
+            tracer = trace_module.get_tracer("e2e-celery-test")
+            with tracer.start_as_current_span("celery-e2e-parent") as span:
+                trace_id = format(span.get_span_context().trace_id, "032x")
+                add.apply_async((1, 2))
+            provider.force_flush(timeout_millis=10_000)
+        CeleryInstrumentor().uninstrument()
+
+        data = _query_tempo(trace_id)
+        names = _span_names(data)
+        assert "celery-e2e-parent" in names
+        # CeleryInstrumentor names task execution spans "run/<task_name>"
+        assert "run/tests.add" in names
