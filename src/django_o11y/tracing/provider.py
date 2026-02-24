@@ -26,6 +26,13 @@ def _is_celery_fork_pool_worker() -> bool:
     return is_celery_fork_pool_worker()
 
 
+def _is_celery_prefork_boot(argv: list[str] | None = None) -> bool:
+    """Return True when current process is a celery prefork worker boot."""
+    from django_o11y.celery.detection import is_celery_prefork_pool
+
+    return is_celery_prefork_pool(argv)
+
+
 def setup_tracing(config: dict[str, Any]) -> TracerProvider:
     """
     Set up OpenTelemetry tracing.
@@ -82,12 +89,12 @@ def setup_tracing(config: dict[str, Any]) -> TracerProvider:
 
     profiling_config = config.get("PROFILING", {})
     if profiling_config.get("ENABLED"):
-        if _is_celery_fork_pool_worker():
+        if _is_celery_prefork_boot() or _is_celery_fork_pool_worker():
             # Disabled in Celery prefork workers due to known native instability.
             # Context: https://github.com/grafana/pyroscope-rs/issues/276
             logger.warning(
                 "Skipping Pyroscope profile-trace correlation in Celery prefork "
-                "worker; this avoids pyroscope-io fork instability"
+                "process; this avoids pyroscope-io fork instability"
             )
             return provider
 
