@@ -109,3 +109,31 @@ def test_config_banner_defaults():
 
     if "BANNER" in config:
         assert "ENABLED" in config["BANNER"]
+
+
+def test_env_vars_take_precedence_over_django_settings(monkeypatch):
+    """Env vars must win over DJANGO_O11Y settings dict."""
+    from django_o11y.conf import get_config
+
+    monkeypatch.setenv("OTEL_SERVICE_NAME", "from-env")
+    monkeypatch.setenv("DJANGO_O11Y_TRACING_ENABLED", "true")
+    monkeypatch.setenv("DJANGO_O11Y_LOGGING_LEVEL", "DEBUG")
+    monkeypatch.setenv("DJANGO_O11Y_CELERY_ENABLED", "true")
+    monkeypatch.setenv("DJANGO_O11Y_PROFILING_ENABLED", "true")
+
+    with override_settings(
+        DJANGO_O11Y={
+            "SERVICE_NAME": "from-settings",
+            "TRACING": {"ENABLED": False},
+            "LOGGING": {"LEVEL": "ERROR"},
+            "CELERY": {"ENABLED": False},
+            "PROFILING": {"ENABLED": False},
+        }
+    ):
+        config = get_config()
+
+    assert config["SERVICE_NAME"] == "from-env"
+    assert config["TRACING"]["ENABLED"] is True
+    assert config["LOGGING"]["LEVEL"] == "DEBUG"
+    assert config["CELERY"]["ENABLED"] is True
+    assert config["PROFILING"]["ENABLED"] is True

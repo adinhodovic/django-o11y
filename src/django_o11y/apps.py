@@ -1,6 +1,7 @@
 """Django app configuration for django-o11y."""
 
 import logging
+import os
 import sys
 from importlib.metadata import PackageNotFoundError, version
 
@@ -17,7 +18,20 @@ def _is_celery_prefork_worker_boot() -> bool:
     """
     args = sys.argv
 
-    if "celery" not in args or "worker" not in args:
+    if "worker" not in args:
+        return False
+
+    if not args:
+        return False
+
+    cmd = os.path.basename(args[0])
+    is_celery_command = cmd == "celery"
+    is_python_module_celery = any(
+        arg == "-m" and idx + 1 < len(args) and args[idx + 1] == "celery"
+        for idx, arg in enumerate(args)
+    )
+
+    if not (is_celery_command or is_python_module_celery):
         return False
 
     for idx, arg in enumerate(args):
@@ -131,7 +145,7 @@ class DjangoO11yConfig(AppConfig):
             try:
                 pkg_version = version("django-o11y")
             except PackageNotFoundError:
-                pkg_version = "0.2.4"
+                pkg_version = "0.2.5"
 
             banner = [
                 "",

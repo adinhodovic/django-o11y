@@ -43,6 +43,48 @@ def test_detects_celery_prefork_worker_boot_respects_pool_flag():
         apps_module.sys.argv = original_argv
 
 
+def test_detects_celery_prefork_worker_boot_with_absolute_celery_path():
+    import django_o11y.apps as apps_module
+    from django_o11y.apps import _is_celery_prefork_worker_boot
+
+    original_argv = apps_module.sys.argv
+    apps_module.sys.argv = ["/usr/local/bin/celery", "-A", "proj", "worker"]
+    try:
+        assert _is_celery_prefork_worker_boot() is True
+    finally:
+        apps_module.sys.argv = original_argv
+
+
+def test_detects_celery_prefork_worker_boot_with_absolute_path_pool_override():
+    import django_o11y.apps as apps_module
+    from django_o11y.apps import _is_celery_prefork_worker_boot
+
+    original_argv = apps_module.sys.argv
+    apps_module.sys.argv = [
+        "/usr/local/bin/celery",
+        "-A",
+        "proj",
+        "worker",
+        "--pool=solo",
+    ]
+    try:
+        assert _is_celery_prefork_worker_boot() is False
+    finally:
+        apps_module.sys.argv = original_argv
+
+
+def test_detects_celery_prefork_worker_boot_with_python_module_invocation():
+    import django_o11y.apps as apps_module
+    from django_o11y.apps import _is_celery_prefork_worker_boot
+
+    original_argv = apps_module.sys.argv
+    apps_module.sys.argv = ["/usr/bin/python3", "-m", "celery", "-A", "proj", "worker"]
+    try:
+        assert _is_celery_prefork_worker_boot() is True
+    finally:
+        apps_module.sys.argv = original_argv
+
+
 def test_app_ready_initializes_tracing():
     from opentelemetry import trace
 
