@@ -17,6 +17,32 @@ def test_app_config_default_auto_field():
     assert DjangoO11yConfig.default_auto_field == "django.db.models.BigAutoField"
 
 
+def test_detects_celery_prefork_worker_boot_default():
+    from django_o11y.apps import _is_celery_prefork_worker_boot
+
+    with override_settings():
+        import django_o11y.apps as apps_module
+
+        original_argv = apps_module.sys.argv
+        apps_module.sys.argv = ["celery", "-A", "proj", "worker"]
+        try:
+            assert _is_celery_prefork_worker_boot() is True
+        finally:
+            apps_module.sys.argv = original_argv
+
+
+def test_detects_celery_prefork_worker_boot_respects_pool_flag():
+    import django_o11y.apps as apps_module
+    from django_o11y.apps import _is_celery_prefork_worker_boot
+
+    original_argv = apps_module.sys.argv
+    apps_module.sys.argv = ["celery", "-A", "proj", "worker", "--pool=solo"]
+    try:
+        assert _is_celery_prefork_worker_boot() is False
+    finally:
+        apps_module.sys.argv = original_argv
+
+
 def test_app_ready_initializes_tracing():
     from opentelemetry import trace
 
