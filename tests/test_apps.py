@@ -18,11 +18,7 @@ def test_app_config_default_auto_field():
 
 
 def test_configure_tracing_calls_setup_and_registers_fork_handler():
-    """_configure_tracing always sets up the provider and registers the fork hook.
-
-    It must no longer skip or defer for Celery prefork; os.register_at_fork
-    handles child reinitialisation uniformly for all pre-fork servers.
-    """
+    """_configure_tracing sets up tracing in non-prefork processes."""
     from unittest.mock import patch
 
     from django_o11y.apps import DjangoO11yConfig
@@ -40,6 +36,9 @@ def test_configure_tracing_calls_setup_and_registers_fork_handler():
     app_config = DjangoO11yConfig("django_o11y", __import__("django_o11y"))
 
     with (
+        patch(
+            "django_o11y.celery.detection.is_celery_prefork_pool", return_value=False
+        ),
         patch("django_o11y.tracing.provider.setup_tracing") as mock_setup,
         patch("django_o11y.fork.register_post_fork_handler") as mock_fork,
     ):
@@ -47,6 +46,34 @@ def test_configure_tracing_calls_setup_and_registers_fork_handler():
 
     mock_setup.assert_called_once_with(config)
     mock_fork.assert_called_once()
+
+
+def test_configure_tracing_skips_in_celery_prefork_parent():
+    from unittest.mock import patch
+
+    from django_o11y.apps import DjangoO11yConfig
+
+    config = {
+        "TRACING": {"ENABLED": True, "OTLP_ENDPOINT": None, "CONSOLE_EXPORTER": False},
+        "PROFILING": {"ENABLED": False},
+        "SERVICE_NAME": "test",
+        "SERVICE_INSTANCE_ID": None,
+        "SERVICE_VERSION": "1.0",
+        "ENVIRONMENT": "test",
+        "RESOURCE_ATTRIBUTES": {},
+    }
+
+    app_config = DjangoO11yConfig("django_o11y", __import__("django_o11y"))
+
+    with (
+        patch("django_o11y.celery.detection.is_celery_prefork_pool", return_value=True),
+        patch("django_o11y.tracing.provider.setup_tracing") as mock_setup,
+        patch("django_o11y.fork.register_post_fork_handler") as mock_fork,
+    ):
+        app_config._configure_tracing(config)
+
+    mock_setup.assert_not_called()
+    mock_fork.assert_not_called()
 
 
 def test_configure_tracing_skips_when_disabled():

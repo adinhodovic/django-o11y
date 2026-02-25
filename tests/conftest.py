@@ -6,10 +6,6 @@ import time
 import pytest
 from click.testing import CliRunner
 
-# ---------------------------------------------------------------------------
-# Integration fixture: full observability stack via Docker Compose
-# ---------------------------------------------------------------------------
-
 # Ports that must all be open before integration tests run.
 # Alloy (:4317) is listed last because it depends_on all other services.
 _STACK_PORTS = [

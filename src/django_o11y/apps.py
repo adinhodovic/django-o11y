@@ -45,6 +45,9 @@ class DjangoO11yConfig(AppConfig):
         self._configure_instrumentation_and_metrics(config)
         self._configure_profiling(config)
 
+        if config.get("CELERY", {}).get("ENABLED", False):
+            self._configure_celery_worker_logging()
+
         try:
             if settings.DEBUG:
                 self._print_startup_banner(config)
@@ -52,10 +55,22 @@ class DjangoO11yConfig(AppConfig):
             pass
 
     def _configure_tracing(self, config: dict) -> None:
+        from django_o11y.celery.detection import is_celery_prefork_pool
         from django_o11y.tracing.provider import setup_tracing
 
         if not config["TRACING"]["ENABLED"]:
             logger.info("Tracing disabled")
+            return
+
+        # Celery prefork workers fork child processes after Django app startup.
+        # Initializing the tracer provider (and its background exporter threads)
+        # in the parent process can cause instability in forked children.
+        # Children initialize tracing via worker_process_init in celery setup.
+        if is_celery_prefork_pool():
+            logger.info(
+                "Skipping tracing setup in Celery prefork parent; "
+                "child workers initialize tracing post-fork"
+            )
             return
 
         setup_tracing(config)
@@ -78,6 +93,16 @@ class DjangoO11yConfig(AppConfig):
                 "Metrics enabled at %s", metrics.get("PROMETHEUS_ENDPOINT", "/metrics")
             )
 
+    def _configure_celery_worker_logging(self) -> None:
+        """Register Celery logging hook early during Django startup."""
+        try:
+            from django_o11y.celery.setup import register_early_celery_logging_hook
+
+            register_early_celery_logging_hook()
+
+        except ImportError:
+            pass  # Celery not installed — nothing to do
+
     def _configure_profiling(self, config: dict) -> None:
         from django_o11y.profiling import setup_profiling
 
@@ -93,7 +118,7 @@ class DjangoO11yConfig(AppConfig):
             try:
                 pkg_version = version("django-o11y")
             except PackageNotFoundError:
-                pkg_version = "0.2.11"
+                pkg_version = "0.2.12"
 
             banner = [
                 "",

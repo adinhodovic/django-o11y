@@ -4,12 +4,35 @@ datasources:
   - name: Prometheus
     type: prometheus
     access: proxy
+    uid: prometheus
     url: http://prometheus:9090
     isDefault: true
     jsonData:
       exemplarTraceIdDestinations:
         - name: trace_id
           datasourceUid: tempo
+
+  - name: Loki
+    type: loki
+    access: proxy
+    uid: loki
+    url: http://loki:3100
+    jsonData:
+      derivedFields:
+        - name: trace
+          datasourceUid: tempo
+          matcherRegex: '"?(?:trace_id|traceID)"?\s*[:=]\s*"?([a-fA-F0-9]+)"?'
+          url: "$${__value.raw}"
+          urlDisplayLabel: View Trace
+
+  - name: Pyroscope
+    type: grafana-pyroscope-datasource
+    access: proxy
+    uid: pyroscope
+    url: http://pyroscope:4040
+    jsonData:
+      minStep: 15s
+      backendType: pyroscope
 
   - name: Tempo
     type: tempo
@@ -30,21 +53,3 @@ datasources:
         datasourceUid: prometheus
       nodeGraph:
         enabled: true
-
-  - name: Loki
-    type: loki
-    access: proxy
-    url: http://loki:3100
-    jsonData:
-      derivedFields:
-        - name: trace
-          datasourceUid: tempo
-          matcherRegex: '"?(?:trace_id|traceID)"?\s*[:=]\s*"?([a-fA-F0-9]+)"?'
-          url: "$${__value.raw}"
-          urlDisplayLabel: View Trace
-
-  - name: Pyroscope
-    type: grafana-pyroscope-datasource
-    access: proxy
-    uid: pyroscope
-    url: http://pyroscope:4040

@@ -1,6 +1,7 @@
 """OpenTelemetry tracing provider setup."""
 
 import logging
+import multiprocessing
 import os
 import socket
 from typing import Any
@@ -15,8 +16,17 @@ from opentelemetry.sdk.resources import (
 )
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+from opentelemetry.sdk.trace.sampling import ParentBased, TraceIdRatioBased
 
 logger = logging.getLogger("django_o11y.tracing")
+
+
+def _process_identity() -> str:
+    """Return process identity details for startup diagnostics."""
+    return (
+        f"pid={os.getpid()} ppid={os.getppid()} "
+        f"process={multiprocessing.current_process().name}"
+    )
 
 
 def _is_celery_fork_pool_worker() -> bool:
@@ -67,7 +77,9 @@ def setup_tracing(config: dict[str, Any]) -> TracerProvider:
         resource_attrs.update(custom_attrs)
 
     resource = Resource(attributes=resource_attrs)
-    provider = TracerProvider(resource=resource)
+    sample_rate = tracing_config.get("SAMPLE_RATE", 1.0)
+    sampler = ParentBased(root=TraceIdRatioBased(sample_rate))
+    provider = TracerProvider(resource=resource, sampler=sampler)
 
     if tracing_config["OTLP_ENDPOINT"]:
         otlp_exporter = OTLPSpanExporter(
@@ -81,10 +93,11 @@ def setup_tracing(config: dict[str, Any]) -> TracerProvider:
 
     trace.set_tracer_provider(provider)
     logger.info(
-        "Tracing configured for %s, sending to %s (%.0f%% sampling)",
+        "Tracing configured for %s, sending to %s (%.0f%% sampling) [%s]",
         service_name,
         tracing_config["OTLP_ENDPOINT"],
         tracing_config.get("SAMPLE_RATE", 1.0) * 100,
+        _process_identity(),
     )
 
     profiling_config = config.get("PROFILING", {})
@@ -94,7 +107,8 @@ def setup_tracing(config: dict[str, Any]) -> TracerProvider:
             # Context: https://github.com/grafana/pyroscope-rs/issues/276
             logger.warning(
                 "Skipping Pyroscope profile-trace correlation in Celery prefork "
-                "process; this avoids pyroscope-io fork instability"
+                "process; this avoids pyroscope-io fork instability [%s]",
+                _process_identity(),
             )
             return provider
 

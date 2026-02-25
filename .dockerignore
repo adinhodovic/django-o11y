@@ -1,0 +1,36 @@
+# Python
+.venv
+.tox
+__pycache__
+*.py[cod]
+*.egg-info
+dist
+build
+
+# Test / coverage artifacts
+.pytest_cache
+.coverage
+coverage.xml
+coverage.json
+htmlcov
+
+# Type checking / linting caches
+.mypy_cache
+.ruff_cache
+
+# Docs
+site
+docs
+
+# Dev data
+*.sqlite3
+/tmp
+
+# Git / CI
+.git
+.github
+
+# Beads issue tracking
+.beads
+beads
+beads_django-o11y
