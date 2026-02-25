@@ -34,7 +34,7 @@ def get_urls() -> list:
     from django.urls import path
     from django_prometheus import exports
 
-    from django_o11y.conf import get_config
+    from django_o11y.config.setup import get_config
 
     config = get_config()
     metrics = config.get("METRICS", {})

@@ -4,7 +4,7 @@ from django.test import override_settings
 
 
 def test_get_o11y_config_returns_config():
-    from django_o11y.conf import get_o11y_config
+    from django_o11y.config.setup import get_o11y_config
 
     config = get_o11y_config()
 
@@ -16,7 +16,7 @@ def test_get_o11y_config_returns_config():
 
 
 def test_get_o11y_config_caches():
-    from django_o11y.conf import get_o11y_config
+    from django_o11y.config.setup import get_o11y_config
 
     config1 = get_o11y_config()
     config2 = get_o11y_config()
@@ -25,7 +25,7 @@ def test_get_o11y_config_caches():
 
 
 def test_config_has_default_service_name():
-    from django_o11y.conf import get_o11y_config
+    from django_o11y.config.setup import get_o11y_config
 
     config = get_o11y_config()
 
@@ -34,7 +34,7 @@ def test_config_has_default_service_name():
 
 
 def test_config_tracing_defaults():
-    from django_o11y.conf import get_o11y_config
+    from django_o11y.config.setup import get_o11y_config
 
     config = get_o11y_config()
 
@@ -46,7 +46,7 @@ def test_config_tracing_defaults():
 
 @override_settings(DEBUG=False, DJANGO_O11Y={})
 def test_config_tracing_sample_rate_default_non_debug(monkeypatch):
-    from django_o11y.conf import get_config
+    from django_o11y.config.setup import get_config
 
     monkeypatch.delenv("OTEL_TRACES_SAMPLER_ARG", raising=False)
     config = get_config()
@@ -56,7 +56,7 @@ def test_config_tracing_sample_rate_default_non_debug(monkeypatch):
 
 @override_settings(DEBUG=True, DJANGO_O11Y={})
 def test_config_tracing_sample_rate_default_debug(monkeypatch):
-    from django_o11y.conf import get_config
+    from django_o11y.config.setup import get_config
 
     monkeypatch.delenv("OTEL_TRACES_SAMPLER_ARG", raising=False)
     config = get_config()
@@ -65,7 +65,7 @@ def test_config_tracing_sample_rate_default_debug(monkeypatch):
 
 
 def test_config_logging_defaults():
-    from django_o11y.conf import get_o11y_config
+    from django_o11y.config.setup import get_o11y_config
 
     config = get_o11y_config()
 
@@ -75,7 +75,7 @@ def test_config_logging_defaults():
 
 
 def test_config_metrics_defaults():
-    from django_o11y.conf import get_o11y_config
+    from django_o11y.config.setup import get_o11y_config
 
     config = get_o11y_config()
 
@@ -85,7 +85,7 @@ def test_config_metrics_defaults():
 
 
 def test_config_celery_defaults():
-    from django_o11y.conf import get_o11y_config
+    from django_o11y.config.setup import get_o11y_config
 
     config = get_o11y_config()
 
@@ -94,7 +94,7 @@ def test_config_celery_defaults():
 
 
 def test_config_profiling_defaults():
-    from django_o11y.conf import get_o11y_config
+    from django_o11y.config.setup import get_o11y_config
 
     config = get_o11y_config()
 
@@ -103,7 +103,7 @@ def test_config_profiling_defaults():
 
 
 def test_config_banner_defaults():
-    from django_o11y.conf import get_o11y_config
+    from django_o11y.config.setup import get_o11y_config
 
     config = get_o11y_config()
 
@@ -113,7 +113,7 @@ def test_config_banner_defaults():
 
 def test_env_vars_take_precedence_over_django_settings(monkeypatch):
     """Env vars must win over DJANGO_O11Y settings dict."""
-    from django_o11y.conf import get_config
+    from django_o11y.config.setup import get_config
 
     monkeypatch.setenv("OTEL_SERVICE_NAME", "from-env")
     monkeypatch.setenv("DJANGO_O11Y_TRACING_ENABLED", "true")

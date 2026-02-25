@@ -27,8 +27,9 @@ uv sync --all-extras
 django-o11y/
 ├── src/django_o11y/        # Main package
 │   ├── apps.py                      # Django app config
-│   ├── conf.py                      # Configuration management
-│   ├── context.py                   # Custom tags helper
+│   ├── config/setup.py              # Configuration management
+│   ├── logging/utils.py             # Logging helper utilities
+│   ├── tracing/utils.py             # Trace context helper utilities
 │   ├── middleware/                  # Tracing, Logging, Correlation middleware
 │   ├── tracing/                     # OpenTelemetry tracing
 │   ├── logging/                     # Structured logging

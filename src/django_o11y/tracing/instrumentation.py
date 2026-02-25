@@ -1,26 +1,10 @@
-"""Auto-instrumentation setup for django-o11y."""
+"""Auto-instrumentation setup for tracing-related libraries."""
 
 from typing import Any
 
 
 def setup_instrumentation(config: dict[str, Any]) -> None:
-    """
-    Set up automatic instrumentation for Django and related libraries.
-
-    This function instruments:
-    - Django (requests, middleware, templates, database)
-    - Psycopg2 (PostgreSQL, legacy driver)
-    - Psycopg (PostgreSQL, v3 driver)
-    - Redis
-    - Celery (producer-side, so traceparent headers are injected into tasks)
-    - Requests library
-    - urllib / urllib3
-    - httpx
-    - boto3/botocore (opt-in via TRACING.AWS_ENABLED)
-
-    Args:
-        config: Configuration dictionary from get_o11y_config()
-    """
+    """Set up automatic tracing instrumentation for Django and dependencies."""
     from opentelemetry.instrumentation.django import DjangoInstrumentor
 
     DjangoInstrumentor().instrument()
@@ -31,42 +15,29 @@ def setup_instrumentation(config: dict[str, Any]) -> None:
 
 
 def _instrument_database() -> None:
-    """Instrument database connections."""
     try:
         from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
 
         Psycopg2Instrumentor().instrument(enable_commenter=True)
     except ImportError:
-        pass  # psycopg2 not installed
+        pass
 
     try:
         from opentelemetry.instrumentation.psycopg import PsycopgInstrumentor
 
         PsycopgInstrumentor().instrument(skip_dep_check=True, enable_commenter=True)
     except ImportError:
-        pass  # psycopg (v3) not installed
+        pass
 
     try:
         from opentelemetry.instrumentation.pymysql import PyMySQLInstrumentor
 
         PyMySQLInstrumentor().instrument()
     except ImportError:
-        pass  # pymysql not installed
+        pass
 
 
 def _instrument_celery(config: dict[str, Any]) -> None:
-    """Instrument Celery on the producer side.
-
-    CeleryInstrumentor must be active in the process that calls
-    ``.delay()`` / ``.apply_async()`` so that it injects W3C ``traceparent``
-    headers into the task message.  Without this the worker receives tasks
-    with no parent context and each task span becomes a new root trace.
-
-    The worker side is instrumented separately by
-    ``django_o11y.celery.setup._setup_celery_tracing``.  Calling
-    ``CeleryInstrumentor().instrument()`` a second time in the same process
-    is a no-op (the SDK guards against double-instrumentation).
-    """
     if not config.get("CELERY", {}).get("ENABLED", False):
         return
 
@@ -75,48 +46,46 @@ def _instrument_celery(config: dict[str, Any]) -> None:
 
         CeleryInstrumentor().instrument()
     except ImportError:
-        pass  # opentelemetry-instrumentation-celery not installed
+        pass
 
 
 def _instrument_cache() -> None:
-    """Instrument cache backends."""
     try:
         from opentelemetry.instrumentation.redis import RedisInstrumentor
 
         RedisInstrumentor().instrument()
     except ImportError:
-        pass  # redis not installed
+        pass
 
 
 def _instrument_http_clients(config: dict[str, Any]) -> None:
-    """Instrument HTTP client libraries."""
     try:
         from opentelemetry.instrumentation.requests import RequestsInstrumentor
 
         RequestsInstrumentor().instrument()
     except ImportError:
-        pass  # requests not installed
+        pass
 
     try:
         from opentelemetry.instrumentation.urllib3 import URLLib3Instrumentor
 
         URLLib3Instrumentor().instrument()
     except ImportError:
-        pass  # urllib3 not installed
+        pass
 
     try:
         from opentelemetry.instrumentation.urllib import URLLibInstrumentor
 
         URLLibInstrumentor().instrument()
     except ImportError:
-        pass  # opentelemetry-instrumentation-urllib not installed
+        pass
 
     try:
         from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 
         HTTPXClientInstrumentor().instrument()
     except ImportError:
-        pass  # httpx not installed
+        pass
 
     if config.get("TRACING", {}).get("AWS_ENABLED", False):
         try:
@@ -124,4 +93,4 @@ def _instrument_http_clients(config: dict[str, Any]) -> None:
 
             BotocoreInstrumentor().instrument()
         except ImportError:
-            pass  # opentelemetry-instrumentation-botocore not installed
+            pass

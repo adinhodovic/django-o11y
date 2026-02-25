@@ -13,7 +13,7 @@ def test_config_loaded():
 
 
 def test_get_o11y_config():
-    from django_o11y.conf import get_o11y_config
+    from django_o11y.config.setup import get_o11y_config
 
     config = get_o11y_config()
 
@@ -25,7 +25,7 @@ def test_get_o11y_config():
 
 
 def test_config_defaults():
-    from django_o11y.conf import get_o11y_config
+    from django_o11y.config.setup import get_o11y_config
 
     config = get_o11y_config()
     expected_sample_rate = 1.0 if settings.DEBUG else 0.01
@@ -36,7 +36,7 @@ def test_config_defaults():
 
 
 def test_build_logging_dict_json_format():
-    from django_o11y.logging.config import build_logging_dict
+    from django_o11y.logging.setup import build_logging_dict
 
     logging_config = {
         "FORMAT": "json",
@@ -54,7 +54,7 @@ def test_build_logging_dict_json_format():
 
 
 def test_build_logging_dict_with_otlp_enabled():
-    from django_o11y.logging.config import build_logging_dict
+    from django_o11y.logging.setup import build_logging_dict
 
     logging_config = {
         "FORMAT": "console",
@@ -68,8 +68,8 @@ def test_build_logging_dict_with_otlp_enabled():
     }
 
     with (
-        patch("django_o11y.logging.otlp_handler.OTLPLogExporter"),
-        patch("django_o11y.logging.otlp_handler.set_logger_provider"),
+        patch("django_o11y.logging.utils.OTLPLogExporter"),
+        patch("django_o11y.logging.utils.set_logger_provider"),
     ):
         result = build_logging_dict(logging_config)
         assert "otlp" in result["handlers"]
@@ -82,7 +82,7 @@ def test_add_open_telemetry_spans_with_parent():
         InMemorySpanExporter,
     )
 
-    from django_o11y.logging.processors import add_open_telemetry_spans
+    from django_o11y.logging.utils import add_open_telemetry_spans
 
     provider = TracerProvider()
     provider.add_span_processor(SimpleSpanProcessor(InMemorySpanExporter()))
@@ -106,7 +106,7 @@ def test_build_logging_dict_rich_exceptions_disabled():
     whether we *explicitly* inject it; with False we leave the choice to
     structlog.  We just assert the call succeeds and returns a renderer.
     """
-    from django_o11y.logging.config import build_logging_dict
+    from django_o11y.logging.setup import build_logging_dict
 
     logging_config = {
         "FORMAT": "console",
@@ -128,7 +128,7 @@ def test_build_logging_dict_rich_exceptions_disabled():
 
 def test_build_logging_dict_rich_exceptions_enabled_without_rich():
     """RICH_EXCEPTIONS=True with Rich absent falls back silently to plain renderer."""
-    from django_o11y.logging.config import build_logging_dict
+    from django_o11y.logging.setup import build_logging_dict
 
     logging_config = {
         "FORMAT": "console",
@@ -153,7 +153,7 @@ def test_build_logging_dict_rich_exceptions_enabled_without_rich():
 
 def test_build_logging_dict_rich_exceptions_enabled_with_rich():
     """RICH_EXCEPTIONS=True with Rich present injects RichTracebackFormatter."""
-    from django_o11y.logging.config import build_logging_dict
+    from django_o11y.logging.setup import build_logging_dict
 
     logging_config = {
         "FORMAT": "console",

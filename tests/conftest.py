@@ -149,7 +149,7 @@ def django_user_request(rf):
 @pytest.fixture(autouse=True)
 def reset_o11y_cache():
     """Reset the lru_cache on get_o11y_config for each test."""
-    from django_o11y.conf import get_o11y_config
+    from django_o11y.config.setup import get_o11y_config
 
     get_o11y_config.cache_clear()
     yield

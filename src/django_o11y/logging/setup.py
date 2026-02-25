@@ -1,14 +1,4 @@
-"""
-Structlog configuration for Django Observability.
-
-Based on the blog post: https://hodovi.cc/blog/django-development-and-production-logging/
-
-Usage in settings.py:
-
-    from django_o11y.logging.config import build_logging_dict
-
-    LOGGING = build_logging_dict()
-"""
+"""Logging setup and Celery logging signal integration."""
 
 import sys
 from pathlib import Path
@@ -16,33 +6,18 @@ from typing import Any
 
 import structlog
 
-from django_o11y.logging.processors import add_open_telemetry_spans
+from django_o11y.logging.utils import OTLPHandler, add_open_telemetry_spans, get_logger
+
+logger = get_logger()
 
 
 def build_logging_dict(
     logging_config: dict[str, Any] | None = None,
     extra: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """
-    Build and return a Django-compatible LOGGING dict wired up for structlog.
-
-    Call this in settings.py and assign the result to LOGGING.
-
-    Args:
-        logging_config: The LOGGING sub-dict from DJANGO_O11Y config. When
-            omitted the defaults from conf.get_config() are used, which means
-            the function can be called with no arguments in settings.py before
-            DJANGO_O11Y is defined.
-        extra: A partial LOGGING dict to deep-merge into the result, letting
-            you add or override loggers/handlers without rewriting the whole
-            config. For example::
-
-                LOGGING = build_logging_dict(extra={
-                    "loggers": {"myapp": {"level": "DEBUG"}},
-                })
-    """
+    """Build and return a Django-compatible LOGGING dict wired for structlog."""
     if logging_config is None:
-        from django_o11y.conf import get_config
+        from django_o11y.config.setup import get_config
 
         logging_config = get_config()["LOGGING"]
 
@@ -61,7 +36,7 @@ def build_logging_dict(
                     structlog.dev.RichTracebackFormatter()
                 )
             except ImportError:
-                pass  # Rich not installed — silently skip
+                pass
 
         default_formatter: dict[str, Any] = {
             "()": structlog.stdlib.ProcessorFormatter,
@@ -90,8 +65,6 @@ def build_logging_dict(
     }
 
     if cfg.get("OTLP_ENABLED", False):
-        from django_o11y.logging.otlp_handler import OTLPHandler
-
         handlers["otlp"] = {
             "()": OTLPHandler,
             "endpoint": cfg["OTLP_ENDPOINT"],
@@ -100,7 +73,6 @@ def build_logging_dict(
     if cfg.get("FILE_ENABLED", False):
         log_path = Path(cfg["FILE_PATH"])
         log_path.parent.mkdir(parents=True, exist_ok=True)
-        # Always write JSON to the file so Alloy can parse it regardless of FORMAT
         handlers["file"] = {
             "class": "logging.FileHandler",
             "formatter": "json",
@@ -144,7 +116,6 @@ def build_logging_dict(
             "django.db.backends": {
                 "level": cfg["DATABASE_LEVEL"],
             },
-            # Suppress built-in access logs — django-structlog middleware handles these
             "django.server": {
                 "handlers": ["null"],
                 "propagate": False,
@@ -157,12 +128,9 @@ def build_logging_dict(
                 "handlers": ["null"],
                 "propagate": False,
             },
-            # Silence debug logging in interactive shell mode
-            # https://github.com/ipython/ipython/issues/10946#issuecomment-568336466
             "parso": {
                 "level": cfg.get("PARSO_LEVEL", "WARNING"),
             },
-            # Boto logs
             "botocore": {
                 "level": cfg.get("AWS_LEVEL", "WARNING"),
             },
@@ -172,16 +140,12 @@ def build_logging_dict(
             "s3transfer": {
                 "level": cfg.get("AWS_LEVEL", "WARNING"),
             },
-            # Celery's built-in task lifecycle lines ("Task x received", "succeeded in")
-            # duplicate the structured events from django-structlog's CeleryReceiver.
             "celery.app.trace": {
                 "level": "WARNING",
             },
             "celery.worker.strategy": {
                 "level": "WARNING",
             },
-            # Level set explicitly — werkzeug attaches its own ColorStreamHandler
-            # at import time if the logger level is NOTSET
             "werkzeug": {
                 "handlers": ["null"],
                 "level": "WARNING",
@@ -194,6 +158,21 @@ def build_logging_dict(
         _deep_merge(result, extra)
 
     return result
+
+
+def setup_logging_for_django(config: dict) -> None:
+    """Configure logging during Django startup."""
+    if config.get("CELERY", {}).get("ENABLED", False):
+        try:
+            import django_o11y.logging.signals  # noqa: F401
+        except ImportError:
+            logger.warning(
+                "CELERY.ENABLED is true but Celery is not installed. "
+                "Install with: pip install django-o11y[celery]"
+            )
+
+    fmt = config.get("LOGGING", {}).get("FORMAT", "console")
+    logger.info("Logging configured, format=%s", fmt)
 
 
 def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> None:
@@ -231,6 +210,6 @@ def _configure_structlog(logging_config: dict[str, Any]) -> None:
 
     structlog.configure(
         processors=base_processors
-        + [structlog.stdlib.ProcessorFormatter.wrap_for_formatter],  # type: ignore[arg-type]
+        + [structlog.stdlib.ProcessorFormatter.wrap_for_formatter],
         logger_factory=structlog.stdlib.LoggerFactory(),
     )

@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 
 def test_setup_instrumentation_instruments_django():
-    from django_o11y.instrumentation.setup import setup_instrumentation
+    from django_o11y.tracing.instrumentation import setup_instrumentation
 
     config = {"SERVICE_NAME": "test"}
 
@@ -16,10 +16,10 @@ def test_setup_instrumentation_instruments_django():
         patch.dict(
             "sys.modules", {"opentelemetry.instrumentation.django": mock_django_module}
         ),
-        patch("django_o11y.instrumentation.setup._instrument_database"),
-        patch("django_o11y.instrumentation.setup._instrument_cache"),
-        patch("django_o11y.instrumentation.setup._instrument_celery"),
-        patch("django_o11y.instrumentation.setup._instrument_http_clients"),
+        patch("django_o11y.tracing.instrumentation._instrument_database"),
+        patch("django_o11y.tracing.instrumentation._instrument_cache"),
+        patch("django_o11y.tracing.instrumentation._instrument_celery"),
+        patch("django_o11y.tracing.instrumentation._instrument_http_clients"),
     ):
         setup_instrumentation(config)
 
@@ -27,14 +27,14 @@ def test_setup_instrumentation_instruments_django():
 
 
 def test_instrument_database_handles_import_error():
-    from django_o11y.instrumentation.setup import _instrument_database
+    from django_o11y.tracing.instrumentation import _instrument_database
 
     with patch("builtins.__import__", side_effect=ImportError("psycopg2 not found")):
         _instrument_database()
 
 
 def test_instrument_cache_redis():
-    from django_o11y.instrumentation.setup import _instrument_cache
+    from django_o11y.tracing.instrumentation import _instrument_cache
 
     with patch(
         "opentelemetry.instrumentation.redis.RedisInstrumentor"
@@ -48,14 +48,14 @@ def test_instrument_cache_redis():
 
 
 def test_instrument_cache_handles_import_error():
-    from django_o11y.instrumentation.setup import _instrument_cache
+    from django_o11y.tracing.instrumentation import _instrument_cache
 
     with patch("builtins.__import__", side_effect=ImportError("redis not found")):
         _instrument_cache()
 
 
 def test_instrument_http_clients_requests():
-    from django_o11y.instrumentation.setup import _instrument_http_clients
+    from django_o11y.tracing.instrumentation import _instrument_http_clients
 
     mock_inst = MagicMock()
     mock_requests_module = MagicMock()
@@ -74,14 +74,14 @@ def test_instrument_http_clients_requests():
 
 
 def test_instrument_http_clients_handles_import_error():
-    from django_o11y.instrumentation.setup import _instrument_http_clients
+    from django_o11y.tracing.instrumentation import _instrument_http_clients
 
     with patch("builtins.__import__", side_effect=ImportError("requests not found")):
         _instrument_http_clients({})
 
 
 def test_instrument_http_clients_urllib3():
-    from django_o11y.instrumentation.setup import _instrument_http_clients
+    from django_o11y.tracing.instrumentation import _instrument_http_clients
 
     mock_requests_inst = MagicMock()
     mock_urllib3_inst = MagicMock()
@@ -109,7 +109,7 @@ def test_instrument_celery_when_enabled():
     headers into task messages so the worker can continue the trace rather
     than starting a new root span.
     """
-    from django_o11y.instrumentation.setup import _instrument_celery
+    from django_o11y.tracing.instrumentation import _instrument_celery
 
     mock_inst = MagicMock()
     mock_celery_module = MagicMock()
@@ -126,7 +126,7 @@ def test_instrument_celery_when_enabled():
 
 def test_instrument_celery_skipped_when_disabled():
     """CeleryInstrumentor is not called when CELERY.ENABLED is False."""
-    from django_o11y.instrumentation.setup import _instrument_celery
+    from django_o11y.tracing.instrumentation import _instrument_celery
 
     mock_inst = MagicMock()
     mock_celery_module = MagicMock()
@@ -144,7 +144,7 @@ def test_instrument_celery_skipped_when_disabled():
 
 def test_instrument_celery_handles_import_error():
     """Missing opentelemetry-instrumentation-celery is silently ignored."""
-    from django_o11y.instrumentation.setup import _instrument_celery
+    from django_o11y.tracing.instrumentation import _instrument_celery
 
     with patch("builtins.__import__", side_effect=ImportError("celery not found")):
         _instrument_celery({"CELERY": {"ENABLED": True}})
