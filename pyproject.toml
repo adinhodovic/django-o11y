@@ -122,7 +122,7 @@ Repository = "https://github.com/adinhodovic/django-o11y"
 Issues = "https://github.com/adinhodovic/django-o11y/issues"
 
 [tool.pytest.ini_options]
-addopts = "--ds=tests.settings --reuse-db"
+addopts = "--ds=tests.config.settings.test --reuse-db"
 python_files = "tests.py test_*.py"
 norecursedirs = ".git */migrations/* */static/* venv .venv .virtualenv node_modules .tox"
 markers = [
@@ -168,7 +168,7 @@ plugins = ["mypy_django_plugin.main"]
 exclude = [".venv", "migrations.*", "examples"]
 
 [tool.django-stubs]
-django_settings_module = "tests.settings"
+django_settings_module = "tests.config.settings.test"
 
 [tool.pylint.'MASTER']
 load-plugins = "pylint_django"
