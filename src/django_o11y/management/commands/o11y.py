@@ -297,7 +297,7 @@ def _get_broker_url() -> str | None:
 def _is_celery_enabled() -> bool:
     """Check if Celery is enabled in django-o11y settings."""
     try:
-        from django_o11y.conf import get_o11y_config
+        from django_o11y.config.setup import get_o11y_config
 
         config = get_o11y_config()
         return bool(config.get("CELERY", {}).get("ENABLED"))
@@ -478,7 +478,7 @@ def _check_configuration():
     ok, warn, err = 0, 0, 0
 
     try:
-        from django_o11y.conf import get_o11y_config
+        from django_o11y.config.setup import get_o11y_config
 
         config = get_o11y_config()
 
@@ -521,7 +521,7 @@ def _check_otlp_endpoint():
     ok, warn, err = 0, 0, 0
 
     try:
-        from django_o11y.conf import get_o11y_config
+        from django_o11y.config.setup import get_o11y_config
 
         config = get_o11y_config()
 
@@ -571,7 +571,7 @@ def _check_metrics_endpoint():
     ok, warn, err = 0, 0, 0
 
     try:
-        from django_o11y.conf import get_o11y_config
+        from django_o11y.config.setup import get_o11y_config
 
         config = get_o11y_config()
         metrics_config = config.get("METRICS", {})
@@ -676,7 +676,7 @@ def _test_trace():
                 click.echo(f"     Span ID: {span_id}")
                 ok += 1
 
-                from django_o11y.conf import get_o11y_config
+                from django_o11y.config.setup import get_o11y_config
 
                 config = get_o11y_config()
                 endpoint = config.get("TRACING", {}).get("OTLP_ENDPOINT", "")

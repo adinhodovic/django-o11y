@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 def test_register_post_fork_handler_idempotent():
     """register_post_fork_handler only calls os.register_at_fork once."""
-    import django_o11y.fork as fork_module
+    import django_o11y.tracing.fork as fork_module
 
     original = fork_module._fork_handler_registered
     fork_module._fork_handler_registered = False
@@ -24,7 +24,7 @@ def test_register_post_fork_handler_idempotent():
 
 def test_register_post_fork_handler_passes_correct_hook():
     """register_post_fork_handler wires _reinit_after_fork as after_in_child."""
-    import django_o11y.fork as fork_module
+    import django_o11y.tracing.fork as fork_module
 
     original = fork_module._fork_handler_registered
     fork_module._fork_handler_registered = False
@@ -47,13 +47,13 @@ def test_reinit_after_fork_shuts_down_and_reinitialises(mock_config):
     mock_provider = MagicMock()
 
     with (
-        patch("django_o11y.fork.get_o11y_config", return_value=mock_config),
-        patch("django_o11y.fork.trace") as mock_trace,
-        patch("django_o11y.fork.setup_tracing") as mock_setup,
+        patch("django_o11y.tracing.fork.get_o11y_config", return_value=mock_config),
+        patch("django_o11y.tracing.fork.trace") as mock_trace,
+        patch("django_o11y.tracing.setup.setup_tracing") as mock_setup,
     ):
         mock_trace.get_tracer_provider.return_value = mock_provider
 
-        from django_o11y.fork import _reinit_after_fork
+        from django_o11y.tracing.fork import _reinit_after_fork
 
         _reinit_after_fork()
 
@@ -66,10 +66,10 @@ def test_reinit_after_fork_skips_when_tracing_disabled(mock_config):
     mock_config["TRACING"]["ENABLED"] = False
 
     with (
-        patch("django_o11y.fork.get_o11y_config", return_value=mock_config),
-        patch("django_o11y.fork.setup_tracing") as mock_setup,
+        patch("django_o11y.tracing.fork.get_o11y_config", return_value=mock_config),
+        patch("django_o11y.tracing.setup.setup_tracing") as mock_setup,
     ):
-        from django_o11y.fork import _reinit_after_fork
+        from django_o11y.tracing.fork import _reinit_after_fork
 
         _reinit_after_fork()
 
@@ -84,13 +84,13 @@ def test_reinit_after_fork_handles_shutdown_exception(mock_config):
     mock_provider.shutdown.side_effect = RuntimeError("broken channel")
 
     with (
-        patch("django_o11y.fork.get_o11y_config", return_value=mock_config),
-        patch("django_o11y.fork.trace") as mock_trace,
-        patch("django_o11y.fork.setup_tracing") as mock_setup,
+        patch("django_o11y.tracing.fork.get_o11y_config", return_value=mock_config),
+        patch("django_o11y.tracing.fork.trace") as mock_trace,
+        patch("django_o11y.tracing.setup.setup_tracing") as mock_setup,
     ):
         mock_trace.get_tracer_provider.return_value = mock_provider
 
-        from django_o11y.fork import _reinit_after_fork
+        from django_o11y.tracing.fork import _reinit_after_fork
 
         # Must not raise
         _reinit_after_fork()
@@ -103,10 +103,11 @@ def test_reinit_after_fork_handles_top_level_exception():
     """_reinit_after_fork swallows all exceptions so the worker boots cleanly."""
     with (
         patch(
-            "django_o11y.fork.get_o11y_config", side_effect=RuntimeError("config boom")
+            "django_o11y.tracing.fork.get_o11y_config",
+            side_effect=RuntimeError("config boom"),
         ),
     ):
-        from django_o11y.fork import _reinit_after_fork
+        from django_o11y.tracing.fork import _reinit_after_fork
 
         # Must not raise
         _reinit_after_fork()
@@ -120,7 +121,7 @@ def test_setup_tracing_uses_worker_pid_after_fork():
     """
     import os
 
-    from django_o11y.tracing.provider import setup_tracing
+    from django_o11y.tracing.setup import setup_tracing
 
     config = {
         "SERVICE_NAME": "test-service",
@@ -133,7 +134,7 @@ def test_setup_tracing_uses_worker_pid_after_fork():
     }
 
     with (
-        patch("django_o11y.tracing.provider.trace.set_tracer_provider"),
+        patch("django_o11y.tracing.utils.trace.set_tracer_provider"),
     ):
         provider = setup_tracing(config)
 

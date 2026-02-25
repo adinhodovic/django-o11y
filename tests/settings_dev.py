@@ -11,7 +11,7 @@ Or simply:
     docker compose -f docker-compose.dev.yml up --build
 """
 
-from django_o11y.logging.config import build_logging_dict
+from django_o11y.logging.setup import build_logging_dict
 from tests.settings import *  # noqa: F401,F403  # pylint: disable=wildcard-import,unused-wildcard-import
 
 DEBUG = False

@@ -32,7 +32,7 @@ Or pick what you need:
 Add to your Django settings:
 
 ```python
-from django_o11y.logging.config import build_logging_dict
+from django_o11y.logging.setup import build_logging_dict
 
 LOGGING = build_logging_dict()
 
@@ -211,7 +211,7 @@ Call `build_logging_dict()` in each settings file. The defaults are keyed off `D
 **`settings/local.py`**
 
 ```python
-from django_o11y.logging.config import build_logging_dict
+from django_o11y.logging.setup import build_logging_dict
 
 LOGGING = build_logging_dict()
 # DEBUG=True: console format, colorized, file output to /tmp/django-o11y/django.log
@@ -220,7 +220,7 @@ LOGGING = build_logging_dict()
 **`settings/production.py`**
 
 ```python
-from django_o11y.logging.config import build_logging_dict
+from django_o11y.logging.setup import build_logging_dict
 
 LOGGING = build_logging_dict()
 # DEBUG=False: JSON format, no file output
@@ -229,7 +229,7 @@ LOGGING = build_logging_dict()
 **`settings/test.py`**
 
 ```python
-from django_o11y.logging.config import build_logging_dict
+from django_o11y.logging.setup import build_logging_dict
 
 LOGGING = build_logging_dict({"LEVEL": "WARNING", "FILE_ENABLED": False})
 # Quiet in tests regardless of DEBUG
@@ -238,7 +238,7 @@ LOGGING = build_logging_dict({"LEVEL": "WARNING", "FILE_ENABLED": False})
 ### Usage
 
 ```python
-from django_o11y.context import get_logger
+from django_o11y.logging.utils import get_logger
 
 logger = get_logger()
 
@@ -302,7 +302,7 @@ DJANGO_O11Y_LOGGING_FILE_ENABLED=false
 Pass `extra` to deep-merge additional loggers or handlers into the base dict:
 
 ```python
-from django_o11y.logging.config import build_logging_dict
+from django_o11y.logging.setup import build_logging_dict
 
 LOGGING = build_logging_dict(extra={
     "loggers": {
@@ -319,7 +319,8 @@ Nested dicts are merged rather than replaced, so you only need to specify what y
 Attach extra fields to all logs within the current request or task:
 
 ```python
-from django_o11y.context import add_log_context, set_custom_tags
+from django_o11y.logging.utils import add_log_context
+from django_o11y.tracing.utils import set_custom_tags
 
 # Logs only
 add_log_context(tenant_id="acme", checkout_variant="B")
@@ -406,7 +407,7 @@ To disable tracing entirely, set `ENABLED: False` or `DJANGO_O11Y_TRACING_ENABLE
 ### Adding custom context
 
 ```python
-from django_o11y.context import set_custom_tags, add_span_attribute, set_user_context
+from django_o11y.tracing.utils import set_custom_tags, add_span_attribute
 
 def checkout_view(request):
     # Attached to both the trace span and all logs in this request
@@ -415,8 +416,7 @@ def checkout_view(request):
     # Span only
     add_span_attribute("cart_size", len(cart.items))
 
-    # User identity on the span (called automatically if using AuthenticationMiddleware)
-    set_user_context(user_id=str(request.user.id), username=request.user.username)
+
 ```
 
 | Function | Trace span | Logs | Use case |
@@ -424,7 +424,6 @@ def checkout_view(request):
 | `set_custom_tags()` | Yes | Yes | Business context |
 | `add_span_attribute()` | Yes | No | Technical span data |
 | `add_log_context()` | No | Yes | Debug info |
-| `set_user_context()` | Yes | Yes | User identity |
 
 ### Celery
 
@@ -451,7 +450,7 @@ To reduce span loss in prefork workers, django-o11y force-flushes tracing on `wo
 ```python
 import structlog
 from celery import shared_task
-from django_o11y.context import set_custom_tags
+from django_o11y.tracing.utils import set_custom_tags
 
 logger = structlog.get_logger(__name__)
 

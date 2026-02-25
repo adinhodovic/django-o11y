@@ -35,17 +35,10 @@ def test_configure_tracing_calls_setup_and_registers_fork_handler():
 
     app_config = DjangoO11yConfig("django_o11y", __import__("django_o11y"))
 
-    with (
-        patch(
-            "django_o11y.celery.detection.is_celery_prefork_pool", return_value=False
-        ),
-        patch("django_o11y.tracing.provider.setup_tracing") as mock_setup,
-        patch("django_o11y.fork.register_post_fork_handler") as mock_fork,
-    ):
+    with patch("django_o11y.tracing.setup.setup_tracing_for_django") as mock_setup:
         app_config._configure_tracing(config)
 
     mock_setup.assert_called_once_with(config)
-    mock_fork.assert_called_once()
 
 
 def test_configure_tracing_skips_in_celery_prefork_parent():
@@ -65,15 +58,10 @@ def test_configure_tracing_skips_in_celery_prefork_parent():
 
     app_config = DjangoO11yConfig("django_o11y", __import__("django_o11y"))
 
-    with (
-        patch("django_o11y.celery.detection.is_celery_prefork_pool", return_value=True),
-        patch("django_o11y.tracing.provider.setup_tracing") as mock_setup,
-        patch("django_o11y.fork.register_post_fork_handler") as mock_fork,
-    ):
+    with patch("django_o11y.tracing.setup.setup_tracing_for_django") as mock_setup:
         app_config._configure_tracing(config)
 
-    mock_setup.assert_not_called()
-    mock_fork.assert_not_called()
+    mock_setup.assert_called_once_with(config)
 
 
 def test_configure_tracing_skips_when_disabled():
@@ -85,16 +73,16 @@ def test_configure_tracing_skips_when_disabled():
 
     app_config = DjangoO11yConfig("django_o11y", __import__("django_o11y"))
 
-    with patch("django_o11y.tracing.provider.setup_tracing") as mock_setup:
+    with patch("django_o11y.tracing.setup.setup_tracing_for_django") as mock_setup:
         app_config._configure_tracing(config)
 
-    mock_setup.assert_not_called()
+    mock_setup.assert_called_once_with(config)
 
 
 def test_app_ready_initializes_tracing():
     from opentelemetry import trace
 
-    from django_o11y.conf import get_o11y_config
+    from django_o11y.config.setup import get_o11y_config
 
     get_o11y_config.cache_clear()
     config = get_o11y_config()
@@ -119,7 +107,7 @@ def test_app_ready_initializes_logging():
 
 
 def test_app_ready_raises_on_invalid_config():
-    from django_o11y.conf import get_o11y_config
+    from django_o11y.config.setup import get_o11y_config
 
     with override_settings(
         DJANGO_O11Y={"SERVICE_NAME": "test", "TRACING": {"SAMPLE_RATE": 2.0}}
@@ -128,7 +116,7 @@ def test_app_ready_raises_on_invalid_config():
 
         with pytest.raises(ImproperlyConfigured) as exc_info:
             get_o11y_config()
-            from django_o11y.validation import validate_config
+            from django_o11y.config.utils import validate_config
 
             errors = validate_config(get_o11y_config())
             if errors:
@@ -151,9 +139,8 @@ def test_configure_metrics_warns_when_metrics_url_missing():
     app_config = DjangoO11yConfig("django_o11y", __import__("django_o11y"))
 
     with (
-        patch("django_o11y.instrumentation.setup.setup_instrumentation"),
-        patch("django.urls.resolve", side_effect=Resolver404("missing")),
-        patch("django_o11y.apps.logger.warning") as mock_warning,
+        patch("django_o11y.metrics.setup.resolve", side_effect=Resolver404("missing")),
+        patch("django_o11y.metrics.setup.logger.warning") as mock_warning,
     ):
         app_config._configure_metrics(config)
 
@@ -172,9 +159,8 @@ def test_configure_metrics_no_warning_when_metrics_url_exists():
     app_config = DjangoO11yConfig("django_o11y", __import__("django_o11y"))
 
     with (
-        patch("django_o11y.instrumentation.setup.setup_instrumentation"),
-        patch("django.urls.resolve"),
-        patch("django_o11y.apps.logger.warning") as mock_warning,
+        patch("django_o11y.metrics.setup.resolve"),
+        patch("django_o11y.metrics.setup.logger.warning") as mock_warning,
     ):
         app_config._configure_metrics(config)
 

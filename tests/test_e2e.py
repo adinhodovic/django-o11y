@@ -46,7 +46,7 @@ def _fresh_tracing_provider(service_name: str):
 
     import opentelemetry.trace as trace_module
 
-    from django_o11y.tracing.provider import setup_tracing
+    from django_o11y.tracing.setup import setup_tracing
 
     @contextlib.contextmanager
     def _ctx():

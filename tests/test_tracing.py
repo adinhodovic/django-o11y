@@ -4,22 +4,22 @@ from unittest.mock import MagicMock, patch
 
 
 def test_setup_tracing_creates_provider():
-    from django_o11y.tracing.provider import setup_tracing
+    from django_o11y.tracing.setup import setup_tracing
 
     config = {
         "SERVICE_NAME": "test-service",
         "TRACING": {"OTLP_ENDPOINT": "http://localhost:4317"},
     }
 
-    with patch("django_o11y.tracing.provider.OTLPSpanExporter"):
-        with patch("django_o11y.tracing.provider.trace.set_tracer_provider"):
+    with patch("django_o11y.tracing.setup.OTLPSpanExporter"):
+        with patch("django_o11y.tracing.setup.trace.set_tracer_provider"):
             provider = setup_tracing(config)
 
             assert provider is not None
 
 
 def test_setup_tracing_with_namespace():
-    from django_o11y.tracing.provider import setup_tracing
+    from django_o11y.tracing.setup import setup_tracing
 
     config = {
         "SERVICE_NAME": "test-service",
@@ -27,15 +27,15 @@ def test_setup_tracing_with_namespace():
         "TRACING": {"OTLP_ENDPOINT": "http://localhost:4317"},
     }
 
-    with patch("django_o11y.tracing.provider.OTLPSpanExporter"):
-        with patch("django_o11y.tracing.provider.trace.set_tracer_provider"):
+    with patch("django_o11y.tracing.setup.OTLPSpanExporter"):
+        with patch("django_o11y.tracing.setup.trace.set_tracer_provider"):
             provider = setup_tracing(config)
 
             assert provider is not None
 
 
 def test_setup_tracing_with_resource_attributes():
-    from django_o11y.tracing.provider import setup_tracing
+    from django_o11y.tracing.setup import setup_tracing
 
     config = {
         "SERVICE_NAME": "test-service",
@@ -43,29 +43,29 @@ def test_setup_tracing_with_resource_attributes():
         "TRACING": {"OTLP_ENDPOINT": "http://localhost:4317"},
     }
 
-    with patch("django_o11y.tracing.provider.OTLPSpanExporter"):
-        with patch("django_o11y.tracing.provider.trace.set_tracer_provider"):
+    with patch("django_o11y.tracing.setup.OTLPSpanExporter"):
+        with patch("django_o11y.tracing.setup.trace.set_tracer_provider"):
             provider = setup_tracing(config)
 
             assert provider is not None
 
 
 def test_setup_tracing_without_otlp_endpoint():
-    from django_o11y.tracing.provider import setup_tracing
+    from django_o11y.tracing.setup import setup_tracing
 
     config = {
         "SERVICE_NAME": "test-service",
         "TRACING": {"OTLP_ENDPOINT": None},
     }
 
-    with patch("django_o11y.tracing.provider.trace.set_tracer_provider"):
+    with patch("django_o11y.tracing.setup.trace.set_tracer_provider"):
         provider = setup_tracing(config)
 
         assert provider is not None
 
 
 def test_setup_tracing_with_console_exporter():
-    from django_o11y.tracing.provider import setup_tracing
+    from django_o11y.tracing.setup import setup_tracing
 
     config = {
         "SERVICE_NAME": "test-service",
@@ -75,9 +75,9 @@ def test_setup_tracing_with_console_exporter():
         },
     }
 
-    with patch("django_o11y.tracing.provider.OTLPSpanExporter"):
-        with patch("django_o11y.tracing.provider.ConsoleSpanExporter") as mock_console:
-            with patch("django_o11y.tracing.provider.trace.set_tracer_provider"):
+    with patch("django_o11y.tracing.setup.OTLPSpanExporter"):
+        with patch("django_o11y.tracing.setup.ConsoleSpanExporter") as mock_console:
+            with patch("django_o11y.tracing.setup.trace.set_tracer_provider"):
                 mock_console.return_value = MagicMock()
 
                 provider = setup_tracing(config)
@@ -87,16 +87,16 @@ def test_setup_tracing_with_console_exporter():
 
 
 def test_setup_tracing_without_console_exporter():
-    from django_o11y.tracing.provider import setup_tracing
+    from django_o11y.tracing.setup import setup_tracing
 
     config = {
         "SERVICE_NAME": "test-service",
         "TRACING": {"OTLP_ENDPOINT": "http://localhost:4317"},
     }
 
-    with patch("django_o11y.tracing.provider.OTLPSpanExporter"):
-        with patch("django_o11y.tracing.provider.ConsoleSpanExporter") as mock_console:
-            with patch("django_o11y.tracing.provider.trace.set_tracer_provider"):
+    with patch("django_o11y.tracing.setup.OTLPSpanExporter"):
+        with patch("django_o11y.tracing.setup.ConsoleSpanExporter") as mock_console:
+            with patch("django_o11y.tracing.setup.trace.set_tracer_provider"):
                 provider = setup_tracing(config)
 
                 assert provider is not None
@@ -106,7 +106,7 @@ def test_setup_tracing_without_console_exporter():
 def test_setup_tracing_adds_pyroscope_processor_when_enabled():
     import sys
 
-    from django_o11y.tracing.provider import setup_tracing
+    from django_o11y.tracing.setup import setup_tracing
 
     config = {
         "SERVICE_NAME": "test-service",
@@ -118,8 +118,8 @@ def test_setup_tracing_adds_pyroscope_processor_when_enabled():
     mock_pyroscope_otel = MagicMock()
     mock_pyroscope_otel.PyroscopeSpanProcessor.return_value = mock_processor
 
-    with patch("django_o11y.tracing.provider.OTLPSpanExporter"):
-        with patch("django_o11y.tracing.provider.trace.set_tracer_provider"):
+    with patch("django_o11y.tracing.setup.OTLPSpanExporter"):
+        with patch("django_o11y.tracing.setup.trace.set_tracer_provider"):
             with patch.dict(sys.modules, {"pyroscope.otel": mock_pyroscope_otel}):
                 provider = setup_tracing(config)
 
@@ -130,7 +130,7 @@ def test_setup_tracing_adds_pyroscope_processor_when_enabled():
 def test_setup_tracing_skips_pyroscope_processor_when_unavailable():
     import sys
 
-    from django_o11y.tracing.provider import setup_tracing
+    from django_o11y.tracing.setup import setup_tracing
 
     config = {
         "SERVICE_NAME": "test-service",
@@ -138,8 +138,8 @@ def test_setup_tracing_skips_pyroscope_processor_when_unavailable():
         "PROFILING": {"ENABLED": True},
     }
 
-    with patch("django_o11y.tracing.provider.OTLPSpanExporter"):
-        with patch("django_o11y.tracing.provider.trace.set_tracer_provider"):
+    with patch("django_o11y.tracing.setup.OTLPSpanExporter"):
+        with patch("django_o11y.tracing.setup.trace.set_tracer_provider"):
             with patch.dict(sys.modules, {"pyroscope.otel": None}):
                 provider = setup_tracing(config)
 
@@ -149,7 +149,7 @@ def test_setup_tracing_skips_pyroscope_processor_when_unavailable():
 def test_setup_tracing_adds_pyroscope_processor_in_celery_prefork_worker_child():
     import sys
 
-    from django_o11y.tracing.provider import setup_tracing
+    from django_o11y.tracing.setup import setup_tracing
 
     config = {
         "SERVICE_NAME": "test-service",
@@ -161,10 +161,10 @@ def test_setup_tracing_adds_pyroscope_processor_in_celery_prefork_worker_child()
     mock_pyroscope_otel = MagicMock()
     mock_pyroscope_otel.PyroscopeSpanProcessor.return_value = mock_processor
 
-    with patch("django_o11y.tracing.provider.OTLPSpanExporter"):
-        with patch("django_o11y.tracing.provider.trace.set_tracer_provider"):
+    with patch("django_o11y.tracing.setup.OTLPSpanExporter"):
+        with patch("django_o11y.tracing.setup.trace.set_tracer_provider"):
             with patch(
-                "django_o11y.tracing.provider.is_celery_fork_pool_worker",
+                "django_o11y.tracing.setup.is_celery_fork_pool_worker",
                 return_value=True,
             ):
                 with patch.dict(sys.modules, {"pyroscope.otel": mock_pyroscope_otel}):
@@ -177,7 +177,7 @@ def test_setup_tracing_adds_pyroscope_processor_in_celery_prefork_worker_child()
 def test_setup_tracing_skips_pyroscope_processor_in_celery_prefork_boot_process():
     import sys
 
-    from django_o11y.tracing.provider import setup_tracing
+    from django_o11y.tracing.setup import setup_tracing
 
     config = {
         "SERVICE_NAME": "test-service",
@@ -187,10 +187,10 @@ def test_setup_tracing_skips_pyroscope_processor_in_celery_prefork_boot_process(
 
     mock_pyroscope_otel = MagicMock()
 
-    with patch("django_o11y.tracing.provider.OTLPSpanExporter"):
-        with patch("django_o11y.tracing.provider.trace.set_tracer_provider"):
+    with patch("django_o11y.tracing.setup.OTLPSpanExporter"):
+        with patch("django_o11y.tracing.setup.trace.set_tracer_provider"):
             with patch(
-                "django_o11y.tracing.provider.is_celery_prefork_pool",
+                "django_o11y.tracing.setup.is_celery_prefork_pool",
                 return_value=True,
             ):
                 with patch.dict(sys.modules, {"pyroscope.otel": mock_pyroscope_otel}):

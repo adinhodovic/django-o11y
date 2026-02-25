@@ -1,24 +1,10 @@
-"""Configuration validation for django-o11y."""
+"""Configuration validation helpers."""
 
 from typing import Any
 
 
 def validate_config(config: dict[str, Any]) -> list[str]:
-    """
-    Validate django-o11y configuration.
-
-    Args:
-        config: Configuration dictionary from DJANGO_O11Y setting
-
-    Returns:
-        List of error messages. Empty list if validation passes.
-
-    Example:
-        >>> config = {"TRACING": {"SAMPLE_RATE": 1.5}}
-        >>> errors = validate_config(config)
-        >>> errors
-        ['TRACING.SAMPLE_RATE must be between 0.0 and 1.0, got 1.5']
-    """
+    """Validate django-o11y configuration and return list of errors."""
     errors = []
 
     tracing = config.get("TRACING", {})
@@ -37,7 +23,6 @@ def validate_config(config: dict[str, Any]) -> list[str]:
 
 
 def _validate_tracing(tracing: dict[str, Any]) -> list[str]:
-    """Validate tracing configuration."""
     errors = []
 
     sample_rate = tracing.get("SAMPLE_RATE")
@@ -60,7 +45,6 @@ def _validate_tracing(tracing: dict[str, Any]) -> list[str]:
 
 
 def _validate_logging(logging_config: dict[str, Any]) -> list[str]:
-    """Validate logging configuration."""
     errors = []
 
     log_format = logging_config.get("FORMAT")
@@ -75,14 +59,7 @@ def _validate_logging(logging_config: dict[str, Any]) -> list[str]:
         "PARSO_LEVEL",
         "AWS_LEVEL",
     ]
-    valid_levels = [
-        "DEBUG",
-        "INFO",
-        "WARNING",
-        "ERROR",
-        "CRITICAL",
-        "NOTSET",
-    ]
+    valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL", "NOTSET"]
 
     for key in level_keys:
         level = logging_config.get(key)
@@ -103,7 +80,6 @@ def _validate_logging(logging_config: dict[str, Any]) -> list[str]:
 
 
 def _validate_profiling(profiling: dict[str, Any]) -> list[str]:
-    """Validate profiling configuration."""
     errors = []
 
     url = profiling.get("PYROSCOPE_URL")
@@ -114,7 +90,6 @@ def _validate_profiling(profiling: dict[str, Any]) -> list[str]:
 
 
 def _validate_endpoint(endpoint: str, field_name: str) -> list[str]:
-    """Validate an endpoint URL."""
     errors = []
 
     if not isinstance(endpoint, str):

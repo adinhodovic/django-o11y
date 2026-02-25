@@ -75,20 +75,7 @@ def counter(
     unit: str = "",
     labelnames: tuple[str, ...] | list[str] = (),
 ) -> CounterWrapper:
-    """Create and return a Prometheus Counter wrapped in CounterWrapper.
-
-    Args:
-        name: Metric name (e.g. ``"payments_total"``).
-        description: Human-readable description.
-        unit: Optional unit string (informational only).
-        labelnames: Label dimensions declared upfront
-            (e.g. ``("status", "method")``).
-
-    Example::
-
-        orders = counter("orders_total", labelnames=["status"])
-        orders.add(1, {"status": "success"})
-    """
+    """Create and return a Prometheus Counter wrapped in CounterWrapper."""
     label_tuple = tuple(labelnames)
     prom_counter = Counter(
         name,
@@ -106,22 +93,7 @@ def histogram(
     labelnames: tuple[str, ...] | list[str] = (),
     buckets: tuple[float, ...] = Histogram.DEFAULT_BUCKETS,
 ) -> HistogramWrapper:
-    """Create and return a Prometheus Histogram wrapped in HistogramWrapper.
-
-    Args:
-        name: Metric name (e.g. ``"request_duration_seconds"``).
-        description: Human-readable description.
-        unit: Optional unit string (informational only).
-        labelnames: Label dimensions declared upfront
-            (e.g. ``("region", "method")``).
-        buckets: Custom bucket boundaries. Defaults to Prometheus defaults.
-
-    Example::
-
-        latency = histogram("order_latency_seconds", labelnames=["region"])
-        with latency.time({"region": "us-east"}):
-            process_order()
-    """
+    """Create and return a Prometheus Histogram wrapped in HistogramWrapper."""
     label_tuple = tuple(labelnames)
     prom_histogram = Histogram(
         name,

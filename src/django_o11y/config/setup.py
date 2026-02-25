@@ -1,21 +1,4 @@
-"""Configuration module for django-o11y.
-
-Provides sensible defaults and validates user configuration from Django settings.
-
-Environment variables follow a single consistent prefix: `DJANGO_O11Y_<SECTION>_<KEY>`.
-The three OpenTelemetry spec vars are also honoured where they naturally map:
-
-  OTEL_SERVICE_NAME              → SERVICE_NAME
-  OTEL_EXPORTER_OTLP_ENDPOINT    → TRACING.OTLP_ENDPOINT, LOGGING.OTLP_ENDPOINT
-  OTEL_TRACES_SAMPLER_ARG        → TRACING.SAMPLE_RATE
-
-All other env vars use the ``DJANGO_O11Y_`` prefix, e.g.::
-
-  DJANGO_O11Y_ENVIRONMENT=production
-  DJANGO_O11Y_TRACING_ENABLED=true
-  DJANGO_O11Y_LOGGING_LEVEL=WARNING
-  DJANGO_O11Y_PROFILING_ENABLED=true
-"""
+"""Configuration setup for django-o11y."""
 
 import os
 from functools import lru_cache
@@ -39,40 +22,27 @@ def _float_env(key: str, default: float) -> float:
 
 
 def _set_str(config: dict, key: str, env: str) -> None:
-    """Set config[key] from env var if present."""
     if (v := os.getenv(env)) is not None:
         config[key] = v
 
 
 def _set_bool(config: dict, key: str, env: str, default: bool = False) -> None:
-    """Set config[key] from bool env var if present."""
     if os.getenv(env) is not None:
         config[key] = _bool_env(env, default)
 
 
 def _set_float(config: dict, key: str, env: str, default: float = 0.0) -> None:
-    """Set config[key] from float env var if present."""
     if os.getenv(env) is not None:
         config[key] = _float_env(env, default)
 
 
 def get_config() -> dict[str, Any]:
-    """
-    Return the merged django-o11y configuration.
-
-    Priority (lowest → highest):
-    1. Hardcoded defaults
-    2. DJANGO_O11Y settings dict
-    3. Environment variables
-    """
+    """Return merged django-o11y configuration."""
     default_sample_rate = 1.0 if settings.DEBUG else 0.01
 
     defaults: dict[str, Any] = {
         "SERVICE_NAME": "django-app",
         "SERVICE_VERSION": "unknown",
-        # None means "compute hostname:pid at tracing setup time so forked
-        # workers get their own pid rather than the master's".
-        # Set OTEL_SERVICE_INSTANCE_ID to fix a specific value (e.g. pod name).
         "SERVICE_INSTANCE_ID": None,
         "ENVIRONMENT": "development",
         "NAMESPACE": "",
@@ -125,7 +95,6 @@ def get_config() -> dict[str, Any]:
 
 
 def _apply_env_overrides(config: dict[str, Any], default_sample_rate: float) -> None:
-    """Apply environment variable overrides in-place (highest priority)."""
     t, lg, m, c, p = (
         config["TRACING"],
         config["LOGGING"],
@@ -134,7 +103,6 @@ def _apply_env_overrides(config: dict[str, Any], default_sample_rate: float) -> 
         config["PROFILING"],
     )
 
-    # Top-level
     _set_str(config, "SERVICE_NAME", "OTEL_SERVICE_NAME")
     _set_str(config, "SERVICE_VERSION", "OTEL_SERVICE_VERSION")
     _set_str(config, "ENVIRONMENT", "DJANGO_O11Y_ENVIRONMENT")
@@ -142,18 +110,15 @@ def _apply_env_overrides(config: dict[str, Any], default_sample_rate: float) -> 
     if (v := os.getenv("OTEL_SERVICE_INSTANCE_ID")) is not None:
         config["SERVICE_INSTANCE_ID"] = v or None
 
-    # OTLP endpoint fans out to both tracing and logging
     if (v := os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")) is not None:
         t["OTLP_ENDPOINT"] = v
         lg["OTLP_ENDPOINT"] = v
 
-    # Tracing
     _set_bool(t, "ENABLED", "DJANGO_O11Y_TRACING_ENABLED")
     _set_float(t, "SAMPLE_RATE", "OTEL_TRACES_SAMPLER_ARG", default_sample_rate)
     _set_bool(t, "CONSOLE_EXPORTER", "DJANGO_O11Y_TRACING_CONSOLE_EXPORTER")
     _set_bool(t, "AWS_ENABLED", "DJANGO_O11Y_TRACING_AWS_ENABLED")
 
-    # Logging
     _set_str(lg, "FORMAT", "DJANGO_O11Y_LOGGING_FORMAT")
     _set_str(lg, "LEVEL", "DJANGO_O11Y_LOGGING_LEVEL")
     _set_str(lg, "REQUEST_LEVEL", "DJANGO_O11Y_LOGGING_REQUEST_LEVEL")
@@ -167,24 +132,20 @@ def _apply_env_overrides(config: dict[str, Any], default_sample_rate: float) -> 
     _set_bool(lg, "OTLP_ENABLED", "DJANGO_O11Y_LOGGING_OTLP_ENABLED")
     _set_bool(lg, "FILE_ENABLED", "DJANGO_O11Y_LOGGING_FILE_ENABLED", settings.DEBUG)
 
-    # Metrics
     _set_bool(m, "PROMETHEUS_ENABLED", "DJANGO_O11Y_METRICS_PROMETHEUS_ENABLED", True)
     _set_str(m, "PROMETHEUS_ENDPOINT", "DJANGO_O11Y_METRICS_PROMETHEUS_ENDPOINT")
     _set_bool(m, "EXPORT_MIGRATIONS", "DJANGO_O11Y_METRICS_EXPORT_MIGRATIONS", True)
 
-    # Celery
     _set_bool(c, "ENABLED", "DJANGO_O11Y_CELERY_ENABLED")
     _set_bool(c, "TRACING_ENABLED", "DJANGO_O11Y_CELERY_TRACING_ENABLED", True)
     _set_bool(c, "LOGGING_ENABLED", "DJANGO_O11Y_CELERY_LOGGING_ENABLED", True)
     _set_bool(c, "METRICS_ENABLED", "DJANGO_O11Y_CELERY_METRICS_ENABLED", True)
 
-    # Profiling
     _set_bool(p, "ENABLED", "DJANGO_O11Y_PROFILING_ENABLED")
     _set_str(p, "PYROSCOPE_URL", "DJANGO_O11Y_PROFILING_PYROSCOPE_URL")
 
 
 def _deep_merge(default: dict, override: dict) -> dict:
-    """Deep merge two dictionaries."""
     result = default.copy()
     for key, value in override.items():
         if key in result and isinstance(result[key], dict) and isinstance(value, dict):
@@ -196,5 +157,5 @@ def _deep_merge(default: dict, override: dict) -> dict:
 
 @lru_cache(maxsize=1)
 def get_o11y_config() -> dict[str, Any]:
-    """Get the global o11y configuration (cached via lru_cache)."""
+    """Get global o11y configuration."""
     return get_config()

@@ -20,7 +20,7 @@ def _make_tracer():
 def test_logging_middleware_uses_meta_header():
     from django.test import RequestFactory
 
-    from django_o11y.middleware.logging import LoggingMiddleware
+    from django_o11y.logging.middleware import LoggingMiddleware
 
     rf = RequestFactory()
     request = rf.get("/", HTTP_X_REQUEST_ID="meta-request-123")
@@ -36,7 +36,7 @@ def test_logging_middleware_uses_meta_header():
 
 
 def test_tracing_middleware_adds_user_attributes(django_user_request):
-    from django_o11y.middleware.tracing import TracingMiddleware
+    from django_o11y.tracing.middleware import TracingMiddleware
 
     middleware = TracingMiddleware(lambda r: HttpResponse("OK"))
 
@@ -53,7 +53,7 @@ def test_tracing_middleware_adds_user_attributes(django_user_request):
 def test_tracing_middleware_allows_5xx_response():
     from django.test import RequestFactory
 
-    from django_o11y.middleware.tracing import TracingMiddleware
+    from django_o11y.tracing.middleware import TracingMiddleware
 
     rf = RequestFactory()
     request = rf.get("/")
@@ -71,7 +71,7 @@ def test_tracing_middleware_allows_5xx_response():
 def test_tracing_middleware_propagates_exception():
     from django.test import RequestFactory
 
-    from django_o11y.middleware.tracing import TracingMiddleware
+    from django_o11y.tracing.middleware import TracingMiddleware
 
     rf = RequestFactory()
     request = rf.get("/")
@@ -92,7 +92,7 @@ def test_tracing_middleware_anonymous_user():
     from django.contrib.auth.models import AnonymousUser
     from django.test import RequestFactory
 
-    from django_o11y.middleware.tracing import TracingMiddleware
+    from django_o11y.tracing.middleware import TracingMiddleware
 
     rf = RequestFactory()
     request = rf.get("/")

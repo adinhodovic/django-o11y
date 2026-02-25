@@ -8,10 +8,10 @@ from celery import Celery
 from celery.contrib.testing.worker import start_worker
 from django.test import override_settings
 
-from django_o11y.celery.setup import (
+from django_o11y.logging.setup import build_logging_dict
+from django_o11y.tracing.setup import (
     setup_celery_o11y,
 )
-from django_o11y.logging.config import build_logging_dict
 
 pytestmark = pytest.mark.integration
 

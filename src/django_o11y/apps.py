@@ -5,7 +5,7 @@ from importlib.metadata import PackageNotFoundError, version
 from django.apps import AppConfig
 from django.conf import settings
 
-from django_o11y.context import get_logger
+from django_o11y.logging.utils import get_logger
 
 logger = get_logger()
 
@@ -22,8 +22,8 @@ class DjangoO11yConfig(AppConfig):
         """Initialize observability when Django starts."""
         from django.core.exceptions import ImproperlyConfigured
 
-        from django_o11y.conf import get_o11y_config
-        from django_o11y.validation import validate_config
+        from django_o11y.config.setup import get_o11y_config
+        from django_o11y.config.utils import validate_config
 
         config = get_o11y_config()
 
@@ -40,10 +40,7 @@ class DjangoO11yConfig(AppConfig):
             return
         self._o11y_ready = True
 
-        settings.PROMETHEUS_EXPORT_MIGRATIONS = config["METRICS"]["EXPORT_MIGRATIONS"]
-
         self._configure_tracing(config)
-        self._configure_celery(config)
         self._configure_logging(config)
         self._configure_metrics(config)
         self._configure_profiling(config)
@@ -55,75 +52,22 @@ class DjangoO11yConfig(AppConfig):
             pass
 
     def _configure_tracing(self, config: dict) -> None:
-        from django_o11y.celery.detection import is_celery_prefork_pool
-        from django_o11y.tracing.provider import setup_tracing
+        from django_o11y.tracing.setup import setup_tracing_for_django
 
-        if not config["TRACING"]["ENABLED"]:
-            logger.info("Tracing disabled")
-            return
-
-        # Celery prefork workers fork child processes after Django app startup.
-        # Initializing the tracer provider (and its background exporter threads)
-        # in the parent process can cause instability in forked children.
-        # Children initialize tracing via worker_process_init in celery setup.
-        if is_celery_prefork_pool():
-            logger.info(
-                "Skipping tracing setup in Celery prefork parent; "
-                "child workers initialize tracing post-fork"
-            )
-            return
-
-        setup_tracing(config)
-
-        from django_o11y.fork import register_post_fork_handler
-
-        register_post_fork_handler()
-
-    def _configure_celery(self, config: dict) -> None:
-        """Import Celery setup only when Celery integration is enabled."""
-        if not config.get("CELERY", {}).get("ENABLED", False):
-            return
-
-        try:
-            import django_o11y.celery.setup  # noqa: F401
-        except ImportError:
-            logger.warning(
-                "CELERY.ENABLED is true but Celery is not installed. "
-                "Install with: pip install django-o11y[celery]"
-            )
+        setup_tracing_for_django(config)
 
     def _configure_logging(self, config: dict) -> None:
-        from django_o11y.instrumentation.setup import setup_instrumentation
+        from django_o11y.logging.setup import setup_logging_for_django
 
-        setup_instrumentation(config)
-
-        fmt = config.get("LOGGING", {}).get("FORMAT", "console")
-        logger.info("Logging configured, format=%s", fmt)
+        setup_logging_for_django(config)
 
     def _configure_metrics(self, config: dict) -> None:
-        """Log metrics configuration and warn if endpoint is not routed."""
-        from django.urls import Resolver404, resolve
+        from django_o11y.metrics.setup import setup_metrics_for_django
 
-        metrics = config.get("METRICS", {})
-        if metrics.get("PROMETHEUS_ENABLED", True):
-            endpoint = metrics.get("PROMETHEUS_ENDPOINT", "/metrics")
-            logger.info(
-                "Metrics enabled at %s",
-                endpoint,
-            )
-
-            normalized = endpoint if endpoint.startswith("/") else f"/{endpoint}"
-            try:
-                resolve(normalized)
-            except Resolver404:
-                logger.warning(
-                    "Metrics endpoint %s is not routed. Add `+ get_urls()` to your "
-                    "root urlpatterns.",
-                    normalized,
-                )
+        setup_metrics_for_django(config)
 
     def _configure_profiling(self, config: dict) -> None:
-        from django_o11y.profiling import setup_profiling
+        from django_o11y.profiling.setup import setup_profiling
 
         if not config.get("PROFILING", {}).get("ENABLED"):
             logger.info("Profiling disabled")

@@ -77,7 +77,7 @@ def test_check_metrics_endpoint_success(monkeypatch):
     from django_o11y.management.commands.o11y import _check_metrics_endpoint
 
     monkeypatch.setattr(
-        "django_o11y.conf.get_o11y_config",
+        "django_o11y.config.setup.get_o11y_config",
         lambda: {
             "METRICS": {"PROMETHEUS_ENABLED": True, "PROMETHEUS_ENDPOINT": "/metrics"}
         },
@@ -101,7 +101,7 @@ def test_check_metrics_endpoint_wrong_view(monkeypatch):
         return None
 
     monkeypatch.setattr(
-        "django_o11y.conf.get_o11y_config",
+        "django_o11y.config.setup.get_o11y_config",
         lambda: {
             "METRICS": {"PROMETHEUS_ENABLED": True, "PROMETHEUS_ENDPOINT": "/metrics"}
         },

@@ -10,14 +10,14 @@ def test_profiling_disabled_by_default():
     import django.test.utils
 
     with django.test.utils.override_settings(DJANGO_O11Y={}):
-        from django_o11y.conf import get_config as _get_config
+        from django_o11y.config.setup import get_config as _get_config
 
         config = _get_config()
         assert config["PROFILING"]["ENABLED"] is False
 
 
 def test_profiling_url_default():
-    from django_o11y.conf import get_o11y_config
+    from django_o11y.config.setup import get_o11y_config
 
     config = get_o11y_config()
 
@@ -25,7 +25,7 @@ def test_profiling_url_default():
 
 
 def test_profiling_validation():
-    from django_o11y.validation import validate_config
+    from django_o11y.config.utils import validate_config
 
     config = {
         "SERVICE_NAME": "test",
@@ -44,7 +44,7 @@ def test_profiling_validation():
 
 
 def test_profiling_validation_invalid_url():
-    from django_o11y.validation import validate_config
+    from django_o11y.config.utils import validate_config
 
     config = {
         "SERVICE_NAME": "test",
@@ -64,7 +64,7 @@ def test_profiling_validation_invalid_url():
 
 
 def test_profiling_can_be_enabled():
-    from django_o11y.conf import get_o11y_config
+    from django_o11y.config.setup import get_o11y_config
 
     config = get_o11y_config()
 
@@ -234,7 +234,7 @@ def test_setup_profiling_allows_prefork_child_process():
 
     with patch("sys.argv", ["celery", "-A", "proj", "worker"]):
         with patch(
-            "django_o11y.profiling.is_celery_fork_pool_worker",
+            "django_o11y.profiling.setup.is_celery_fork_pool_worker",
             return_value=True,
         ):
             with patch.dict("sys.modules", {"pyroscope": mock_pyroscope}):
