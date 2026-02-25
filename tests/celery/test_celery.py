@@ -67,8 +67,8 @@ def test_celery_setup_connects_signals(celery_app):
 
 
 def test_celery_setup_loads_config_from_django_settings(celery_app):
-    from django_o11y.tracing import setup
     from django_o11y.config.setup import get_o11y_config
+    from django_o11y.tracing import setup
 
     original_pid = setup._instrumented_pid
     setup._instrumented_pid = None
@@ -188,7 +188,8 @@ def test_worker_process_init_runs_auto_setup_for_prefork(celery_app):
                 return_value=_celery.current_app,
             ):
                 with patch("django_o11y.tracing.setup.setup_celery_o11y") as mock_setup:
-                    # sender=None mirrors what celery/concurrency/prefork.py actually sends
+                    # sender=None mirrors what celery/concurrency/prefork.py
+                    # actually sends.
                     _auto_setup_on_worker_process_init(sender=None)
                     mock_setup.assert_called_once_with(_celery.current_app, config)
 
