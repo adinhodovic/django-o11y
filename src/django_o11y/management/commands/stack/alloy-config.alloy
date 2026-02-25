@@ -91,16 +91,24 @@ loki.process "django" {
 }
 
 // ============================================================
-// Logs: host file tail → Loki
-// For runserver on the host (DEBUG=True). Django writes JSON
-// logs to /tmp/django-o11y/django.log; Alloy tails it here.
+// Logs: file tail → Loki
+// Each service writes JSON logs to its own file under
+// /tmp/django-o11y/ (bind-mounted from the host). Separate
+// files give each service its own Loki stream so timestamps
+// are always monotonically increasing within a stream.
 // ============================================================
 
-loki.source.file "django_host" {
-  targets = [{
-    __path__     = "/tmp/django-o11y/django.log",
-    service_name = "django-app",
-  }]
+loki.source.file "django_files" {
+  targets = [
+    {
+      __path__     = "/tmp/django-o11y/django.log",
+      service_name = "django-app",
+    },
+    {
+      __path__     = "/tmp/django-o11y/celery.log",
+      service_name = "celery-worker",
+    },
+  ]
   forward_to = [loki.process.django.receiver]
 }
 

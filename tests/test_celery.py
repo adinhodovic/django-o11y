@@ -231,30 +231,30 @@ def test_celery_setup_configures_tracing_provider_when_enabled(celery_app):
         setup._instrumented_pid = original_pid
 
 
-def test_setup_celery_logging_connects_setup_logging_signal():
-    """_setup_celery_logging registers a handler on setup_logging."""
+def test_register_early_celery_logging_hook_connects_setup_logging_signal():
+    """register_early_celery_logging_hook registers a handler on setup_logging."""
     from celery.signals import setup_logging
 
-    from django_o11y.celery.setup import _setup_celery_logging
+    from django_o11y.celery.setup import register_early_celery_logging_hook
 
-    _setup_celery_logging()
+    register_early_celery_logging_hook()
 
-    # At least one receiver must be connected after calling _setup_celery_logging.
+    # At least one receiver must be connected after calling the hook registration.
     assert len(setup_logging.receivers or []) >= 1
 
 
-def test_setup_celery_logging_applies_django_logging_config(celery_app):
-    """_setup_celery_logging applies config when setup_logging fires."""
+def test_register_early_celery_logging_hook_applies_django_logging_config(celery_app):
+    """register_early_celery_logging_hook applies config when setup_logging fires."""
     import logging.config as lc
     from unittest.mock import patch
 
-    from django_o11y.celery.setup import _setup_celery_logging
+    from django_o11y.celery.setup import register_early_celery_logging_hook
 
     fake_logging = {"version": 1, "disable_existing_loggers": False}
 
     with override_settings(LOGGING=fake_logging):
         with patch.object(lc, "dictConfig") as mock_dictconfig:
-            _setup_celery_logging()
+            register_early_celery_logging_hook()
 
             # Registration should not apply config until Celery emits signal.
             mock_dictconfig.assert_not_called()
@@ -268,6 +268,25 @@ def test_setup_celery_logging_applies_django_logging_config(celery_app):
             # it was called at least once with the right config dict.
             mock_dictconfig.assert_called_with(fake_logging)
             assert mock_dictconfig.call_count >= 1
+
+
+def test_register_early_celery_logging_hook_is_idempotent():
+    """Calling the early logging hook twice should not duplicate receivers."""
+    from celery.signals import setup_logging
+
+    from django_o11y.celery import setup
+
+    # Reset module state for deterministic assertion.
+    setup.__dict__["_early_logging_hook_registered"] = False
+
+    before = len(setup_logging.receivers or [])
+    setup.register_early_celery_logging_hook()
+    after_first = len(setup_logging.receivers or [])
+    setup.register_early_celery_logging_hook()
+    after_second = len(setup_logging.receivers or [])
+
+    assert after_first >= before
+    assert after_second == after_first
 
 
 def test_celery_setup_disables_worker_root_logger_hijack(celery_app):

@@ -172,6 +172,14 @@ def build_logging_dict(
             "s3transfer": {
                 "level": cfg.get("AWS_LEVEL", "WARNING"),
             },
+            # Celery's built-in task lifecycle lines ("Task x received", "succeeded in")
+            # duplicate the structured events from django-structlog's CeleryReceiver.
+            "celery.app.trace": {
+                "level": "WARNING",
+            },
+            "celery.worker.strategy": {
+                "level": "WARNING",
+            },
             # Level set explicitly — werkzeug attaches its own ColorStreamHandler
             # at import time if the logger level is NOTSET
             "werkzeug": {

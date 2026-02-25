@@ -50,11 +50,6 @@ def cli(ctx):
     ctx.ensure_object(dict)
 
 
-# =============================================================================
-# Stack Management Commands
-# =============================================================================
-
-
 @cli.group()
 def stack():
     """Manage the local observability stack (Grafana, Tempo, etc.)."""
@@ -212,11 +207,6 @@ def logs(follow, tail):
         raise SystemExit(1) from e
 
 
-# =============================================================================
-# Health Check Command
-# =============================================================================
-
-
 @cli.command()
 def check():
     """Verify Django O11y setup and connectivity.
@@ -272,11 +262,6 @@ def check():
         click.secho(summary, fg="yellow")
     else:
         click.secho(summary, fg="green")
-
-
-# =============================================================================
-# Helper Functions
-# =============================================================================
 
 
 def _get_broker_url() -> str | None:

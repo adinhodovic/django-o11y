@@ -23,10 +23,6 @@ from typing import Any
 
 from django.conf import settings
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
 
 def _bool_env(key: str, default: bool) -> bool:
     value = os.getenv(key)
@@ -58,11 +54,6 @@ def _set_float(config: dict, key: str, env: str, default: float = 0.0) -> None:
     """Set config[key] from float env var if present."""
     if os.getenv(env) is not None:
         config[key] = _float_env(env, default)
-
-
-# ---------------------------------------------------------------------------
-# Config
-# ---------------------------------------------------------------------------
 
 
 def get_config() -> dict[str, Any]:

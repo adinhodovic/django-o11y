@@ -140,3 +140,5 @@ examples/demo_project/celerybeat-schedule.*
 
 # celery filesystem broker artifacts
 control/
+config.yaml
+beads_django-o11y

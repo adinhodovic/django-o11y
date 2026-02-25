@@ -35,11 +35,6 @@ def test_config_defaults():
     assert config["LOGGING"]["LEVEL"] == "WARNING"
 
 
-# ---------------------------------------------------------------------------
-# logging/config.py — json format and OTLP paths
-# ---------------------------------------------------------------------------
-
-
 def test_build_logging_dict_json_format():
     from django_o11y.logging.config import build_logging_dict
 
@@ -80,11 +75,6 @@ def test_build_logging_dict_with_otlp_enabled():
         assert "otlp" in result["handlers"]
 
 
-# ---------------------------------------------------------------------------
-# logging/processors.py — parent span branch
-# ---------------------------------------------------------------------------
-
-
 def test_add_open_telemetry_spans_with_parent():
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import SimpleSpanProcessor
@@ -106,11 +96,6 @@ def test_add_open_telemetry_spans_with_parent():
             assert "parent_span_id" in result
             assert "trace_id" in result
             assert "span_id" in result
-
-
-# ---------------------------------------------------------------------------
-# logging/config.py — RICH_EXCEPTIONS
-# ---------------------------------------------------------------------------
 
 
 def test_build_logging_dict_rich_exceptions_disabled():

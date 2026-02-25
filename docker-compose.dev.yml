@@ -1,0 +1,97 @@
+---
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  migrate:
+    build:
+      context: .
+      dockerfile: tests/Dockerfile
+    command: python manage.py migrate --noinput
+    environment:
+      DJANGO_SETTINGS_MODULE: tests.settings_dev
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  django:
+    container_name: django-app
+    build:
+      context: .
+      dockerfile: tests/Dockerfile
+    command: python manage.py runserver 0.0.0.0:8000
+    environment:
+      DJANGO_SETTINGS_MODULE: tests.settings_dev
+      OTEL_SERVICE_NAME: django-app
+    ports:
+      - "8000:8000"
+    volumes:
+      - /tmp/django-o11y:/tmp/django-o11y
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    develop:
+      watch:
+        - action: sync
+          path: ./src
+          target: /app/src
+        - action: sync
+          path: ./tests
+          target: /app/tests
+        - action: rebuild
+          path: pyproject.toml
+        - action: rebuild
+          path: uv.lock
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  celery:
+    build:
+      context: .
+      dockerfile: tests/Dockerfile
+    command: celery -A tests.celery_app worker -l info
+    environment:
+      DJANGO_SETTINGS_MODULE: tests.settings_dev
+      OTEL_SERVICE_NAME: celery-worker
+      DJANGO_O11Y_LOGGING_FILE_PATH: /tmp/django-o11y/celery.log
+    volumes:
+      - /tmp/django-o11y:/tmp/django-o11y
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./src
+          target: /app/src
+        - action: sync+restart
+          path: ./tests
+          target: /app/tests
+        - action: rebuild
+          path: pyproject.toml
+        - action: rebuild
+          path: uv.lock
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  task-generator:
+    image: curlimages/curl:latest
+    entrypoint: >
+      sh -c "
+        echo 'Waiting for django...';
+        until curl -sf 'http://django:8000/trigger/?x=3&y=4'; do sleep 2; done;
+        echo 'Django ready, generating tasks every 5s';
+        while true; do
+          curl -sf 'http://django:8000/trigger/?x=3&y=4';
+          sleep 5;
+        done
+      "
+    depends_on:
+      - django

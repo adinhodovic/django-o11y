@@ -7,7 +7,7 @@ packages = ["src/django_o11y"]
 
 [project]
 name = "django-o11y"
-version = "0.2.11"
+version = "0.2.12"
 description = "Comprehensive OpenTelemetry observability for Django with traces, logs, metrics, and profiling"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -66,7 +66,7 @@ postgres = [
 ]
 
 # Cache instrumentation
-redis = ["opentelemetry-instrumentation-redis>=0.60b1"]
+redis = ["redis>=7.2.0", "opentelemetry-instrumentation-redis>=0.60b1"]
 
 # HTTP client instrumentation
 http = [

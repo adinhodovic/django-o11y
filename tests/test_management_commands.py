@@ -265,14 +265,6 @@ def test_helper_functions_dont_crash():
     _print_service_urls()
 
 
-# =============================================================================
-# Integration tests - require the full observability stack
-# All tests in this section use the session-scoped `observability_stack`
-# fixture (defined in conftest.py) which starts the stack via
-# `observability stack start` and tears it down after the session.
-# =============================================================================
-
-
 @pytest.mark.integration
 def test_stack_status_with_real_docker():
     from django_o11y.management.commands.o11y import cli

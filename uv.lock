@@ -417,7 +417,7 @@ wheels = [
 
 [[package]]
 name = "django-o11y"
-version = "0.2.11"
+version = "0.2.12"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
@@ -446,6 +446,7 @@ all = [
     { name = "opentelemetry-instrumentation-urllib3" },
     { name = "pyroscope-io" },
     { name = "pyroscope-otel" },
+    { name = "redis" },
     { name = "rich" },
 ]
 aws = [
@@ -503,6 +504,7 @@ profiling = [
 ]
 redis = [
     { name = "opentelemetry-instrumentation-redis" },
+    { name = "redis" },
 ]
 
 [package.metadata]
@@ -549,6 +551,7 @@ requires-dist = [
     { name = "pytest-django", marker = "extra == 'dev'", specifier = ">=4.12.0" },
     { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.15.1" },
     { name = "redis", marker = "extra == 'dev'", specifier = ">=7.2.0" },
+    { name = "redis", marker = "extra == 'redis'", specifier = ">=7.2.0" },
     { name = "requests", marker = "extra == 'dev'", specifier = ">=2.32.5" },
     { name = "rich", marker = "extra == 'dev-logging'", specifier = ">=14.3.3" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.2" },
