@@ -16,8 +16,10 @@ logger = get_logger()
 def setup_profiling(config: dict[str, Any]) -> None:
     """Configure Pyroscope with standard tags (service, version, env, host, pid)."""
     if config.get("CELERY", {}).get("ENABLED", False):
+        import importlib
+
         try:
-            import django_o11y.profiling.signals  # noqa: F401
+            importlib.import_module("django_o11y.profiling.signals")
         except ImportError:
             logger.warning(
                 "CELERY.ENABLED is true but Celery is not installed. "

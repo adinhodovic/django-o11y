@@ -203,4 +203,4 @@ source = ["django_o11y"]
 omit = ["./.venv/*", "*/migrations/*", "*/apps.py", "*/tests/*"]
 
 [tool.coverage.report]
-fail_under = 70
+fail_under = 75

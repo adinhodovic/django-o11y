@@ -124,8 +124,10 @@ def setup_tracing(config: dict[str, Any]) -> TracerProvider:
 def setup_tracing_for_django(config: dict[str, Any]) -> None:
     """Configure tracing for Django startup in non-prefork parent processes."""
     if config.get("CELERY", {}).get("ENABLED", False):
+        import importlib
+
         try:
-            import django_o11y.tracing.signals  # noqa: F401
+            importlib.import_module("django_o11y.tracing.signals")
         except ImportError:
             logger.warning(
                 "CELERY.ENABLED is true but Celery is not installed. "

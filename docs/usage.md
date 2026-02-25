@@ -52,8 +52,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
 
     # After auth so request.user is available
-    "django_o11y.middleware.TracingMiddleware",
-    "django_o11y.middleware.LoggingMiddleware",
+    "django_o11y.tracing.middleware.TracingMiddleware",
+    "django_o11y.logging.middleware.LoggingMiddleware",
 
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",

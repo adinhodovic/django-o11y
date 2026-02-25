@@ -11,7 +11,7 @@ def test_celery_setup_when_disabled(celery_app):
 
 
 def test_celery_setup_prevents_double_instrumentation(celery_app):
-    import django_o11y.tracing.setup as setup
+    from django_o11y.tracing import setup
 
     original_pid = setup._instrumented_pid
     setup._instrumented_pid = None
@@ -48,7 +48,7 @@ def test_celery_setup_warns_on_missing_package():
 def test_celery_setup_connects_signals(celery_app):
     from celery import signals
 
-    import django_o11y.tracing.setup as setup
+    from django_o11y.tracing import setup
     from django_o11y.tracing.setup import setup_celery_o11y
 
     original_pid = setup._instrumented_pid
@@ -67,7 +67,7 @@ def test_celery_setup_connects_signals(celery_app):
 
 
 def test_celery_setup_loads_config_from_django_settings(celery_app):
-    import django_o11y.tracing.setup as setup
+    from django_o11y.tracing import setup
     from django_o11y.config.setup import get_o11y_config
 
     original_pid = setup._instrumented_pid
@@ -95,7 +95,7 @@ def test_auto_setup_skips_when_celery_disabled(celery_app):
 
 def test_celery_setup_enables_task_events(celery_app):
     """setup_celery_o11y sets worker_send_task_events and task_send_sent_event."""
-    import django_o11y.tracing.setup as setup
+    from django_o11y.tracing import setup
 
     original_pid = setup._instrumented_pid
     setup._instrumented_pid = None
@@ -112,7 +112,7 @@ def test_celery_setup_enables_task_events(celery_app):
 
 def test_celery_setup_does_not_set_events_when_disabled(celery_app):
     """Task events are not touched when CELERY.ENABLED is False."""
-    import django_o11y.tracing.setup as setup
+    from django_o11y.tracing import setup
 
     original_pid = setup._instrumented_pid
     setup._instrumented_pid = None
@@ -163,7 +163,7 @@ def test_worker_init_skips_auto_setup_for_prefork(celery_app):
     from django_o11y.tracing.signals import _auto_setup_on_worker_init
 
     with patch("django_o11y.tracing.signals.is_celery_prefork_pool", return_value=True):
-        with patch("django_o11y.tracing.signals.setup_celery_o11y") as mock_setup:
+        with patch("django_o11y.tracing.signals._auto_setup_worker") as mock_setup:
             _auto_setup_on_worker_init(sender=celery_app)
             mock_setup.assert_not_called()
 
@@ -183,10 +183,14 @@ def test_worker_process_init_runs_auto_setup_for_prefork(celery_app):
     config = {"CELERY": {"ENABLED": True}, "TRACING": {"ENABLED": False}}
     with patch("django_o11y.tracing.signals.is_celery_prefork_pool", return_value=True):
         with patch("django_o11y.tracing.signals.get_o11y_config", return_value=config):
-            with patch("django_o11y.tracing.signals.setup_celery_o11y") as mock_setup:
-                # sender=None mirrors what celery/concurrency/prefork.py actually sends
-                _auto_setup_on_worker_process_init(sender=None)
-                mock_setup.assert_called_once_with(_celery.current_app, config)
+            with patch(
+                "django_o11y.tracing.signals._resolve_worker_app",
+                return_value=_celery.current_app,
+            ):
+                with patch("django_o11y.tracing.setup.setup_celery_o11y") as mock_setup:
+                    # sender=None mirrors what celery/concurrency/prefork.py actually sends
+                    _auto_setup_on_worker_process_init(sender=None)
+                    mock_setup.assert_called_once_with(_celery.current_app, config)
 
 
 def test_worker_process_init_sets_up_profiling_for_prefork_child(celery_app):
@@ -213,7 +217,7 @@ def test_worker_process_init_sets_up_profiling_for_prefork_child(celery_app):
                 return_value=True,
             ):
                 with patch(
-                    "django_o11y.profiling.signals.setup_profiling"
+                    "django_o11y.profiling.setup.setup_profiling"
                 ) as mock_profile:
                     _auto_setup_profiling_on_worker_process_init(sender=None)
                     mock_profile.assert_called_once_with(config)
@@ -238,7 +242,7 @@ def test_worker_process_shutdown_flushes_traces_when_enabled():
 def test_celery_setup_configures_tracing_provider_when_enabled(celery_app):
     from unittest.mock import patch
 
-    import django_o11y.tracing.setup as setup
+    from django_o11y.tracing import setup
 
     original_pid = setup._instrumented_pid
     setup._instrumented_pid = None
@@ -292,7 +296,7 @@ def test_setup_logging_signal_applies_django_logging_config(celery_app):
 
 def test_celery_setup_disables_worker_root_logger_hijack(celery_app):
     """setup_celery_o11y disables Celery root logger hijacking."""
-    import django_o11y.tracing.setup as setup
+    from django_o11y.tracing import setup
 
     original_pid = setup._instrumented_pid
     setup._instrumented_pid = None
@@ -312,7 +316,7 @@ def test_setup_celery_adds_django_structlog_worker_step(celery_app):
     from types import SimpleNamespace
     from unittest.mock import Mock
 
-    import django_o11y.tracing.setup as setup
+    from django_o11y.tracing import setup
 
     original_pid = setup._instrumented_pid
     setup._instrumented_pid = None
