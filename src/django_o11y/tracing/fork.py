@@ -2,6 +2,7 @@
 
 import logging
 import os
+from importlib import import_module
 
 from opentelemetry import trace
 
@@ -40,9 +41,8 @@ def _reinit_after_fork() -> None:
         except Exception:  # pylint: disable=broad-exception-caught
             pass
 
-        from django_o11y.tracing.setup import setup_tracing
-
-        setup_tracing(config)
+        tracing_setup = import_module("django_o11y.tracing.setup")
+        tracing_setup.setup_tracing(config)
         logger.debug(
             "django_o11y: tracing re-initialised after fork (pid=%s)", os.getpid()
         )

@@ -163,8 +163,10 @@ def build_logging_dict(
 def setup_logging_for_django(config: dict) -> None:
     """Configure logging during Django startup."""
     if config.get("CELERY", {}).get("ENABLED", False):
+        import importlib
+
         try:
-            import django_o11y.logging.signals  # noqa: F401
+            importlib.import_module("django_o11y.logging.signals")
         except ImportError:
             logger.warning(
                 "CELERY.ENABLED is true but Celery is not installed. "

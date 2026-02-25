@@ -6,7 +6,6 @@ from celery.signals import worker_init, worker_process_init, worker_process_shut
 
 from django_o11y.config.setup import get_o11y_config
 from django_o11y.logging.utils import get_logger
-from django_o11y.tracing.setup import setup_celery_o11y
 from django_o11y.tracing.utils import is_celery_prefork_pool
 from django_o11y.utils.signals import connect_signal
 
@@ -22,9 +21,8 @@ def _maybe_force_flush(config: dict[str, Any], reason: str) -> None:
         from opentelemetry import trace
 
         provider = trace.get_tracer_provider()
-        force_flush = getattr(provider, "force_flush", None)
-        if callable(force_flush):
-            force_flush()
+        if hasattr(provider, "force_flush"):
+            provider.force_flush()  # type: ignore[attr-defined]
     except Exception:  # pragma: no cover
         logger.warning(
             "Failed to force-flush tracer provider on %s", reason, exc_info=True
@@ -49,6 +47,8 @@ def _auto_setup_worker(sender) -> None:
             return
 
         app = _resolve_worker_app(sender)
+        from django_o11y.tracing.setup import setup_celery_o11y
+
         setup_celery_o11y(app, config)
     except Exception:  # pragma: no cover
         logger.warning(

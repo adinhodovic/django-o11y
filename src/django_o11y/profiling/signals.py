@@ -4,7 +4,6 @@ from celery.signals import worker_process_init
 
 from django_o11y.config.setup import get_o11y_config
 from django_o11y.logging.utils import get_logger
-from django_o11y.profiling.setup import setup_profiling
 from django_o11y.tracing.utils import is_celery_fork_pool_worker, is_celery_prefork_pool
 from django_o11y.utils.signals import connect_signal
 
@@ -27,6 +26,8 @@ def _auto_setup_profiling_on_worker_process_init(sender=None, **kwargs) -> None:
 
         if not config.get("PROFILING", {}).get("ENABLED", False):
             return
+
+        from django_o11y.profiling.setup import setup_profiling
 
         setup_profiling(config)
     except Exception:  # pragma: no cover
