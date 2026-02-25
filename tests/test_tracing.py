@@ -146,7 +146,7 @@ def test_setup_tracing_skips_pyroscope_processor_when_unavailable():
                 assert provider is not None
 
 
-def test_setup_tracing_skips_pyroscope_processor_in_celery_prefork_worker():
+def test_setup_tracing_adds_pyroscope_processor_in_celery_prefork_worker_child():
     import sys
 
     from django_o11y.tracing.provider import setup_tracing
@@ -157,19 +157,21 @@ def test_setup_tracing_skips_pyroscope_processor_in_celery_prefork_worker():
         "PROFILING": {"ENABLED": True},
     }
 
+    mock_processor = MagicMock()
     mock_pyroscope_otel = MagicMock()
+    mock_pyroscope_otel.PyroscopeSpanProcessor.return_value = mock_processor
 
     with patch("django_o11y.tracing.provider.OTLPSpanExporter"):
         with patch("django_o11y.tracing.provider.trace.set_tracer_provider"):
             with patch(
-                "django_o11y.tracing.provider._is_celery_fork_pool_worker",
+                "django_o11y.tracing.provider.is_celery_fork_pool_worker",
                 return_value=True,
             ):
                 with patch.dict(sys.modules, {"pyroscope.otel": mock_pyroscope_otel}):
                     provider = setup_tracing(config)
 
                     assert provider is not None
-                    mock_pyroscope_otel.PyroscopeSpanProcessor.assert_not_called()
+                    mock_pyroscope_otel.PyroscopeSpanProcessor.assert_called_once()
 
 
 def test_setup_tracing_skips_pyroscope_processor_in_celery_prefork_boot_process():
@@ -188,7 +190,7 @@ def test_setup_tracing_skips_pyroscope_processor_in_celery_prefork_boot_process(
     with patch("django_o11y.tracing.provider.OTLPSpanExporter"):
         with patch("django_o11y.tracing.provider.trace.set_tracer_provider"):
             with patch(
-                "django_o11y.tracing.provider._is_celery_prefork_boot",
+                "django_o11y.tracing.provider.is_celery_prefork_pool",
                 return_value=True,
             ):
                 with patch.dict(sys.modules, {"pyroscope.otel": mock_pyroscope_otel}):

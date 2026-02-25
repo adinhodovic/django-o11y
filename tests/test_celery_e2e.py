@@ -9,7 +9,6 @@ from celery.contrib.testing.worker import start_worker
 from django.test import override_settings
 
 from django_o11y.celery.setup import (
-    register_early_celery_logging_hook,
     setup_celery_o11y,
 )
 from django_o11y.logging.config import build_logging_dict
@@ -142,8 +141,6 @@ def test_prefork_worker_console_logs_are_json(tmp_path, capsys):
         LOGGING=build_logging_dict(logging_cfg, extra={"root": {"level": "INFO"}}),
         DJANGO_O11Y=o11y_cfg,
     ):
-        register_early_celery_logging_hook()
-
         app = Celery("e2e-json", broker="filesystem://", backend="cache+memory://")
         app.conf.broker_transport_options = {
             "data_folder_in": str(queue_dir),

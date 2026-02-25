@@ -65,6 +65,7 @@ services:
     image: grafana/alloy:v1.13.1
     ports:
       - "12345:12345"
+      - "4041:4041"
       - "4317:4317"
       - "4318:4318"
     volumes:

@@ -135,3 +135,47 @@ def test_app_ready_raises_on_invalid_config():
                 raise ImproperlyConfigured("\n".join(errors))
 
         assert "SAMPLE_RATE" in str(exc_info.value)
+
+
+def test_configure_metrics_warns_when_metrics_url_missing():
+    from unittest.mock import patch
+
+    from django.urls import Resolver404
+
+    from django_o11y.apps import DjangoO11yConfig
+
+    config = {
+        "LOGGING": {"FORMAT": "json"},
+        "METRICS": {"PROMETHEUS_ENABLED": True, "PROMETHEUS_ENDPOINT": "/metrics"},
+    }
+    app_config = DjangoO11yConfig("django_o11y", __import__("django_o11y"))
+
+    with (
+        patch("django_o11y.instrumentation.setup.setup_instrumentation"),
+        patch("django.urls.resolve", side_effect=Resolver404("missing")),
+        patch("django_o11y.apps.logger.warning") as mock_warning,
+    ):
+        app_config._configure_metrics(config)
+
+    mock_warning.assert_called_once()
+
+
+def test_configure_metrics_no_warning_when_metrics_url_exists():
+    from unittest.mock import patch
+
+    from django_o11y.apps import DjangoO11yConfig
+
+    config = {
+        "LOGGING": {"FORMAT": "json"},
+        "METRICS": {"PROMETHEUS_ENABLED": True, "PROMETHEUS_ENDPOINT": "/metrics"},
+    }
+    app_config = DjangoO11yConfig("django_o11y", __import__("django_o11y"))
+
+    with (
+        patch("django_o11y.instrumentation.setup.setup_instrumentation"),
+        patch("django.urls.resolve"),
+        patch("django_o11y.apps.logger.warning") as mock_warning,
+    ):
+        app_config._configure_metrics(config)
+
+    mock_warning.assert_not_called()

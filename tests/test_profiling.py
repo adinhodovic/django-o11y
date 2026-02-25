@@ -216,3 +216,28 @@ def test_setup_profiling_skips_pyroscope_configure_in_celery_prefork_boot():
             setup_profiling(config)
 
             mock_pyroscope.configure.assert_not_called()
+
+
+def test_setup_profiling_allows_prefork_child_process():
+    """setup_profiling runs in celery prefork child workers."""
+    from django_o11y.profiling import setup_profiling
+
+    mock_pyroscope = MagicMock()
+
+    config = {
+        "SERVICE_NAME": "test-service",
+        "PROFILING": {
+            "ENABLED": True,
+            "PYROSCOPE_URL": "http://localhost:4040",
+        },
+    }
+
+    with patch("sys.argv", ["celery", "-A", "proj", "worker"]):
+        with patch(
+            "django_o11y.profiling.is_celery_fork_pool_worker",
+            return_value=True,
+        ):
+            with patch.dict("sys.modules", {"pyroscope": mock_pyroscope}):
+                setup_profiling(config)
+
+                mock_pyroscope.configure.assert_called_once()
