@@ -358,7 +358,6 @@ Profiles are pushed to Pyroscope on startup. View them in Grafana under **Explor
 
 For Celery prefork workers, profiling is initialized in each worker child process (post-fork), not in the prefork parent process.
 
-
 ### Custom tags
 
 Tag profiles with extra context for filtering:
