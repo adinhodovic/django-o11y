@@ -81,7 +81,7 @@ python manage.py o11y stack stop
 
 ### Test configuration
 
-Tests use `tests/settings.py` with sane defaults:
+Tests use `tests/config/settings/test.py` with sane defaults:
 
 - All instrumentation enabled by default (tests should reflect production)
 - File-based SQLite database (not :memory:) for manual testing

@@ -16,7 +16,7 @@ services:
       dockerfile: tests/Dockerfile
     command: python manage.py migrate --noinput
     environment:
-      DJANGO_SETTINGS_MODULE: tests.settings_dev
+      DJANGO_SETTINGS_MODULE: tests.config.settings.dev
     depends_on:
       redis:
         condition: service_healthy
@@ -28,7 +28,7 @@ services:
       dockerfile: tests/Dockerfile
     command: python manage.py runserver 0.0.0.0:8000
     environment:
-      DJANGO_SETTINGS_MODULE: tests.settings_dev
+      DJANGO_SETTINGS_MODULE: tests.config.settings.dev
       OTEL_SERVICE_NAME: django-app
     ports:
       - "8000:8000"
@@ -58,7 +58,7 @@ services:
       dockerfile: tests/Dockerfile
     command: celery -A tests.celery_app worker -l info
     environment:
-      DJANGO_SETTINGS_MODULE: tests.settings_dev
+      DJANGO_SETTINGS_MODULE: tests.config.settings.dev
       OTEL_SERVICE_NAME: celery-worker
       DJANGO_O11Y_LOGGING_FILE_PATH: /tmp/django-o11y/celery.log
     volumes:
