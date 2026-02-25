@@ -1,18 +1,18 @@
 """Dev settings for running the test project locally via Docker Compose.
 
-Extends tests.settings with a real Redis broker, a real Celery worker process,
+Extends tests.config.settings.test with a real Redis broker, a real Celery worker process,
 and JSON structured logging so you can see what production logs look like.
 
 Usage:
-    DJANGO_SETTINGS_MODULE=tests.settings_dev python manage.py runserver
-    DJANGO_SETTINGS_MODULE=tests.settings_dev celery -A tests.celery_app worker -l info
+    DJANGO_SETTINGS_MODULE=tests.config.settings.dev python manage.py runserver
+    DJANGO_SETTINGS_MODULE=tests.config.settings.dev celery -A tests.celery_app worker -l info
 
 Or simply:
     docker compose -f docker-compose.dev.yml up --build
 """
 
 from django_o11y.logging.setup import build_logging_dict
-from tests.settings import *  # noqa: F401,F403  # pylint: disable=wildcard-import,unused-wildcard-import
+from tests.config.settings.test import *  # noqa: F401,F403  # pylint: disable=wildcard-import,unused-wildcard-import
 
 DEBUG = False
 
