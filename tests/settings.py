@@ -12,7 +12,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    "django_o11y.middleware.TracingMiddleware",
+    "django_o11y.tracing.middleware.TracingMiddleware",
     "django_structlog.middlewares.RequestMiddleware",
     "django.middleware.common.CommonMiddleware",
 ]
