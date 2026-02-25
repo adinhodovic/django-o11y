@@ -1,35 +1,58 @@
 """Setup module for Celery o11y integration."""
 
 import os
-import warnings
-from typing import TYPE_CHECKING, Any
+from typing import Any
+
+from celery.signals import (
+    setup_logging,
+    worker_init,
+    worker_process_init,
+    worker_process_shutdown,
+)
 
 from django_o11y.celery.detection import (
+    is_celery_fork_pool_worker,
     is_celery_prefork_pool,
-    is_celery_worker_boot,
 )
 from django_o11y.conf import get_o11y_config
+from django_o11y.context import get_logger
+from django_o11y.profiling import setup_profiling
 from django_o11y.tracing.provider import setup_tracing
-
-if TYPE_CHECKING:  # pragma: no cover
-    from celery import Celery
 
 # Track instrumentation per-process to remain fork-safe.
 _instrumented_pid: int | None = None
-_early_logging_hook_registered = False
+logger = get_logger()
 
 
-def _is_celery_worker_boot(argv: list[str] | None = None) -> bool:
-    """Compatibility wrapper for shared celery worker boot detection."""
-    return is_celery_worker_boot(argv)
+def _connect(signal, dispatch_uid: str):
+    """Return a decorator that registers handler when Celery is available."""
+
+    def _decorator(func):
+        signal.connect(func, weak=False, dispatch_uid=dispatch_uid)
+        return func
+
+    return _decorator
 
 
-def _is_celery_prefork_pool(argv: list[str] | None = None) -> bool:
-    """Compatibility wrapper for shared celery prefork pool detection."""
-    return is_celery_prefork_pool(argv)
+def _maybe_force_flush(config: dict[str, Any], reason: str) -> None:
+    """Flush pending spans from current process provider."""
+    if not config.get("TRACING", {}).get("ENABLED", False):
+        return
+
+    try:
+        from opentelemetry import trace
+
+        provider = trace.get_tracer_provider()
+        force_flush = getattr(provider, "force_flush", None)
+        if callable(force_flush):
+            force_flush()
+    except Exception:  # pragma: no cover
+        logger.warning(
+            "Failed to force-flush tracer provider on %s", reason, exc_info=True
+        )
 
 
-def setup_celery_o11y(app: "Celery", config: dict[str, Any] | None = None) -> None:
+def setup_celery_o11y(app: Any, config: dict[str, Any] | None = None) -> None:
     """
     Set up tracing, logging, and metrics for Celery tasks.
 
@@ -55,7 +78,9 @@ def setup_celery_o11y(app: "Celery", config: dict[str, Any] | None = None) -> No
     app.conf.worker_send_task_events = True
     app.conf.task_send_sent_event = True
 
-    _setup_django_structlog_worker_step(app)
+    from django_structlog.celery.steps import DjangoStructLogInitStep
+
+    app.steps["worker"].add(DjangoStructLogInitStep)
 
     if config.get("TRACING", {}).get("ENABLED") and celery_config.get(
         "TRACING_ENABLED", True
@@ -66,59 +91,25 @@ def setup_celery_o11y(app: "Celery", config: dict[str, Any] | None = None) -> No
     _instrumented_pid = os.getpid()
 
 
-def register_early_celery_logging_hook() -> None:
-    """Hook Celery's setup_logging signal so workers use Django's LOGGING config.
-
-    Without this, Celery configures its own logging on worker startup and the
-    worker process ends up with a different format (plain text) from the Django
-    process (structlog JSON/console).  Connecting to ``setup_logging`` and
-    calling ``dictConfig(settings.LOGGING)`` replicates the pattern described
-    in the logging blog post.
-    """
-    global _early_logging_hook_registered
-
-    if _early_logging_hook_registered:
-        return
-
+@_connect(setup_logging, dispatch_uid="django_o11y.celery.setup_logging")
+def _config_loggers(*args, **kwargs):  # pylint: disable=unused-variable
+    """Use Django's LOGGING config for Celery worker logging setup."""
     import logging.config as _logging_config
 
-    from celery.signals import setup_logging
     from django.conf import settings
 
-    @setup_logging.connect(weak=False, dispatch_uid="django_o11y.celery.setup_logging")
-    def _config_loggers(*args, **kwargs):  # pylint: disable=unused-variable
-        if hasattr(settings, "LOGGING") and settings.LOGGING:
-            _logging_config.dictConfig(settings.LOGGING)
-            # Returning truthy tells Celery to skip its own logger setup.
-            return True
-        return False
-
-    _early_logging_hook_registered = True
-
-
-def _setup_django_structlog_worker_step(app: "Celery") -> None:
-    """Register django-structlog worker init step when available."""
-    try:
-        from django_structlog.celery.steps import DjangoStructLogInitStep
-    except ImportError:
-        return
-
-    app.steps["worker"].add(DjangoStructLogInitStep)
+    if hasattr(settings, "LOGGING") and settings.LOGGING:
+        _logging_config.dictConfig(settings.LOGGING)
+        # Returning truthy tells Celery to skip its own logger setup.
+        return True
+    return False
 
 
 def _setup_celery_tracing() -> None:
     """Set up automatic tracing for Celery tasks.
 
-    In Celery prefork workers the parent Django process already called
-    ``CeleryInstrumentor().instrument()`` (via instrumentation/setup.py) to
-    inject W3C traceparent headers on the producer side.  That sets the
-    class-level ``_is_instrumented_by_opentelemetry = True`` which every
-    forked child inherits.  Calling ``instrument()`` again in each child
-    triggers the "Attempting to instrument while already instrumented" warning
-    from the OTel SDK even though the monkey-patches are already in place.
-
-    The TracerProvider is re-created per-child by ``setup_tracing()`` before
-    this function is called, so we only need to skip re-patching here.
+    In prefork mode, monkey-patches are inherited across fork. We only need to
+    ensure instrumentation is applied once per process to avoid OTel warnings.
     """
     try:
         from opentelemetry.instrumentation.celery import CeleryInstrumentor
@@ -127,34 +118,57 @@ def _setup_celery_tracing() -> None:
         if not instrumentor.is_instrumented_by_opentelemetry:
             instrumentor.instrument()
     except ImportError:
-        warnings.warn(
+        logger.warning(
             "Celery tracing is enabled but 'opentelemetry-instrumentation-celery' "
             "is not installed. "
-            "Install it with: pip install opentelemetry-instrumentation-celery",
-            UserWarning,
-            stacklevel=3,
+            "Install it with: pip install opentelemetry-instrumentation-celery"
         )
 
 
+@_connect(worker_init, dispatch_uid="django_o11y.celery.worker_init")
 def _auto_setup_on_worker_init(sender, **kwargs) -> None:
     """worker_init signal handler — runs setup_celery_o11y on worker start."""
-    if _is_celery_prefork_pool():
+    if is_celery_prefork_pool():
         return
 
+    _auto_setup_worker(sender, prefork=False)
+
+
+def _resolve_worker_app(sender):
+    """Resolve Celery app from signal sender or current_app fallback."""
+    if sender is not None:
+        return sender
+
+    import celery as _celery
+
+    return _celery.current_app
+
+
+def _auto_setup_worker(sender, *, prefork: bool) -> None:
+    """Shared worker setup path for both worker_init and process_init."""
     try:
         config = get_o11y_config()
+        if not config.get("CELERY", {}).get("ENABLED", False):
+            return
 
-        if config.get("CELERY", {}).get("ENABLED", False):
-            setup_celery_o11y(sender, config)
+        app = _resolve_worker_app(sender)
+        setup_celery_o11y(app, config)
+
+        if prefork and config.get("PROFILING", {}).get("ENABLED"):
+            if is_celery_fork_pool_worker():
+                setup_profiling(config)
     except Exception:  # pragma: no cover
-        warnings.warn(
+        logger.warning(
             "Failed to auto-setup django-o11y for Celery. "
             "Check your DJANGO_O11Y configuration.",
-            UserWarning,
-            stacklevel=2,
+            exc_info=True,
         )
 
 
+@_connect(
+    worker_process_init,
+    dispatch_uid="django_o11y.celery.worker_process_init",
+)
 def _auto_setup_on_worker_process_init(sender=None, **kwargs) -> None:
     """worker_process_init handler — runs setup in prefork child workers.
 
@@ -162,23 +176,26 @@ def _auto_setup_on_worker_process_init(sender=None, **kwargs) -> None:
     (see celery/concurrency/prefork.py).  Fall back to ``celery.current_app``
     so that ``setup_celery_o11y`` receives a real Celery instance.
     """
-    if not _is_celery_prefork_pool():
+    if not is_celery_prefork_pool():
         return
 
+    _auto_setup_worker(sender, prefork=True)
+
+
+@_connect(
+    worker_process_shutdown,
+    dispatch_uid="django_o11y.celery.worker_process_shutdown",
+)
+def _auto_flush_on_worker_process_shutdown(sender=None, **kwargs) -> None:
+    """worker_process_shutdown handler — flush spans before worker child exits."""
     try:
         config = get_o11y_config()
+        if not config.get("CELERY", {}).get("ENABLED", False):
+            return
 
-        if config.get("CELERY", {}).get("ENABLED", False):
-            app = sender
-            if app is None:
-                import celery as _celery
-
-                app = _celery.current_app
-            setup_celery_o11y(app, config)
+        _maybe_force_flush(config, reason="worker_process_shutdown")
     except Exception:  # pragma: no cover
-        warnings.warn(
-            "Failed to auto-setup django-o11y for Celery. "
-            "Check your DJANGO_O11Y configuration.",
-            UserWarning,
-            stacklevel=2,
+        logger.warning(
+            "Failed to flush tracer provider during Celery worker shutdown.",
+            exc_info=True,
         )

@@ -33,6 +33,24 @@ otelcol.exporter.loki "otlp" {
 }
 
 // ============================================================
+// Profiles: Pyroscope HTTP ingest -> Pyroscope
+// ============================================================
+
+pyroscope.receive_http "default" {
+  http {
+    listen_address = "0.0.0.0"
+    listen_port    = 4041
+  }
+  forward_to = [pyroscope.write.default.receiver]
+}
+
+pyroscope.write "default" {
+  endpoint {
+    url = "http://pyroscope:4040"
+  }
+}
+
+// ============================================================
 // Logs: Docker stdout scrape path → Loki
 // Picks up logs when OTLP log push is disabled (the default).
 // Django writes JSON logs to stdout; Alloy tails them here.

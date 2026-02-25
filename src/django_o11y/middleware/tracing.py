@@ -4,15 +4,14 @@ from collections.abc import Callable
 
 from django.http import HttpRequest, HttpResponse
 from opentelemetry import trace
-from opentelemetry.trace import Status, StatusCode
 
 
 class TracingMiddleware:
     """
-    Middleware that creates a span for each HTTP request.
+    Middleware that enriches the current request span with extra attributes.
 
-    This is supplementary to the automatic Django instrumentation,
-    providing additional control and customization.
+    Span creation and HTTP status/error mapping are handled by automatic Django
+    instrumentation. This middleware adds route and authenticated user metadata.
     """
 
     def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]):
@@ -33,18 +32,4 @@ class TracingMiddleware:
                 span.set_attribute("user.id", str(request.user.id))
                 span.set_attribute("user.username", request.user.username)
 
-        try:
-            response = self.get_response(request)
-
-            if span.is_recording():
-                span.set_attribute("http.status_code", response.status_code)
-                if response.status_code >= 500:
-                    span.set_status(Status(StatusCode.ERROR))
-
-            return response
-
-        except Exception as exc:
-            if span.is_recording():
-                span.record_exception(exc)
-                span.set_status(Status(StatusCode.ERROR, str(exc)))
-            raise
+        return self.get_response(request)

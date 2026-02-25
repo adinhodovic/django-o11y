@@ -1,36 +1,34 @@
 """Pyroscope profiling integration with proper tags."""
 
-import logging
 import os
 import socket
 from typing import Any
 
-logger = logging.getLogger("django_o11y.profiling")
+from django_o11y.celery.detection import (
+    is_celery_fork_pool_worker,
+    is_celery_prefork_pool,
+)
+from django_o11y.context import get_logger
 
-
-def _is_celery_prefork_boot(argv: list[str] | None = None) -> bool:
-    """Return True when current process is a celery prefork worker boot."""
-    from django_o11y.celery.detection import is_celery_prefork_pool
-
-    return is_celery_prefork_pool(argv)
+logger = get_logger()
 
 
 def setup_profiling(config: dict[str, Any]) -> None:
     """Configure Pyroscope with standard tags (service, version, env, host, pid).
 
-    Skips ``pyroscope.configure()`` for Celery prefork parent and child
-    processes to avoid fork-safety issues in native profilers.
-    Context: https://github.com/grafana/pyroscope-rs/issues/276
+    For Celery prefork workers, the parent process is skipped and child
+    processes are initialized post-fork via ``worker_process_init``.
     """
     profiling_config = config.get("PROFILING", {})
 
     if not profiling_config.get("ENABLED"):
         return
 
-    if _is_celery_prefork_boot():
+    is_prefork_parent = is_celery_prefork_pool() and not is_celery_fork_pool_worker()
+    if is_prefork_parent:
         logger.info(
             "django_o11y: skipping pyroscope.configure() in Celery prefork process "
-            "(fork-safety); traces still active"
+            "parent; worker child processes initialize profiling post-fork"
         )
         return
 

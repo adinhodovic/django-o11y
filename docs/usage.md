@@ -355,6 +355,9 @@ DJANGO_O11Y = {
 
 Profiles are pushed to Pyroscope on startup. View them in Grafana under **Explore → Pyroscope**.
 
+For Celery prefork workers, profiling is initialized in each worker child process (post-fork), not in the prefork parent process.
+
+
 ### Custom tags
 
 Tag profiles with extra context for filtering:
@@ -442,6 +445,8 @@ DJANGO_O11Y = {
 ```
 
 Celery signals wire everything up when the worker starts. Each task gets a trace span linked to the originating request, and structured logs with `trace_id`/`span_id`.
+
+To reduce span loss in prefork workers, django-o11y force-flushes tracing on `worker_process_shutdown`.
 
 ```python
 import structlog

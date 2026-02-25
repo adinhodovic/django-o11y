@@ -1,4 +1,7 @@
-.PHONY: dev dev-stop dev-logs o11y-stack o11y-stack-stop o11y-stack-logs
+.PHONY: setup dev dev-stop dev-logs o11y-stack o11y-stack-stop o11y-stack-logs
+
+setup:
+	uv sync --all-extras
 
 dev:
 	docker compose -f docker-compose.dev.yml up --build --watch

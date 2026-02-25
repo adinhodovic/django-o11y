@@ -1,6 +1,5 @@
 """Tests for Celery integration."""
 
-import pytest
 from django.test import override_settings
 
 
@@ -41,8 +40,9 @@ def test_celery_setup_warns_on_missing_package():
         return importlib.__import__(name, *args, **kwargs)
 
     with patch("builtins.__import__", side_effect=mock_import):
-        with pytest.warns(UserWarning, match="opentelemetry-instrumentation-celery"):
+        with patch("django_o11y.celery.setup.logger.warning") as mock_warning:
             _setup_celery_tracing()
+            mock_warning.assert_called_once()
 
 
 def test_celery_setup_connects_signals(celery_app):
@@ -132,49 +132,31 @@ def test_celery_setup_does_not_set_events_when_disabled(celery_app):
         setup._instrumented_pid = original_pid
 
 
-def test_is_celery_worker_boot_detects_celery_worker():
-    from django_o11y.celery.setup import _is_celery_worker_boot
-
-    assert _is_celery_worker_boot(["celery", "-A", "proj", "worker"]) is True
-    assert _is_celery_worker_boot(["/usr/local/bin/celery", "worker"]) is True
-    assert (
-        _is_celery_worker_boot(["/usr/bin/python3", "-m", "celery", "worker"]) is True
-    )
-
-
-def test_is_celery_worker_boot_false_for_non_worker_commands():
-    from django_o11y.celery.setup import _is_celery_worker_boot
-
-    assert _is_celery_worker_boot(["celery", "-A", "proj", "beat"]) is False
-    assert _is_celery_worker_boot(["gunicorn", "myapp.wsgi"]) is False
-    assert _is_celery_worker_boot([]) is False
-
-
 def test_celery_prefork_pool_detection_defaults_to_prefork():
-    from django_o11y.celery.setup import _is_celery_prefork_pool
+    from django_o11y.celery.detection import is_celery_prefork_pool
 
-    assert _is_celery_prefork_pool(["celery", "-A", "proj", "worker"]) is True
+    assert is_celery_prefork_pool(["celery", "-A", "proj", "worker"]) is True
 
 
 def test_celery_prefork_pool_detection_honours_explicit_pool():
-    from django_o11y.celery.setup import _is_celery_prefork_pool
+    from django_o11y.celery.detection import is_celery_prefork_pool
 
     assert (
-        _is_celery_prefork_pool(["celery", "-A", "proj", "worker", "--pool=solo"])
+        is_celery_prefork_pool(["celery", "-A", "proj", "worker", "--pool=solo"])
         is False
     )
     assert (
-        _is_celery_prefork_pool(["celery", "-A", "proj", "worker", "-P", "prefork"])
+        is_celery_prefork_pool(["celery", "-A", "proj", "worker", "-P", "prefork"])
         is True
     )
 
 
 def test_celery_prefork_pool_detection_false_for_non_worker():
-    """_is_celery_prefork_pool must return False for non-worker commands."""
-    from django_o11y.celery.setup import _is_celery_prefork_pool
+    """is_celery_prefork_pool must return False for non-worker commands."""
+    from django_o11y.celery.detection import is_celery_prefork_pool
 
-    assert _is_celery_prefork_pool(["celery", "-A", "proj", "beat"]) is False
-    assert _is_celery_prefork_pool(["gunicorn", "myapp.wsgi"]) is False
+    assert is_celery_prefork_pool(["celery", "-A", "proj", "beat"]) is False
+    assert is_celery_prefork_pool(["gunicorn", "myapp.wsgi"]) is False
 
 
 def test_worker_init_skips_auto_setup_for_prefork(celery_app):
@@ -182,7 +164,7 @@ def test_worker_init_skips_auto_setup_for_prefork(celery_app):
 
     from django_o11y.celery.setup import _auto_setup_on_worker_init
 
-    with patch("django_o11y.celery.setup._is_celery_prefork_pool", return_value=True):
+    with patch("django_o11y.celery.setup.is_celery_prefork_pool", return_value=True):
         with patch("django_o11y.celery.setup.setup_celery_o11y") as mock_setup:
             _auto_setup_on_worker_init(sender=celery_app)
             mock_setup.assert_not_called()
@@ -201,12 +183,56 @@ def test_worker_process_init_runs_auto_setup_for_prefork(celery_app):
     from django_o11y.celery.setup import _auto_setup_on_worker_process_init
 
     config = {"CELERY": {"ENABLED": True}, "TRACING": {"ENABLED": False}}
-    with patch("django_o11y.celery.setup._is_celery_prefork_pool", return_value=True):
+    with patch("django_o11y.celery.setup.is_celery_prefork_pool", return_value=True):
         with patch("django_o11y.celery.setup.get_o11y_config", return_value=config):
             with patch("django_o11y.celery.setup.setup_celery_o11y") as mock_setup:
                 # sender=None mirrors what celery/concurrency/prefork.py actually sends
                 _auto_setup_on_worker_process_init(sender=None)
                 mock_setup.assert_called_once_with(_celery.current_app, config)
+
+
+def test_worker_process_init_sets_up_profiling_for_prefork_child(celery_app):
+    """Prefork child worker should initialize profiling post-fork."""
+    from unittest.mock import patch
+
+    import celery as _celery
+
+    from django_o11y.celery.setup import _auto_setup_on_worker_process_init
+
+    config = {
+        "CELERY": {"ENABLED": True},
+        "TRACING": {"ENABLED": False},
+        "PROFILING": {"ENABLED": True},
+    }
+    with patch("django_o11y.celery.setup.is_celery_prefork_pool", return_value=True):
+        with patch("django_o11y.celery.setup.get_o11y_config", return_value=config):
+            with patch("django_o11y.celery.setup.setup_celery_o11y") as mock_setup:
+                with patch(
+                    "django_o11y.celery.setup.is_celery_fork_pool_worker",
+                    return_value=True,
+                ):
+                    with patch(
+                        "django_o11y.celery.setup.setup_profiling"
+                    ) as mock_profile:
+                        _auto_setup_on_worker_process_init(sender=None)
+                        mock_setup.assert_called_once_with(_celery.current_app, config)
+                        mock_profile.assert_called_once_with(config)
+
+
+def test_worker_process_shutdown_flushes_traces_when_enabled():
+    from unittest.mock import patch
+
+    from django_o11y.celery.setup import _auto_flush_on_worker_process_shutdown
+
+    config = {
+        "CELERY": {"ENABLED": True},
+        "TRACING": {"ENABLED": True},
+    }
+
+    with patch("django_o11y.celery.setup.get_o11y_config", return_value=config):
+        with patch("django_o11y.celery.setup._maybe_force_flush") as mock_flush:
+            _auto_flush_on_worker_process_shutdown(sender=None)
+            mock_flush.assert_called_once_with(config, reason="worker_process_shutdown")
 
 
 def test_celery_setup_configures_tracing_provider_when_enabled(celery_app):
@@ -231,32 +257,24 @@ def test_celery_setup_configures_tracing_provider_when_enabled(celery_app):
         setup._instrumented_pid = original_pid
 
 
-def test_register_early_celery_logging_hook_connects_setup_logging_signal():
-    """register_early_celery_logging_hook registers a handler on setup_logging."""
+def test_celery_logging_handler_connected_to_setup_logging_signal():
+    """setup_logging has django-o11y logging receiver connected."""
     from celery.signals import setup_logging
 
-    from django_o11y.celery.setup import register_early_celery_logging_hook
-
-    register_early_celery_logging_hook()
-
-    # At least one receiver must be connected after calling the hook registration.
+    # setup.py registers handler at import time via decorator.
     assert len(setup_logging.receivers or []) >= 1
 
 
-def test_register_early_celery_logging_hook_applies_django_logging_config(celery_app):
-    """register_early_celery_logging_hook applies config when setup_logging fires."""
+def test_setup_logging_signal_applies_django_logging_config(celery_app):
+    """setup_logging receiver applies Django LOGGING config."""
     import logging.config as lc
     from unittest.mock import patch
-
-    from django_o11y.celery.setup import register_early_celery_logging_hook
 
     fake_logging = {"version": 1, "disable_existing_loggers": False}
 
     with override_settings(LOGGING=fake_logging):
         with patch.object(lc, "dictConfig") as mock_dictconfig:
-            register_early_celery_logging_hook()
-
-            # Registration should not apply config until Celery emits signal.
+            # Handler should run only when Celery emits setup_logging.
             mock_dictconfig.assert_not_called()
 
             # Simulate Celery firing the setup_logging signal on worker start
@@ -268,25 +286,6 @@ def test_register_early_celery_logging_hook_applies_django_logging_config(celery
             # it was called at least once with the right config dict.
             mock_dictconfig.assert_called_with(fake_logging)
             assert mock_dictconfig.call_count >= 1
-
-
-def test_register_early_celery_logging_hook_is_idempotent():
-    """Calling the early logging hook twice should not duplicate receivers."""
-    from celery.signals import setup_logging
-
-    from django_o11y.celery import setup
-
-    # Reset module state for deterministic assertion.
-    setup.__dict__["_early_logging_hook_registered"] = False
-
-    before = len(setup_logging.receivers or [])
-    setup.register_early_celery_logging_hook()
-    after_first = len(setup_logging.receivers or [])
-    setup.register_early_celery_logging_hook()
-    after_second = len(setup_logging.receivers or [])
-
-    assert after_first >= before
-    assert after_second == after_first
 
 
 def test_celery_setup_disables_worker_root_logger_hijack(celery_app):
@@ -306,36 +305,23 @@ def test_celery_setup_disables_worker_root_logger_hijack(celery_app):
         setup._instrumented_pid = original_pid
 
 
-def test_registers_django_structlog_worker_step():
-    """Registers DjangoStructLogInitStep on worker steps when available."""
+def test_setup_celery_adds_django_structlog_worker_step(celery_app):
+    """setup_celery_o11y registers django-structlog worker init step."""
+    from types import SimpleNamespace
     from unittest.mock import Mock
 
-    from django_o11y.celery.setup import _setup_django_structlog_worker_step
+    from django_o11y.celery import setup
 
-    fake_worker_steps = Mock()
-    fake_app = Mock(steps={"worker": fake_worker_steps})
+    original_pid = setup._instrumented_pid
+    setup._instrumented_pid = None
 
-    _setup_django_structlog_worker_step(fake_app)
-
-    fake_worker_steps.add.assert_called_once()
-
-
-def test_skips_django_structlog_step_when_unavailable():
-    """No error when django-structlog celery step cannot be imported."""
-    import importlib
-    from unittest.mock import Mock, patch
-
-    from django_o11y.celery.setup import _setup_django_structlog_worker_step
-
-    fake_worker_steps = Mock()
-    fake_app = Mock(steps={"worker": fake_worker_steps})
-
-    def mock_import(name, *args, **kwargs):
-        if name == "django_structlog.celery.steps":
-            raise ImportError("django_structlog celery extras unavailable")
-        return importlib.__import__(name, *args, **kwargs)
-
-    with patch("builtins.__import__", side_effect=mock_import):
-        _setup_django_structlog_worker_step(fake_app)
-
-    fake_worker_steps.add.assert_not_called()
+    try:
+        fake_worker_steps = Mock()
+        fake_app = Mock()
+        fake_app.conf = SimpleNamespace()
+        fake_app.steps = {"worker": fake_worker_steps}
+        config = {"CELERY": {"ENABLED": True}}
+        setup.setup_celery_o11y(fake_app, config=config)
+        fake_worker_steps.add.assert_called_once()
+    finally:
+        setup._instrumented_pid = original_pid

@@ -7,7 +7,6 @@ from django.http import HttpResponse
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
-from opentelemetry.trace import StatusCode
 
 
 def _make_tracer():
@@ -51,7 +50,7 @@ def test_tracing_middleware_adds_user_attributes(django_user_request):
             assert response.status_code == 200
 
 
-def test_tracing_middleware_5xx_error_status():
+def test_tracing_middleware_allows_5xx_response():
     from django.test import RequestFactory
 
     from django_o11y.middleware.tracing import TracingMiddleware
@@ -67,10 +66,9 @@ def test_tracing_middleware_5xx_error_status():
             response = middleware(request)
 
             assert response.status_code == 500
-            assert span.status.status_code == StatusCode.ERROR
 
 
-def test_tracing_middleware_records_exception():
+def test_tracing_middleware_propagates_exception():
     from django.test import RequestFactory
 
     from django_o11y.middleware.tracing import TracingMiddleware
@@ -84,12 +82,10 @@ def test_tracing_middleware_records_exception():
     middleware = TracingMiddleware(exception_view)
 
     tracer = _make_tracer()
-    with tracer.start_as_current_span("test-span") as span:
-        with patch("opentelemetry.trace.get_current_span", return_value=span):
+    with tracer.start_as_current_span("test-span"):
+        with patch("opentelemetry.trace.get_current_span"):
             with pytest.raises(ValueError, match="Test exception"):
                 middleware(request)
-
-            assert span.status.status_code == StatusCode.ERROR
 
 
 def test_tracing_middleware_anonymous_user():

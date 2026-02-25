@@ -18,6 +18,11 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 from opentelemetry.sdk.trace.sampling import ParentBased, TraceIdRatioBased
 
+from django_o11y.celery.detection import (
+    is_celery_fork_pool_worker,
+    is_celery_prefork_pool,
+)
+
 logger = logging.getLogger("django_o11y.tracing")
 
 
@@ -27,20 +32,6 @@ def _process_identity() -> str:
         f"pid={os.getpid()} ppid={os.getppid()} "
         f"process={multiprocessing.current_process().name}"
     )
-
-
-def _is_celery_fork_pool_worker() -> bool:
-    """Return True when running inside a Celery prefork pool child."""
-    from django_o11y.celery.detection import is_celery_fork_pool_worker
-
-    return is_celery_fork_pool_worker()
-
-
-def _is_celery_prefork_boot(argv: list[str] | None = None) -> bool:
-    """Return True when current process is a celery prefork worker boot."""
-    from django_o11y.celery.detection import is_celery_prefork_pool
-
-    return is_celery_prefork_pool(argv)
 
 
 def setup_tracing(config: dict[str, Any]) -> TracerProvider:
@@ -102,12 +93,17 @@ def setup_tracing(config: dict[str, Any]) -> TracerProvider:
 
     profiling_config = config.get("PROFILING", {})
     if profiling_config.get("ENABLED"):
-        if _is_celery_prefork_boot() or _is_celery_fork_pool_worker():
-            # Disabled in Celery prefork workers due to known native instability.
-            # Context: https://github.com/grafana/pyroscope-rs/issues/276
+        # In Celery prefork mode, the parent process should not add the
+        # Pyroscope span processor. Child workers run setup_tracing() post-fork
+        # via worker_process_init, and are allowed to enable correlation.
+        is_prefork_parent = (
+            is_celery_prefork_pool() and not is_celery_fork_pool_worker()
+        )
+        if is_prefork_parent:
             logger.warning(
                 "Skipping Pyroscope profile-trace correlation in Celery prefork "
-                "process; this avoids pyroscope-io fork instability [%s]",
+                "parent process [%s]. Correlation is initialized in worker "
+                "child processes post-fork.",
                 _process_identity(),
             )
             return provider

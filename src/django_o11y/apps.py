@@ -1,12 +1,13 @@
 """Django app configuration for django-o11y."""
 
-import logging
 from importlib.metadata import PackageNotFoundError, version
 
 from django.apps import AppConfig
 from django.conf import settings
 
-logger = logging.getLogger("django_o11y")
+from django_o11y.context import get_logger
+
+logger = get_logger()
 
 
 class DjangoO11yConfig(AppConfig):
@@ -42,11 +43,10 @@ class DjangoO11yConfig(AppConfig):
         settings.PROMETHEUS_EXPORT_MIGRATIONS = config["METRICS"]["EXPORT_MIGRATIONS"]
 
         self._configure_tracing(config)
-        self._configure_instrumentation_and_metrics(config)
+        self._configure_celery(config)
+        self._configure_logging(config)
+        self._configure_metrics(config)
         self._configure_profiling(config)
-
-        if config.get("CELERY", {}).get("ENABLED", False):
-            self._configure_celery_worker_logging()
 
         try:
             if settings.DEBUG:
@@ -79,7 +79,20 @@ class DjangoO11yConfig(AppConfig):
 
         register_post_fork_handler()
 
-    def _configure_instrumentation_and_metrics(self, config: dict) -> None:
+    def _configure_celery(self, config: dict) -> None:
+        """Import Celery setup only when Celery integration is enabled."""
+        if not config.get("CELERY", {}).get("ENABLED", False):
+            return
+
+        try:
+            import django_o11y.celery.setup  # noqa: F401
+        except ImportError:
+            logger.warning(
+                "CELERY.ENABLED is true but Celery is not installed. "
+                "Install with: pip install django-o11y[celery]"
+            )
+
+    def _configure_logging(self, config: dict) -> None:
         from django_o11y.instrumentation.setup import setup_instrumentation
 
         setup_instrumentation(config)
@@ -87,21 +100,27 @@ class DjangoO11yConfig(AppConfig):
         fmt = config.get("LOGGING", {}).get("FORMAT", "console")
         logger.info("Logging configured, format=%s", fmt)
 
+    def _configure_metrics(self, config: dict) -> None:
+        """Log metrics configuration and warn if endpoint is not routed."""
+        from django.urls import Resolver404, resolve
+
         metrics = config.get("METRICS", {})
         if metrics.get("PROMETHEUS_ENABLED", True):
+            endpoint = metrics.get("PROMETHEUS_ENDPOINT", "/metrics")
             logger.info(
-                "Metrics enabled at %s", metrics.get("PROMETHEUS_ENDPOINT", "/metrics")
+                "Metrics enabled at %s",
+                endpoint,
             )
 
-    def _configure_celery_worker_logging(self) -> None:
-        """Register Celery logging hook early during Django startup."""
-        try:
-            from django_o11y.celery.setup import register_early_celery_logging_hook
-
-            register_early_celery_logging_hook()
-
-        except ImportError:
-            pass  # Celery not installed — nothing to do
+            normalized = endpoint if endpoint.startswith("/") else f"/{endpoint}"
+            try:
+                resolve(normalized)
+            except Resolver404:
+                logger.warning(
+                    "Metrics endpoint %s is not routed. Add `+ get_urls()` to your "
+                    "root urlpatterns.",
+                    normalized,
+                )
 
     def _configure_profiling(self, config: dict) -> None:
         from django_o11y.profiling import setup_profiling

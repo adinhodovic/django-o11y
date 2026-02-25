@@ -6,8 +6,8 @@ import sys
 from importlib import import_module
 
 
-def is_celery_worker_boot(argv: list[str] | None = None) -> bool:
-    """Return True when the process is a ``celery worker`` invocation."""
+def is_celery_prefork_pool(argv: list[str] | None = None) -> bool:
+    """Return True when Celery worker is running with prefork pool."""
     args = argv if argv is not None else sys.argv
 
     if not args or "worker" not in args:
@@ -19,14 +19,7 @@ def is_celery_worker_boot(argv: list[str] | None = None) -> bool:
         arg == "-m" and idx + 1 < len(args) and args[idx + 1] == "celery"
         for idx, arg in enumerate(args)
     )
-    return is_celery_cmd or is_python_module
-
-
-def is_celery_prefork_pool(argv: list[str] | None = None) -> bool:
-    """Return True when Celery worker is running with prefork pool."""
-    args = argv if argv is not None else sys.argv
-
-    if not is_celery_worker_boot(args):
+    if not (is_celery_cmd or is_python_module):
         return False
 
     for idx, arg in enumerate(args):
