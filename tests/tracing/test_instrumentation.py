@@ -112,6 +112,7 @@ def test_instrument_celery_when_enabled():
     from django_o11y.tracing.instrumentation import _instrument_celery
 
     mock_inst = MagicMock()
+    mock_inst.is_instrumented_by_opentelemetry = False
     mock_celery_module = MagicMock()
     mock_celery_module.CeleryInstrumentor.return_value = mock_inst
 
