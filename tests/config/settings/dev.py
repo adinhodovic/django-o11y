@@ -18,6 +18,13 @@ from tests.config.settings.test import *  # noqa: F401,F403  # pylint: disable=w
 
 DEBUG = False
 
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": "/data/dev_db.sqlite3",
+    }
+}
+
 CELERY_BROKER_URL = "redis://redis:6379/0"
 CELERY_RESULT_BACKEND = "redis://redis:6379/0"
 

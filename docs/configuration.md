@@ -42,7 +42,7 @@ Precedence (lowest to highest):
 | `TRACING.OTLP_ENDPOINT` | str | `"http://localhost:4317"` | `OTEL_EXPORTER_OTLP_ENDPOINT` |
 | `TRACING.SAMPLE_RATE` | float | `1.0` (`DEBUG=True`) / `0.01` (`DEBUG=False`) | `OTEL_TRACES_SAMPLER_ARG` |
 | `TRACING.CONSOLE_EXPORTER` | bool | `False` | `DJANGO_O11Y_TRACING_CONSOLE_EXPORTER` |
-| `TRACING.AWS_ENABLED` | bool | `False` | `DJANGO_O11Y_TRACING_AWS_ENABLED` |
+| `TRACING.AWS_ENABLED` | bool | `True` | `DJANGO_O11Y_TRACING_AWS_ENABLED` |
 
 ### Logging
 

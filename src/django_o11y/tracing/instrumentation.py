@@ -36,6 +36,13 @@ def _instrument_database() -> None:
     except ImportError:
         pass
 
+    try:
+        from opentelemetry.instrumentation.sqlite3 import SQLite3Instrumentor
+
+        SQLite3Instrumentor().instrument()
+    except ImportError:
+        pass
+
 
 def _instrument_celery(config: dict[str, Any]) -> None:
     if not config.get("CELERY", {}).get("ENABLED", False):
