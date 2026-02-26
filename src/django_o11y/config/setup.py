@@ -53,7 +53,7 @@ def get_config() -> dict[str, Any]:
             "OTLP_ENDPOINT": "http://localhost:4317",
             "SAMPLE_RATE": default_sample_rate,
             "CONSOLE_EXPORTER": False,
-            "AWS_ENABLED": False,
+            "AWS_ENABLED": True,
         },
         "LOGGING": {
             "FORMAT": "json" if not settings.DEBUG else "console",

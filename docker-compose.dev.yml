@@ -1,4 +1,7 @@
 ---
+volumes:
+  sqlite-data:
+
 services:
   redis:
     image: redis:7-alpine
@@ -17,6 +20,8 @@ services:
     command: python manage.py migrate --noinput
     environment:
       DJANGO_SETTINGS_MODULE: tests.config.settings.dev
+    volumes:
+      - sqlite-data:/data
     depends_on:
       redis:
         condition: service_healthy
@@ -34,6 +39,7 @@ services:
       - "8000:8000"
     volumes:
       - /tmp/django-o11y:/tmp/django-o11y
+      - sqlite-data:/data
     extra_hosts:
       - "host.docker.internal:host-gateway"
     develop:
@@ -63,6 +69,7 @@ services:
       DJANGO_O11Y_LOGGING_FILE_PATH: /tmp/django-o11y/celery.log
     volumes:
       - /tmp/django-o11y:/tmp/django-o11y
+      - sqlite-data:/data
     extra_hosts:
       - "host.docker.internal:host-gateway"
     develop:
