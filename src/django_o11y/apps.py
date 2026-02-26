@@ -81,7 +81,7 @@ class DjangoO11yConfig(AppConfig):
             try:
                 pkg_version = version("django-o11y")
             except PackageNotFoundError:
-                pkg_version = "0.3.0"
+                pkg_version = "0.4.0"
 
             banner = [
                 "",
