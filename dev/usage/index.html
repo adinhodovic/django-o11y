@@ -1216,7 +1216,7 @@
 </table>
 <h3 id="basic-setup">Basic setup<a class="headerlink" href="#basic-setup" title="Permanent link">&para;</a></h3>
 <p>Add to your Django settings:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django_o11y.logging.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_logging_dict</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django_o11y.logging.setup</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_logging_dict</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">LOGGING</span> <span class="o">=</span> <span class="n">build_logging_dict</span><span class="p">()</span>
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
@@ -1236,8 +1236,8 @@
 <a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>    <span class="s2">&quot;django.contrib.auth.middleware.AuthenticationMiddleware&quot;</span><span class="p">,</span>
 <a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>
 <a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>    <span class="c1"># After auth so request.user is available</span>
-<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>    <span class="s2">&quot;django_o11y.middleware.TracingMiddleware&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>    <span class="s2">&quot;django_o11y.middleware.LoggingMiddleware&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>    <span class="s2">&quot;django_o11y.tracing.middleware.TracingMiddleware&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>    <span class="s2">&quot;django_o11y.logging.middleware.LoggingMiddleware&quot;</span><span class="p">,</span>
 <a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>
 <a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>    <span class="s2">&quot;django.contrib.messages.middleware.MessageMiddleware&quot;</span><span class="p">,</span>
 <a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>    <span class="s2">&quot;django.middleware.clickjacking.XFrameOptionsMiddleware&quot;</span><span class="p">,</span>
@@ -1389,25 +1389,25 @@
 <h3 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">&para;</a></h3>
 <p>Call <code>build_logging_dict()</code> in each settings file. The defaults are keyed off <code>DEBUG</code>, so most of the difference between environments is handled automatically.</p>
 <p><strong><code>settings/local.py</code></strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django_o11y.logging.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_logging_dict</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django_o11y.logging.setup</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_logging_dict</span>
 <a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
 <a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">LOGGING</span> <span class="o">=</span> <span class="n">build_logging_dict</span><span class="p">()</span>
 <a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1"># DEBUG=True: console format, colorized, file output to /tmp/django-o11y/django.log</span>
 </code></pre></div>
 <p><strong><code>settings/production.py</code></strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django_o11y.logging.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_logging_dict</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django_o11y.logging.setup</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_logging_dict</span>
 <a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
 <a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">LOGGING</span> <span class="o">=</span> <span class="n">build_logging_dict</span><span class="p">()</span>
 <a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="c1"># DEBUG=False: JSON format, no file output</span>
 </code></pre></div>
 <p><strong><code>settings/test.py</code></strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django_o11y.logging.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_logging_dict</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django_o11y.logging.setup</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_logging_dict</span>
 <a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>
 <a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="n">LOGGING</span> <span class="o">=</span> <span class="n">build_logging_dict</span><span class="p">({</span><span class="s2">&quot;LEVEL&quot;</span><span class="p">:</span> <span class="s2">&quot;WARNING&quot;</span><span class="p">,</span> <span class="s2">&quot;FILE_ENABLED&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">})</span>
 <a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="c1"># Quiet in tests regardless of DEBUG</span>
 </code></pre></div>
 <h3 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django_o11y.context</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django_o11y.logging.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
 <a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>
 <a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">()</span>
 <a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>
@@ -1447,7 +1447,7 @@
 </code></pre></div>
 <h3 id="extending-the-config">Extending the config<a class="headerlink" href="#extending-the-config" title="Permanent link">&para;</a></h3>
 <p>Pass <code>extra</code> to deep-merge additional loggers or handlers into the base dict:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django_o11y.logging.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_logging_dict</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django_o11y.logging.setup</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_logging_dict</span>
 <a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>
 <a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="n">LOGGING</span> <span class="o">=</span> <span class="n">build_logging_dict</span><span class="p">(</span><span class="n">extra</span><span class="o">=</span><span class="p">{</span>
 <a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>    <span class="s2">&quot;loggers&quot;</span><span class="p">:</span> <span class="p">{</span>
@@ -1459,13 +1459,14 @@
 <p>Nested dicts are merged rather than replaced, so you only need to specify what you want to change.</p>
 <h3 id="adding-context">Adding context<a class="headerlink" href="#adding-context" title="Permanent link">&para;</a></h3>
 <p>Attach extra fields to all logs within the current request or task:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django_o11y.context</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_log_context</span><span class="p">,</span> <span class="n">set_custom_tags</span>
-<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>
-<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="c1"># Logs only</span>
-<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="n">add_log_context</span><span class="p">(</span><span class="n">tenant_id</span><span class="o">=</span><span class="s2">&quot;acme&quot;</span><span class="p">,</span> <span class="n">checkout_variant</span><span class="o">=</span><span class="s2">&quot;B&quot;</span><span class="p">)</span>
-<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>
-<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="c1"># Logs + traces</span>
-<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="n">set_custom_tags</span><span class="p">({</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="s2">&quot;acme&quot;</span><span class="p">,</span> <span class="s2">&quot;feature&quot;</span><span class="p">:</span> <span class="s2">&quot;checkout_v2&quot;</span><span class="p">})</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django_o11y.logging.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_log_context</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django_o11y.tracing.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">set_custom_tags</span>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="c1"># Logs only</span>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="n">add_log_context</span><span class="p">(</span><span class="n">tenant_id</span><span class="o">=</span><span class="s2">&quot;acme&quot;</span><span class="p">,</span> <span class="n">checkout_variant</span><span class="o">=</span><span class="s2">&quot;B&quot;</span><span class="p">)</span>
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>
+<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="c1"># Logs + traces</span>
+<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="n">set_custom_tags</span><span class="p">({</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="s2">&quot;acme&quot;</span><span class="p">,</span> <span class="s2">&quot;feature&quot;</span><span class="p">:</span> <span class="s2">&quot;checkout_v2&quot;</span><span class="p">})</span>
 </code></pre></div>
 <hr />
 <h2 id="profiling">Profiling<a class="headerlink" href="#profiling" title="Permanent link">&para;</a></h2>
@@ -1483,6 +1484,7 @@
 <a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a><span class="p">}</span>
 </code></pre></div>
 <p>Profiles are pushed to Pyroscope on startup. View them in Grafana under <strong>Explore → Pyroscope</strong>.</p>
+<p>For Celery prefork workers, profiling is initialized in each worker child process (post-fork), not in the prefork parent process.</p>
 <h3 id="custom-tags">Custom tags<a class="headerlink" href="#custom-tags" title="Permanent link">&para;</a></h3>
 <p>Tag profiles with extra context for filtering:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="n">DJANGO_O11Y</span> <span class="o">=</span> <span class="p">{</span>
@@ -1518,7 +1520,7 @@
 </code></pre></div>
 <p>To disable tracing entirely, set <code>ENABLED: False</code> or <code>DJANGO_O11Y_TRACING_ENABLED=false</code>.</p>
 <h3 id="adding-custom-context">Adding custom context<a class="headerlink" href="#adding-custom-context" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django_o11y.context</span><span class="w"> </span><span class="kn">import</span> <span class="n">set_custom_tags</span><span class="p">,</span> <span class="n">add_span_attribute</span><span class="p">,</span> <span class="n">set_user_context</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django_o11y.tracing.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">set_custom_tags</span><span class="p">,</span> <span class="n">add_span_attribute</span>
 <a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>
 <a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">checkout_view</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
 <a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a>    <span class="c1"># Attached to both the trace span and all logs in this request</span>
@@ -1526,9 +1528,6 @@
 <a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a>
 <a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a>    <span class="c1"># Span only</span>
 <a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a>    <span class="n">add_span_attribute</span><span class="p">(</span><span class="s2">&quot;cart_size&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">cart</span><span class="o">.</span><span class="n">items</span><span class="p">))</span>
-<a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a>
-<a id="__codelineno-24-10" name="__codelineno-24-10" href="#__codelineno-24-10"></a>    <span class="c1"># User identity on the span (called automatically if using AuthenticationMiddleware)</span>
-<a id="__codelineno-24-11" name="__codelineno-24-11" href="#__codelineno-24-11"></a>    <span class="n">set_user_context</span><span class="p">(</span><span class="n">user_id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">),</span> <span class="n">username</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">username</span><span class="p">)</span>
 </code></pre></div>
 <table>
 <thead>
@@ -1558,12 +1557,6 @@
 <td>Yes</td>
 <td>Debug info</td>
 </tr>
-<tr>
-<td><code>set_user_context()</code></td>
-<td>Yes</td>
-<td>Yes</td>
-<td>User identity</td>
-</tr>
 </tbody>
 </table>
 <h3 id="celery">Celery<a class="headerlink" href="#celery" title="Permanent link">&para;</a></h3>
@@ -1578,9 +1571,10 @@
 <a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a><span class="p">}</span>
 </code></pre></div>
 <p>Celery signals wire everything up when the worker starts. Each task gets a trace span linked to the originating request, and structured logs with <code>trace_id</code>/<code>span_id</code>.</p>
+<p>To reduce span loss in prefork workers, django-o11y force-flushes tracing on <code>worker_process_shutdown</code>.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">structlog</span>
 <a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">celery</span><span class="w"> </span><span class="kn">import</span> <span class="n">shared_task</span>
-<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django_o11y.context</span><span class="w"> </span><span class="kn">import</span> <span class="n">set_custom_tags</span>
+<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django_o11y.tracing.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">set_custom_tags</span>
 <a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a>
 <a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a><span class="n">logger</span> <span class="o">=</span> <span class="n">structlog</span><span class="o">.</span><span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 <a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a>
