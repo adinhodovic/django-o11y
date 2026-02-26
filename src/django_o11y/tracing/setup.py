@@ -170,6 +170,7 @@ def setup_celery_o11y(app: Any, config: dict[str, Any] | None = None) -> None:
     if config.get("TRACING", {}).get("ENABLED") and celery_config.get(
         "TRACING_ENABLED", True
     ):
+        setup_instrumentation(config)
         setup_tracing(config)
         _setup_celery_tracing()
 

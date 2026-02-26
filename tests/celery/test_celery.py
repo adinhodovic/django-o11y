@@ -254,10 +254,14 @@ def test_celery_setup_configures_tracing_provider_when_enabled(celery_app):
     }
 
     try:
-        with patch("django_o11y.tracing.setup.setup_tracing") as mock_setup_tracing:
-            with patch("django_o11y.tracing.setup._setup_celery_tracing"):
-                setup.setup_celery_o11y(celery_app, config=config)
-                mock_setup_tracing.assert_called_once_with(config)
+        with patch(
+            "django_o11y.tracing.setup.setup_instrumentation"
+        ) as mock_setup_instrumentation:
+            with patch("django_o11y.tracing.setup.setup_tracing") as mock_setup_tracing:
+                with patch("django_o11y.tracing.setup._setup_celery_tracing"):
+                    setup.setup_celery_o11y(celery_app, config=config)
+                    mock_setup_instrumentation.assert_called_once_with(config)
+                    mock_setup_tracing.assert_called_once_with(config)
     finally:
         setup._instrumented_pid = original_pid
 
