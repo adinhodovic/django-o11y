@@ -9,6 +9,7 @@ from django_o11y.tracing.utils import (
     is_celery_fork_pool_worker,
     is_celery_prefork_pool,
 )
+from django_o11y.utils.process import get_process_identity
 
 logger = get_logger()
 
@@ -35,7 +36,8 @@ def setup_profiling(config: dict[str, Any]) -> None:
     if is_prefork_parent:
         logger.info(
             "django_o11y: skipping pyroscope.configure() in Celery prefork process "
-            "parent; worker child processes initialize profiling post-fork"
+            "parent; worker child processes initialize profiling post-fork [%s]",
+            get_process_identity(),
         )
         return
 
@@ -73,7 +75,8 @@ def setup_profiling(config: dict[str, Any]) -> None:
         raise
 
     logger.info(
-        "Profiling configured for %s, sending to %s",
+        "Profiling configured for %s, sending to %s [%s]",
         config["SERVICE_NAME"],
         profiling_config["PYROSCOPE_URL"],
+        get_process_identity(),
     )

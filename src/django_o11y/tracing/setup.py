@@ -1,7 +1,6 @@
 """Tracing setup and Celery tracing signal integration."""
 
 import logging
-import multiprocessing
 import os
 import socket
 from typing import Any
@@ -26,20 +25,13 @@ from django_o11y.tracing.utils import (
     is_celery_fork_pool_worker,
     is_celery_prefork_pool,
 )
+from django_o11y.utils.process import get_process_identity
 
 logger = get_logger()
 provider_logger = logging.getLogger("django_o11y.tracing")
 
 # Track instrumentation per-process to remain fork-safe.
 _instrumented_pid: int | None = None
-
-
-def _process_identity() -> str:
-    """Return process identity details for startup diagnostics."""
-    return (
-        f"pid={os.getpid()} ppid={os.getppid()} "
-        f"process={multiprocessing.current_process().name}"
-    )
 
 
 def setup_tracing(config: dict[str, Any]) -> TracerProvider:
@@ -88,7 +80,7 @@ def setup_tracing(config: dict[str, Any]) -> TracerProvider:
         service_name,
         tracing_config["OTLP_ENDPOINT"],
         tracing_config.get("SAMPLE_RATE", 1.0) * 100,
-        _process_identity(),
+        get_process_identity(),
     )
 
     profiling_config = config.get("PROFILING", {})
@@ -101,7 +93,7 @@ def setup_tracing(config: dict[str, Any]) -> TracerProvider:
                 "Skipping Pyroscope profile-trace correlation in Celery prefork "
                 "parent process [%s]. Correlation is initialized in worker "
                 "child processes post-fork.",
-                _process_identity(),
+                get_process_identity(),
             )
             return provider
 
@@ -110,7 +102,8 @@ def setup_tracing(config: dict[str, Any]) -> TracerProvider:
 
             provider.add_span_processor(PyroscopeSpanProcessor())
             provider_logger.info(
-                "Pyroscope span processor added for profile-to-trace correlation"
+                "Pyroscope span processor added for profile-to-trace correlation [%s]",
+                get_process_identity(),
             )
         except ImportError:
             provider_logger.debug(
