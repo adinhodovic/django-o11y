@@ -51,7 +51,9 @@ def _instrument_celery(config: dict[str, Any]) -> None:
     try:
         from opentelemetry.instrumentation.celery import CeleryInstrumentor
 
-        CeleryInstrumentor().instrument()
+        instrumentor = CeleryInstrumentor()
+        if not instrumentor.is_instrumented_by_opentelemetry:
+            instrumentor.instrument()
     except ImportError:
         pass
 
@@ -97,7 +99,8 @@ def _instrument_http_clients(config: dict[str, Any]) -> None:
     if config.get("TRACING", {}).get("AWS_ENABLED", False):
         try:
             from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
+            from opentelemetry.propagate import get_global_textmap
 
-            BotocoreInstrumentor().instrument()
+            BotocoreInstrumentor().instrument(propagator=get_global_textmap())
         except ImportError:
             pass
