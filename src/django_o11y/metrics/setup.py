@@ -19,12 +19,6 @@ def setup_metrics_for_django(config: dict) -> None:
     if not metrics["PROMETHEUS_ENABLED"]:
         return
 
-    # If PROMETHEUS_MULTIPROC_DIR is already set in the environment (e.g. via
-    # Docker Compose or a pre-fork server that sets it before Django starts),
-    # ensure the directory exists now — before model imports trigger
-    # prometheus_client metric initialisation and try to write .db files.
-    _ensure_existing_multiproc_dir()
-
     if is_prefork_web_server():
         _prepare_metrics_multiproc_dir(metrics)
 
@@ -40,19 +34,6 @@ def setup_metrics_for_django(config: dict) -> None:
             "root urlpatterns.",
             normalized,
         )
-
-
-def _ensure_existing_multiproc_dir() -> None:
-    """Create PROMETHEUS_MULTIPROC_DIR if it is already set in the environment.
-
-    prometheus_client switches to multiprocess mode as soon as the env var is
-    present, so the directory must exist before the first metric object is
-    created — which can happen during model import, before any signal handler
-    runs.
-    """
-    multiproc_dir = os.environ.get("PROMETHEUS_MULTIPROC_DIR")
-    if multiproc_dir:
-        pathlib.Path(multiproc_dir).mkdir(parents=True, exist_ok=True)
 
 
 def is_prefork_web_server() -> bool:
