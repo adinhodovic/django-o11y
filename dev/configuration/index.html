@@ -823,7 +823,7 @@ honoured where they naturally map.</p>
 <li><code>DJANGO_O11Y</code> Django settings dict</li>
 <li>Environment variables</li>
 </ol>
-<p>Runtime file defaults (log files + Prometheus multiprocess files) are per-project. Set <code>DJANGO_O11Y_PROJECT_ID</code> to control the <code>&lt;project&gt;</code> directory suffix explicitly.</p>
+<p>Runtime file defaults (log files) are per-project. The <code>&lt;project&gt;</code> suffix is derived from <code>OTEL_SERVICE_NAME</code>. If that env var is not set, django-o11y uses <code>django-app</code>.</p>
 <h3 id="core">Core<a class="headerlink" href="#core" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -1024,14 +1024,9 @@ honoured where they naturally map.</p>
 <td><code>True</code></td>
 <td><code>DJANGO_O11Y_METRICS_EXPORT_MIGRATIONS</code></td>
 </tr>
-<tr>
-<td><code>METRICS.MULTIPROC_BASE_DIR</code></td>
-<td>str</td>
-<td><code>"${XDG_RUNTIME_DIR:-/tmp}/django-o11y/&lt;project&gt;/prometheus-multiproc"</code></td>
-<td><code>DJANGO_O11Y_METRICS_MULTIPROC_BASE_DIR</code></td>
-</tr>
 </tbody>
 </table>
+<p>Multiprocess metrics are configured via the standard <code>PROMETHEUS_MULTIPROC_DIR</code> environment variable. Set it to a pre-existing directory in your process entrypoint before the Django process starts. See <a href="../usage/#multiprocess-deployments">Multiprocess deployments</a>.</p>
 <h3 id="celery">Celery<a class="headerlink" href="#celery" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
