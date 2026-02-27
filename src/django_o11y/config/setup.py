@@ -73,7 +73,7 @@ def get_config() -> dict[str, Any]:
             "PROMETHEUS_ENABLED": True,
             "PROMETHEUS_ENDPOINT": "/metrics",
             "EXPORT_MIGRATIONS": True,
-            "MULTIPROC_DIR": "/tmp/django-o11y/prometheus-multiproc-django",
+            "MULTIPROC_BASE_DIR": "/tmp/django-o11y/prometheus-multiproc",
         },
         "CELERY": {
             "ENABLED": False,
@@ -81,7 +81,6 @@ def get_config() -> dict[str, Any]:
             "LOGGING_ENABLED": True,
             "METRICS_ENABLED": True,
             "METRICS_PORT": 8009,
-            "METRICS_MULTIPROC_DIR": "/tmp/django-o11y/prometheus-multiproc-celery",
         },
         "PROFILING": {
             "ENABLED": False,
@@ -136,7 +135,11 @@ def _apply_env_overrides(config: dict[str, Any], default_sample_rate: float) -> 
     _set_bool(m, "PROMETHEUS_ENABLED", "DJANGO_O11Y_METRICS_PROMETHEUS_ENABLED", True)
     _set_str(m, "PROMETHEUS_ENDPOINT", "DJANGO_O11Y_METRICS_PROMETHEUS_ENDPOINT")
     _set_bool(m, "EXPORT_MIGRATIONS", "DJANGO_O11Y_METRICS_EXPORT_MIGRATIONS", True)
-    _set_str(m, "MULTIPROC_DIR", "DJANGO_O11Y_METRICS_MULTIPROC_DIR")
+    _set_str(m, "MULTIPROC_BASE_DIR", "DJANGO_O11Y_METRICS_MULTIPROC_BASE_DIR")
+    # Subdirs are always derived from the base — not user-configurable.
+    base = m["MULTIPROC_BASE_DIR"]
+    m["MULTIPROC_DIR"] = f"{base}/django"
+    c["METRICS_MULTIPROC_DIR"] = f"{base}/celery"
 
     _set_bool(c, "ENABLED", "DJANGO_O11Y_CELERY_ENABLED")
     _set_bool(c, "TRACING_ENABLED", "DJANGO_O11Y_CELERY_TRACING_ENABLED", True)
@@ -144,7 +147,6 @@ def _apply_env_overrides(config: dict[str, Any], default_sample_rate: float) -> 
     _set_bool(c, "METRICS_ENABLED", "DJANGO_O11Y_CELERY_METRICS_ENABLED", True)
     if (v := os.getenv("DJANGO_O11Y_CELERY_METRICS_PORT")) is not None:
         c["METRICS_PORT"] = int(v)
-    _set_str(c, "METRICS_MULTIPROC_DIR", "DJANGO_O11Y_CELERY_METRICS_MULTIPROC_DIR")
 
     _set_bool(p, "ENABLED", "DJANGO_O11Y_PROFILING_ENABLED")
     _set_str(p, "PYROSCOPE_URL", "DJANGO_O11Y_PROFILING_PYROSCOPE_URL")

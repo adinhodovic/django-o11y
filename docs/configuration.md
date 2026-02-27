@@ -66,7 +66,7 @@ Precedence (lowest to highest):
 | `METRICS.PROMETHEUS_ENABLED` | bool | `True` | `DJANGO_O11Y_METRICS_PROMETHEUS_ENABLED` |
 | `METRICS.PROMETHEUS_ENDPOINT` | str | `"/metrics"` | `DJANGO_O11Y_METRICS_PROMETHEUS_ENDPOINT` |
 | `METRICS.EXPORT_MIGRATIONS` | bool | `True` | `DJANGO_O11Y_METRICS_EXPORT_MIGRATIONS` |
-| `METRICS.MULTIPROC_DIR` | str | `"/tmp/django-o11y/prometheus-multiproc-django"` | `DJANGO_O11Y_METRICS_MULTIPROC_DIR` |
+| `METRICS.MULTIPROC_BASE_DIR` | str | `"/tmp/django-o11y/prometheus-multiproc"` | `DJANGO_O11Y_METRICS_MULTIPROC_BASE_DIR` |
 
 ### Celery
 
@@ -77,7 +77,6 @@ Precedence (lowest to highest):
 | `CELERY.LOGGING_ENABLED` | bool | `True` | `DJANGO_O11Y_CELERY_LOGGING_ENABLED` |
 | `CELERY.METRICS_ENABLED` | bool | `True` | `DJANGO_O11Y_CELERY_METRICS_ENABLED` |
 | `CELERY.METRICS_PORT` | int | `8009` | `DJANGO_O11Y_CELERY_METRICS_PORT` |
-| `CELERY.METRICS_MULTIPROC_DIR` | str | `"/tmp/django-o11y/prometheus-multiproc-celery"` | `DJANGO_O11Y_CELERY_METRICS_MULTIPROC_DIR` |
 
 ### Profiling
 

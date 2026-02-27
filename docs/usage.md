@@ -489,12 +489,14 @@ No configuration required. Run Gunicorn normally:
 gunicorn myproject.wsgi --workers 4
 ```
 
-When Gunicorn is detected, django-o11y sets `PROMETHEUS_MULTIPROC_DIR` so each worker writes metrics to a shared directory, and the standard `/metrics` endpoint aggregates them. Override the directory if needed:
+When Gunicorn is detected, django-o11y sets `PROMETHEUS_MULTIPROC_DIR` so each worker writes metrics to a shared directory, and the standard `/metrics` endpoint aggregates them.
+
+The default base directory is `/tmp/django-o11y/prometheus-multiproc`. Django workers write to `{base}/django` and Celery workers to `{base}/celery`. Set `MULTIPROC_BASE_DIR` to move both at once:
 
 ```python
 DJANGO_O11Y = {
     "METRICS": {
-        "MULTIPROC_DIR": "/tmp/django-o11y/prometheus-multiproc-django",  # default
+        "MULTIPROC_BASE_DIR": "/var/run/prometheus-multiproc",
     }
 }
 ```
@@ -521,8 +523,7 @@ Each prefork worker child writes metrics to a shared directory (`METRICS_MULTIPR
 DJANGO_O11Y = {
     "CELERY": {
         "ENABLED": True,
-        "METRICS_PORT": 8009,                                          # default
-        "METRICS_MULTIPROC_DIR": "/tmp/django-o11y/prometheus-multiproc-celery",  # default
+        "METRICS_PORT": 8009,  # default
     }
 }
 ```
