@@ -2,14 +2,18 @@
 
 from unittest.mock import MagicMock, patch
 
+from tests.conftest import make_config
+
 
 def test_setup_tracing_creates_provider():
     from django_o11y.tracing.setup import setup_tracing
 
-    config = {
-        "SERVICE_NAME": "test-service",
-        "TRACING": {"OTLP_ENDPOINT": "http://localhost:4317"},
-    }
+    config = make_config(
+        {
+            "SERVICE_NAME": "test-service",
+            "TRACING": {"OTLP_ENDPOINT": "http://localhost:4317"},
+        }
+    )
 
     with patch("django_o11y.tracing.setup.OTLPSpanExporter"):
         with patch("django_o11y.tracing.setup.trace.set_tracer_provider"):
@@ -21,11 +25,13 @@ def test_setup_tracing_creates_provider():
 def test_setup_tracing_with_namespace():
     from django_o11y.tracing.setup import setup_tracing
 
-    config = {
-        "SERVICE_NAME": "test-service",
-        "NAMESPACE": "production",
-        "TRACING": {"OTLP_ENDPOINT": "http://localhost:4317"},
-    }
+    config = make_config(
+        {
+            "SERVICE_NAME": "test-service",
+            "NAMESPACE": "production",
+            "TRACING": {"OTLP_ENDPOINT": "http://localhost:4317"},
+        }
+    )
 
     with patch("django_o11y.tracing.setup.OTLPSpanExporter"):
         with patch("django_o11y.tracing.setup.trace.set_tracer_provider"):
@@ -37,11 +43,13 @@ def test_setup_tracing_with_namespace():
 def test_setup_tracing_with_resource_attributes():
     from django_o11y.tracing.setup import setup_tracing
 
-    config = {
-        "SERVICE_NAME": "test-service",
-        "RESOURCE_ATTRIBUTES": {"region": "us-west-2", "team": "backend"},
-        "TRACING": {"OTLP_ENDPOINT": "http://localhost:4317"},
-    }
+    config = make_config(
+        {
+            "SERVICE_NAME": "test-service",
+            "RESOURCE_ATTRIBUTES": {"region": "us-west-2", "team": "backend"},
+            "TRACING": {"OTLP_ENDPOINT": "http://localhost:4317"},
+        }
+    )
 
     with patch("django_o11y.tracing.setup.OTLPSpanExporter"):
         with patch("django_o11y.tracing.setup.trace.set_tracer_provider"):
@@ -53,10 +61,9 @@ def test_setup_tracing_with_resource_attributes():
 def test_setup_tracing_without_otlp_endpoint():
     from django_o11y.tracing.setup import setup_tracing
 
-    config = {
-        "SERVICE_NAME": "test-service",
-        "TRACING": {"OTLP_ENDPOINT": None},
-    }
+    config = make_config(
+        {"SERVICE_NAME": "test-service", "TRACING": {"OTLP_ENDPOINT": None}}
+    )
 
     with patch("django_o11y.tracing.setup.trace.set_tracer_provider"):
         provider = setup_tracing(config)
@@ -67,13 +74,15 @@ def test_setup_tracing_without_otlp_endpoint():
 def test_setup_tracing_with_console_exporter():
     from django_o11y.tracing.setup import setup_tracing
 
-    config = {
-        "SERVICE_NAME": "test-service",
-        "TRACING": {
-            "OTLP_ENDPOINT": "http://localhost:4317",
-            "CONSOLE_EXPORTER": True,
-        },
-    }
+    config = make_config(
+        {
+            "SERVICE_NAME": "test-service",
+            "TRACING": {
+                "OTLP_ENDPOINT": "http://localhost:4317",
+                "CONSOLE_EXPORTER": True,
+            },
+        }
+    )
 
     with patch("django_o11y.tracing.setup.OTLPSpanExporter"):
         with patch("django_o11y.tracing.setup.ConsoleSpanExporter") as mock_console:
@@ -89,10 +98,12 @@ def test_setup_tracing_with_console_exporter():
 def test_setup_tracing_without_console_exporter():
     from django_o11y.tracing.setup import setup_tracing
 
-    config = {
-        "SERVICE_NAME": "test-service",
-        "TRACING": {"OTLP_ENDPOINT": "http://localhost:4317"},
-    }
+    config = make_config(
+        {
+            "SERVICE_NAME": "test-service",
+            "TRACING": {"OTLP_ENDPOINT": "http://localhost:4317"},
+        }
+    )
 
     with patch("django_o11y.tracing.setup.OTLPSpanExporter"):
         with patch("django_o11y.tracing.setup.ConsoleSpanExporter") as mock_console:
@@ -108,11 +119,13 @@ def test_setup_tracing_adds_pyroscope_processor_when_enabled():
 
     from django_o11y.tracing.setup import setup_tracing
 
-    config = {
-        "SERVICE_NAME": "test-service",
-        "TRACING": {"OTLP_ENDPOINT": "http://localhost:4317"},
-        "PROFILING": {"ENABLED": True},
-    }
+    config = make_config(
+        {
+            "SERVICE_NAME": "test-service",
+            "TRACING": {"OTLP_ENDPOINT": "http://localhost:4317"},
+            "PROFILING": {"ENABLED": True},
+        }
+    )
 
     mock_processor = MagicMock()
     mock_pyroscope_otel = MagicMock()
@@ -132,11 +145,13 @@ def test_setup_tracing_skips_pyroscope_processor_when_unavailable():
 
     from django_o11y.tracing.setup import setup_tracing
 
-    config = {
-        "SERVICE_NAME": "test-service",
-        "TRACING": {"OTLP_ENDPOINT": "http://localhost:4317"},
-        "PROFILING": {"ENABLED": True},
-    }
+    config = make_config(
+        {
+            "SERVICE_NAME": "test-service",
+            "TRACING": {"OTLP_ENDPOINT": "http://localhost:4317"},
+            "PROFILING": {"ENABLED": True},
+        }
+    )
 
     with patch("django_o11y.tracing.setup.OTLPSpanExporter"):
         with patch("django_o11y.tracing.setup.trace.set_tracer_provider"):
@@ -151,11 +166,13 @@ def test_setup_tracing_adds_pyroscope_processor_in_celery_prefork_worker_child()
 
     from django_o11y.tracing.setup import setup_tracing
 
-    config = {
-        "SERVICE_NAME": "test-service",
-        "TRACING": {"OTLP_ENDPOINT": "http://localhost:4317"},
-        "PROFILING": {"ENABLED": True},
-    }
+    config = make_config(
+        {
+            "SERVICE_NAME": "test-service",
+            "TRACING": {"OTLP_ENDPOINT": "http://localhost:4317"},
+            "PROFILING": {"ENABLED": True},
+        }
+    )
 
     mock_processor = MagicMock()
     mock_pyroscope_otel = MagicMock()
@@ -179,11 +196,13 @@ def test_setup_tracing_skips_pyroscope_processor_in_celery_prefork_boot_process(
 
     from django_o11y.tracing.setup import setup_tracing
 
-    config = {
-        "SERVICE_NAME": "test-service",
-        "TRACING": {"OTLP_ENDPOINT": "http://localhost:4317"},
-        "PROFILING": {"ENABLED": True},
-    }
+    config = make_config(
+        {
+            "SERVICE_NAME": "test-service",
+            "TRACING": {"OTLP_ENDPOINT": "http://localhost:4317"},
+            "PROFILING": {"ENABLED": True},
+        }
+    )
 
     mock_pyroscope_otel = MagicMock()
 

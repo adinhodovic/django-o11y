@@ -2,6 +2,8 @@
 
 from unittest.mock import MagicMock, patch
 
+from tests.conftest import make_config
+
 
 def test_register_post_fork_handler_idempotent():
     """register_post_fork_handler only calls os.register_at_fork once."""
@@ -123,15 +125,17 @@ def test_setup_tracing_uses_worker_pid_after_fork():
 
     from django_o11y.tracing.setup import setup_tracing
 
-    config = {
-        "SERVICE_NAME": "test-service",
-        "SERVICE_VERSION": "1.0",
-        "SERVICE_INSTANCE_ID": None,  # no explicit override → use hostname:pid
-        "ENVIRONMENT": "test",
-        "TRACING": {"OTLP_ENDPOINT": None, "CONSOLE_EXPORTER": False},
-        "PROFILING": {"ENABLED": False},
-        "RESOURCE_ATTRIBUTES": {},
-    }
+    config = make_config(
+        {
+            "SERVICE_NAME": "test-service",
+            "SERVICE_VERSION": "1.0",
+            "SERVICE_INSTANCE_ID": None,  # no explicit override → use hostname:pid
+            "ENVIRONMENT": "test",
+            "TRACING": {"OTLP_ENDPOINT": None, "CONSOLE_EXPORTER": False},
+            "PROFILING": {"ENABLED": False},
+            "RESOURCE_ATTRIBUTES": {},
+        }
+    )
 
     with (
         patch("django_o11y.tracing.utils.trace.set_tracer_provider"),

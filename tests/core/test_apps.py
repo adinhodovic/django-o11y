@@ -4,6 +4,8 @@ import pytest
 from django.core.exceptions import ImproperlyConfigured
 from django.test import override_settings
 
+from tests.conftest import make_config
+
 
 def test_app_config_name():
     from django_o11y.apps import DjangoO11yConfig
@@ -132,10 +134,9 @@ def test_configure_metrics_warns_when_metrics_url_missing():
 
     from django_o11y.apps import DjangoO11yConfig
 
-    config = {
-        "LOGGING": {"FORMAT": "json"},
-        "METRICS": {"PROMETHEUS_ENABLED": True, "PROMETHEUS_ENDPOINT": "/metrics"},
-    }
+    config = make_config(
+        {"METRICS": {"PROMETHEUS_ENABLED": True, "PROMETHEUS_ENDPOINT": "/metrics"}}
+    )
     app_config = DjangoO11yConfig("django_o11y", __import__("django_o11y"))
 
     with (
@@ -152,10 +153,9 @@ def test_configure_metrics_no_warning_when_metrics_url_exists():
 
     from django_o11y.apps import DjangoO11yConfig
 
-    config = {
-        "LOGGING": {"FORMAT": "json"},
-        "METRICS": {"PROMETHEUS_ENABLED": True, "PROMETHEUS_ENDPOINT": "/metrics"},
-    }
+    config = make_config(
+        {"METRICS": {"PROMETHEUS_ENABLED": True, "PROMETHEUS_ENDPOINT": "/metrics"}}
+    )
     app_config = DjangoO11yConfig("django_o11y", __import__("django_o11y"))
 
     with (
