@@ -1,6 +1,5 @@
 """Tests for management commands - minimal mocking, integration-first."""
 
-from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -37,19 +36,24 @@ def test_get_compose_cmd_real():
     assert result in [["docker", "compose"], ["docker-compose"]]
 
 
-def test_get_work_dir_creates_directory():
+def test_get_work_dir_creates_directory(monkeypatch, tmp_path):
     from django_o11y.management.commands.o11y import _get_work_dir
+
+    configured_dir = tmp_path / "stack"
+    monkeypatch.setenv("DJANGO_O11Y_STACK_DIR", str(configured_dir))
 
     work_dir = _get_work_dir()
 
     assert work_dir is not None
     assert work_dir.exists()
     assert work_dir.is_dir()
-    assert str(work_dir).endswith(".django-o11y")
+    assert work_dir == configured_dir
 
 
-def test_get_work_dir_with_custom_app_url():
+def test_get_work_dir_with_custom_app_url(monkeypatch, tmp_path):
     from django_o11y.management.commands.o11y import _get_work_dir
+
+    monkeypatch.setenv("DJANGO_O11Y_STACK_DIR", str(tmp_path / "stack"))
 
     work_dir = _get_work_dir(app_url="myapp:8080")
 
@@ -210,8 +214,10 @@ def test_stack_start_dry_run():
     assert "app_url" in param_names
 
 
-def test_work_dir_idempotent():
+def test_work_dir_idempotent(monkeypatch, tmp_path):
     from django_o11y.management.commands.o11y import _get_work_dir
+
+    monkeypatch.setenv("DJANGO_O11Y_STACK_DIR", str(tmp_path / "stack"))
 
     work_dir1 = _get_work_dir()
     work_dir2 = _get_work_dir()
@@ -220,13 +226,30 @@ def test_work_dir_idempotent():
     assert work_dir1.exists()
 
 
-def test_work_dir_contains_stack_files():
+def test_work_dir_contains_stack_files(monkeypatch, tmp_path):
     from django_o11y.management.commands.o11y import _get_work_dir
+
+    monkeypatch.setenv("DJANGO_O11Y_STACK_DIR", str(tmp_path / "stack"))
 
     work_dir = _get_work_dir()
 
     assert (work_dir / "docker-compose.yml").exists()
     assert (work_dir / "prometheus.yml").exists()
+
+
+def test_work_dir_renders_stack_log_mount_path(monkeypatch, tmp_path):
+    from django_o11y.management.commands.o11y import _get_work_dir
+
+    monkeypatch.setenv("DJANGO_O11Y_STACK_DIR", str(tmp_path / "stack"))
+    monkeypatch.setenv(
+        "DJANGO_O11Y_LOGGING_FILE_PATH", "/run/user/1000/o11y/myproj/django.log"
+    )
+
+    work_dir = _get_work_dir()
+    compose_text = (work_dir / "docker-compose.yml").read_text()
+
+    assert "__DJANGO_O11Y_STACK_LOG_DIR__" not in compose_text
+    assert "/run/user/1000/o11y/myproj:/tmp/django-o11y:ro" in compose_text
 
 
 def test_celery_exporter_override_includes_ce_buckets(tmp_path):
@@ -253,10 +276,28 @@ def test_validate_exporter_broker_url_rejects_memory_transport():
     assert "unsupported broker transport" in reason
 
 
+def test_resolve_stack_dir_prefers_xdg_state_home(monkeypatch, tmp_path):
+    from django_o11y.management.commands.o11y import _resolve_stack_dir
+
+    monkeypatch.delenv("DJANGO_O11Y_STACK_DIR", raising=False)
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "xdg-state"))
+
+    assert _resolve_stack_dir() == tmp_path / "xdg-state" / "django-o11y"
+
+
+def test_resolve_stack_dir_prefers_explicit_override(monkeypatch, tmp_path):
+    from django_o11y.management.commands.o11y import _resolve_stack_dir
+
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "xdg-state"))
+    monkeypatch.setenv("DJANGO_O11Y_STACK_DIR", str(tmp_path / "project" / ".o11y"))
+
+    assert _resolve_stack_dir() == tmp_path / "project" / ".o11y"
+
+
 def test_get_work_dir_skips_exporter_for_incompatible_broker(tmp_path, monkeypatch):
     from django_o11y.management.commands.o11y import _get_work_dir
 
-    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    monkeypatch.setenv("DJANGO_O11Y_STACK_DIR", str(tmp_path / "stack"))
     monkeypatch.setattr(
         "django_o11y.management.commands.o11y._is_celery_enabled", lambda: True
     )
@@ -267,7 +308,7 @@ def test_get_work_dir_skips_exporter_for_incompatible_broker(tmp_path, monkeypat
 
     work_dir = _get_work_dir()
 
-    assert work_dir == tmp_path / ".django-o11y"
+    assert work_dir == tmp_path / "stack"
     assert not (work_dir / "docker-compose.celery-exporter.yml").exists()
 
 

@@ -70,7 +70,7 @@ The `o11y` management command has two subcommand groups: `stack` for running the
 
 ### stack
 
-Starts a Docker Compose stack and imports the Grafana dashboards. Stack configs are written to `~/.django-o11y/` on first run.
+Starts a Docker Compose stack and imports the Grafana dashboards. Stack configs are written to `${XDG_STATE_HOME:-~/.local/state}/django-o11y/` on first run. Override with `DJANGO_O11Y_STACK_DIR` when you want a project-local path.
 
 | Service | Image | Purpose |
 | ------- | ----- | ------- |
@@ -216,7 +216,7 @@ Call `build_logging_dict()` in each settings file. The defaults are keyed off `D
 from django_o11y.logging.setup import build_logging_dict
 
 LOGGING = build_logging_dict()
-# DEBUG=True: console format, colorized, file output to /tmp/django-o11y/django.log
+# DEBUG=True: console format, colorized, file output to ${XDG_RUNTIME_DIR:-/tmp}/django-o11y/<project>/django.log
 ```
 
 **`settings/production.py`**
@@ -285,7 +285,7 @@ Or via env var: `DJANGO_O11Y_LOGGING_FORMAT=json`.
 
 ### Log file (dev only)
 
-When `DEBUG=True`, logs are also written as JSON to `/tmp/django-o11y/django.log`. The local dev stack (`o11y stack start`) tails this file with Alloy and ships it to Loki, so logs show up in Grafana without needing OTLP push enabled. Useful when running `runserver` or `runserver_plus` directly on the host.
+When `DEBUG=True`, logs are also written as JSON to `${XDG_RUNTIME_DIR:-/tmp}/django-o11y/<project>/django.log`. The local dev stack (`o11y stack start`) tails this file with Alloy and ships it to Loki, so logs show up in Grafana without needing OTLP push enabled. Useful when running `runserver` or `runserver_plus` directly on the host.
 
 Override the path:
 
@@ -491,7 +491,7 @@ gunicorn myproject.wsgi --workers 4
 
 When Gunicorn is detected, django-o11y sets `PROMETHEUS_MULTIPROC_DIR` so each worker writes metrics to a shared directory, and the standard `/metrics` endpoint aggregates them.
 
-The default base directory is `/tmp/django-o11y/prometheus-multiproc`. Django workers write to `{base}/django` and Celery workers to `{base}/celery`. Set `MULTIPROC_BASE_DIR` to move both at once:
+The default base directory is `${XDG_RUNTIME_DIR:-/tmp}/django-o11y/<project>/prometheus-multiproc`. Django workers write to `{base}/django` and Celery workers to `{base}/celery`. Set `MULTIPROC_BASE_DIR` to move both at once:
 
 ```python
 DJANGO_O11Y = {

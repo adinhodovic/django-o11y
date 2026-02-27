@@ -38,7 +38,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - /tmp/django-o11y:/tmp/django-o11y
+      - ${DJANGO_O11Y_DEV_TMP_DIR:-/tmp/django-o11y-${COMPOSE_PROJECT_NAME:-django-o11y}}:/tmp/django-o11y
       - sqlite-data:/data
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -72,7 +72,7 @@ services:
     ports:
       - "8009:8009"
     volumes:
-      - /tmp/django-o11y:/tmp/django-o11y
+      - ${DJANGO_O11Y_DEV_TMP_DIR:-/tmp/django-o11y-${COMPOSE_PROJECT_NAME:-django-o11y}}:/tmp/django-o11y
       - sqlite-data:/data
     extra_hosts:
       - "host.docker.internal:host-gateway"

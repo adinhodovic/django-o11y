@@ -22,6 +22,8 @@ Precedence (lowest to highest):
 2. `DJANGO_O11Y` Django settings dict
 3. Environment variables
 
+Runtime file defaults (log files + Prometheus multiprocess files) are per-project. Set `DJANGO_O11Y_PROJECT_ID` to control the `<project>` directory suffix explicitly.
+
 ### Core
 
 | Setting | Type | Default | Env var |
@@ -57,7 +59,7 @@ Precedence (lowest to highest):
 | `LOGGING.OTLP_ENABLED` | bool | `False` | `DJANGO_O11Y_LOGGING_OTLP_ENABLED` |
 | `LOGGING.OTLP_ENDPOINT` | str | `"http://localhost:4317"` | `OTEL_EXPORTER_OTLP_ENDPOINT` |
 | `LOGGING.FILE_ENABLED` | bool | Same as `DEBUG` | `DJANGO_O11Y_LOGGING_FILE_ENABLED` |
-| `LOGGING.FILE_PATH` | str | `"/tmp/django-o11y/django.log"` | `DJANGO_O11Y_LOGGING_FILE_PATH` |
+| `LOGGING.FILE_PATH` | str | ``"${XDG_RUNTIME_DIR:-/tmp}/django-o11y/<project>/django.log"`` | `DJANGO_O11Y_LOGGING_FILE_PATH` |
 
 ### Metrics
 
@@ -66,7 +68,7 @@ Precedence (lowest to highest):
 | `METRICS.PROMETHEUS_ENABLED` | bool | `True` | `DJANGO_O11Y_METRICS_PROMETHEUS_ENABLED` |
 | `METRICS.PROMETHEUS_ENDPOINT` | str | `"/metrics"` | `DJANGO_O11Y_METRICS_PROMETHEUS_ENDPOINT` |
 | `METRICS.EXPORT_MIGRATIONS` | bool | `True` | `DJANGO_O11Y_METRICS_EXPORT_MIGRATIONS` |
-| `METRICS.MULTIPROC_BASE_DIR` | str | `"/tmp/django-o11y/prometheus-multiproc"` | `DJANGO_O11Y_METRICS_MULTIPROC_BASE_DIR` |
+| `METRICS.MULTIPROC_BASE_DIR` | str | ``"${XDG_RUNTIME_DIR:-/tmp}/django-o11y/<project>/prometheus-multiproc"`` | `DJANGO_O11Y_METRICS_MULTIPROC_BASE_DIR` |
 
 ### Celery
 

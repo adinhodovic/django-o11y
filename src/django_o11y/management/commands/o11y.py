@@ -1,5 +1,6 @@
 """Unified o11y management command using Click."""
 
+import os
 import shutil
 import socket
 import subprocess
@@ -260,7 +261,6 @@ def check():
 
 def _get_broker_url() -> str | None:
     """Detect the Celery broker URL from Django or Celery settings."""
-    import os
 
     from django.conf import settings
 
@@ -443,12 +443,18 @@ def _get_compose_cmd():
     return ["docker-compose"]  # pragma: no cover
 
 
-def _copy_stack_file(config_file, dest, app_url=None):
+def _copy_stack_file(
+    config_file, dest, app_url=None, stack_log_dir: Path | None = None
+):
     """Copy a single stack config file, substituting placeholders if needed."""
     # For alloy-config.alloy, substitute the metrics scrape URL
     if config_file.name == "alloy-config.alloy" and app_url:  # pragma: no cover
         content = config_file.read_text()
         content = content.replace('"host.docker.internal:8000"', f'"{app_url}"')
+        dest.write_text(content)
+    elif config_file.name == "docker-compose.yml" and stack_log_dir:
+        content = config_file.read_text()
+        content = content.replace("__DJANGO_O11Y_STACK_LOG_DIR__", str(stack_log_dir))
         dest.write_text(content)
     else:
         shutil.copy(config_file, dest)
@@ -456,15 +462,16 @@ def _copy_stack_file(config_file, dest, app_url=None):
 
 def _get_stack_dir() -> Path:
     """Return the stack working directory without modifying any files."""
-    work_dir = Path.home() / ".django-o11y"
-    work_dir.mkdir(exist_ok=True)
+    work_dir = _resolve_stack_dir()
+    work_dir.mkdir(parents=True, exist_ok=True)
     return work_dir
 
 
 def _get_work_dir(app_url=None):
     """Get or create working directory and copy stack configs."""
-    work_dir = Path.home() / ".django-o11y"
-    work_dir.mkdir(exist_ok=True)
+    work_dir = _resolve_stack_dir()
+    work_dir.mkdir(parents=True, exist_ok=True)
+    stack_log_dir = _resolve_stack_log_dir()
 
     # Copy stack files from package to work directory
     try:
@@ -476,7 +483,7 @@ def _get_work_dir(app_url=None):
             for config_file in stack_path.glob("*"):
                 if config_file.is_file():
                     dest = work_dir / config_file.name
-                    _copy_stack_file(config_file, dest, app_url)
+                    _copy_stack_file(config_file, dest, app_url, stack_log_dir)
     except Exception as e:  # pragma: no cover
         click.secho(f"Warning: Could not copy stack files: {e}", fg="yellow")
 
@@ -510,6 +517,33 @@ def _get_work_dir(app_url=None):
                 override.unlink()
 
     return work_dir
+
+
+def _resolve_stack_dir() -> Path:
+    """Resolve stack directory using explicit env var, then XDG state dir."""
+    if configured := os.environ.get("DJANGO_O11Y_STACK_DIR"):
+        return Path(configured).expanduser()
+
+    xdg_state_home = os.environ.get("XDG_STATE_HOME")
+    if xdg_state_home:
+        return Path(xdg_state_home).expanduser() / "django-o11y"
+
+    return Path.home() / ".local" / "state" / "django-o11y"
+
+
+def _resolve_stack_log_dir() -> Path:
+    """Resolve host log dir to mount into the Alloy container."""
+    try:
+        from django_o11y.config.setup import get_config
+
+        config = get_config()
+        file_path = config.get("LOGGING", {}).get("FILE_PATH")
+        if file_path:
+            return Path(file_path).expanduser().parent
+    except Exception:  # pragma: no cover  # pylint: disable=broad-exception-caught
+        pass
+
+    return Path("/tmp/django-o11y")
 
 
 def _print_service_urls(work_dir: Path | None = None):
