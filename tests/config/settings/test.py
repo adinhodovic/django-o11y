@@ -57,7 +57,6 @@ DJANGO_O11Y = {
     "PROFILING": {
         "ENABLED": True,  # Gracefully skips if pyroscope-io not installed
         "PYROSCOPE_URL": "http://localhost:4040",
-        "TAGS": {},
     },
 }
 

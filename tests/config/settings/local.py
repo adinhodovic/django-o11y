@@ -1,12 +1,12 @@
-"""Dev settings for running the test project locally via Docker Compose.
+"""Local settings for running the test project via Docker Compose.
 
 Extends tests.config.settings.test with a real Redis broker,
 a real Celery worker process, and JSON structured logging so you can
 see what production logs look like.
 
 Usage:
-    DJANGO_SETTINGS_MODULE=tests.config.settings.dev python manage.py runserver
-    DJANGO_SETTINGS_MODULE=tests.config.settings.dev \
+    DJANGO_SETTINGS_MODULE=tests.config.settings.local python manage.py runserver
+    DJANGO_SETTINGS_MODULE=tests.config.settings.local \
     celery -A tests.celery_app worker -l info
 
 Or simply:

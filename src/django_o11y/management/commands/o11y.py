@@ -260,9 +260,15 @@ def check():
 
 def _get_broker_url() -> str | None:
     """Detect the Celery broker URL from Django or Celery settings."""
+    import os
+
     from django.conf import settings
 
-    # Check Django-style Celery settings first (CELERY_BROKER_URL)
+    # Env var takes precedence — lets callers override without changing settings.
+    if broker_url := os.environ.get("CELERY_BROKER_URL"):
+        return broker_url
+
+    # Check Django-style Celery settings (CELERY_BROKER_URL)
     broker_url = getattr(settings, "CELERY_BROKER_URL", None)
     if broker_url:
         return broker_url
@@ -358,14 +364,23 @@ def _validate_exporter_broker_url(broker_url: str) -> tuple[bool, str | None]:
             f"unsupported broker transport '{scheme}://' for exporter container",
         )
 
+    return True, None
+
+
+def _rewrite_broker_url_for_container(broker_url: str) -> str:
+    """Rewrite loopback broker URLs to host.docker.internal for container use.
+
+    celery-exporter runs inside Docker, so localhost/127.0.0.1 would resolve
+    to the container itself. The exporter compose override already adds
+    host.docker.internal via extra_hosts, so we rewrite the host there.
+    """
+    parsed = urlparse(broker_url)
     host = (parsed.hostname or "").lower()
     if host in {"localhost", "127.0.0.1", "::1"}:
-        return (
-            False,
-            "broker host resolves to loopback from inside exporter container",
+        broker_url = broker_url.replace(
+            parsed.hostname or host, "host.docker.internal", 1
         )
-
-    return True, None
+    return broker_url
 
 
 def _get_compose_files(work_dir: Path) -> list[str]:
@@ -471,8 +486,9 @@ def _get_work_dir(app_url=None):
         if broker_url:
             valid, reason = _validate_exporter_broker_url(broker_url)
             if valid:
-                _write_celery_exporter_override(work_dir, broker_url)
-                click.echo(f"  celery-exporter: broker {broker_url}")
+                container_broker_url = _rewrite_broker_url_for_container(broker_url)
+                _write_celery_exporter_override(work_dir, container_broker_url)
+                click.echo(f"  celery-exporter: broker {container_broker_url}")
             else:
                 click.secho(
                     "  celery-exporter disabled: broker URL is not "
@@ -481,7 +497,7 @@ def _get_work_dir(app_url=None):
                 )
                 click.echo(
                     "  Set DJANGO_SETTINGS_MODULE to your dev/prod settings "
-                    "(for example tests.config.settings.dev) before running "
+                    "(for example tests.config.settings.local) before running "
                     "`manage.py o11y stack start`."
                 )
                 override = work_dir / CELERY_EXPORTER_COMPOSE_FILE

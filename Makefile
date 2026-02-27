@@ -13,7 +13,7 @@ dev-logs:
 	docker compose -f docker-compose.dev.yml logs -f
 
 o11y-stack:
-	DJANGO_SETTINGS_MODULE=$${DJANGO_SETTINGS_MODULE:-tests.config.settings.dev} python manage.py o11y stack start
+	DJANGO_SETTINGS_MODULE=tests.config.settings.local CELERY_BROKER_URL=$${CELERY_BROKER_URL:-redis://localhost:6379/0} DJANGO_O11Y_LOGGING_FILE_ENABLED=false python manage.py o11y stack start
 
 o11y-stack-stop:
 	python manage.py o11y stack stop
