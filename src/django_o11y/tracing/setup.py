@@ -196,7 +196,7 @@ def setup_worker_metrics(celery_config: dict[str, Any]) -> None:
     from prometheus_client.multiprocess import MultiProcessCollector
 
     multiproc_dir = celery_config.get(
-        "METRICS_MULTIPROC_DIR", "/tmp/django-o11y/prometheus-multiproc"
+        "METRICS_MULTIPROC_DIR", "/tmp/django-o11y/prometheus-multiproc-celery"
     )
     multiproc_path = pathlib.Path(multiproc_dir)
     multiproc_path.mkdir(parents=True, exist_ok=True)
@@ -252,7 +252,7 @@ def prepare_worker_metrics_dir(celery_config: dict[str, Any]) -> None:
     import pathlib
 
     multiproc_dir = celery_config.get(
-        "METRICS_MULTIPROC_DIR", "/tmp/django-o11y/prometheus-multiproc"
+        "METRICS_MULTIPROC_DIR", "/tmp/django-o11y/prometheus-multiproc-celery"
     )
     pathlib.Path(multiproc_dir).mkdir(parents=True, exist_ok=True)
     os.environ["PROMETHEUS_MULTIPROC_DIR"] = multiproc_dir
