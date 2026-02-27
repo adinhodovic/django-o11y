@@ -137,13 +137,13 @@ def test_setup_profiling_with_custom_tags():
     config = {
         "SERVICE_NAME": "test-service",
         "ENVIRONMENT": "staging",
+        "RESOURCE_ATTRIBUTES": {
+            "region": "us-west-2",
+            "team": "backend",
+        },
         "PROFILING": {
             "ENABLED": True,
             "PYROSCOPE_URL": "http://localhost:4040",
-            "TAGS": {
-                "region": "us-west-2",
-                "team": "backend",
-            },
         },
     }
 

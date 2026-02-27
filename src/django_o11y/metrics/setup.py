@@ -1,5 +1,8 @@
 """Metrics setup for Django startup."""
 
+import os
+import pathlib
+
 from django.conf import settings
 from django.urls import Resolver404, resolve
 
@@ -16,6 +19,9 @@ def setup_metrics_for_django(config: dict) -> None:
     if not metrics.get("PROMETHEUS_ENABLED", True):
         return
 
+    if is_prefork_web_server():
+        _prepare_metrics_multiproc_dir(metrics)
+
     endpoint = metrics.get("PROMETHEUS_ENDPOINT", "/metrics")
     logger.info("Metrics enabled at %s", endpoint)
 
@@ -28,3 +34,31 @@ def setup_metrics_for_django(config: dict) -> None:
             "root urlpatterns.",
             normalized,
         )
+
+
+def is_prefork_web_server() -> bool:
+    """Return True when running under a pre-fork web server (Gunicorn, uWSGI).
+
+    Gunicorn and uWSGI import themselves before Django's AppConfig.ready()
+    runs, so their top-level package will already be present in sys.modules.
+    """
+    import sys
+
+    return "gunicorn" in sys.modules or "uwsgi" in sys.modules
+
+
+def _prepare_metrics_multiproc_dir(metrics: dict) -> None:
+    """Set PROMETHEUS_MULTIPROC_DIR for pre-fork web server workers.
+
+    Must be called in the parent process before forking so that:
+    - The directory exists when children are forked.
+    - The env var is inherited by all child processes.
+
+    Each forked child re-sets the var via the post-fork hook in fork.py.
+    """
+    multiproc_dir = metrics.get(
+        "MULTIPROC_DIR", "/tmp/django-o11y/prometheus-multiproc-django"
+    )
+    pathlib.Path(multiproc_dir).mkdir(parents=True, exist_ok=True)
+    os.environ["PROMETHEUS_MULTIPROC_DIR"] = multiproc_dir
+    logger.info("Prometheus multiprocess metrics dir: %s", multiproc_dir)

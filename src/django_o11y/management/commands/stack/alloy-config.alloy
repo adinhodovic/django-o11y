@@ -152,6 +152,18 @@ prometheus.scrape "django" {
   forward_to      = [prometheus.remote_write.default.receiver]
 }
 
+prometheus.scrape "celery_worker" {
+  targets = [
+    {
+      "__address__" = "host.docker.internal:8009",
+      "job"         = "celery-worker",
+    },
+  ]
+  metrics_path    = "/metrics"
+  scrape_interval = "15s"
+  forward_to      = [prometheus.remote_write.default.receiver]
+}
+
 prometheus.remote_write "default" {
   endpoint {
     url = "http://prometheus:9090/api/v1/write"

@@ -62,13 +62,7 @@ def stack():
     help="URL where Django app exposes /metrics endpoint",
     show_default=True,
 )
-@click.option(
-    "--app-container",
-    default="django-app",
-    help="Docker container name to scrape logs from",
-    show_default=True,
-)
-def start(app_url, app_container):
+def start(app_url):
     """Start the o11y stack using Docker Compose.
 
     Examples:
@@ -76,13 +70,13 @@ def start(app_url, app_container):
       # App running on host (default)
       python manage.py o11y stack start
 
-      # App running in Docker with a custom container name
-      python manage.py o11y stack start --app-url django-app:8000 --app-container myapp
+      # App running in Docker
+      python manage.py o11y stack start --app-url django-app:8000
     """
     if not _check_docker_compose():  # pragma: no cover
         raise SystemExit(1)
 
-    work_dir = _get_work_dir(app_url, app_container)
+    work_dir = _get_work_dir(app_url)
     cmd = _get_compose_cmd()
     compose_files = _get_compose_files(work_dir)
 
@@ -111,7 +105,7 @@ def stop():
 
     click.echo("Stopping observability stack...")
 
-    work_dir = _get_work_dir()
+    work_dir = _get_stack_dir()
     cmd = _get_compose_cmd()
     compose_files = _get_compose_files(work_dir)
 
@@ -134,7 +128,7 @@ def restart():
         raise SystemExit(1)
 
     click.echo("Restarting observability stack...")
-    work_dir = _get_work_dir()
+    work_dir = _get_stack_dir()
     cmd = _get_compose_cmd()
     compose_files = _get_compose_files(work_dir)
 
@@ -156,7 +150,7 @@ def status():
     if not _check_docker_compose():  # pragma: no cover
         raise SystemExit(1)
 
-    work_dir = _get_work_dir()
+    work_dir = _get_stack_dir()
     cmd = _get_compose_cmd()
     compose_files = _get_compose_files(work_dir)
 
@@ -190,7 +184,7 @@ def logs(follow, tail):
     if not _check_docker_compose():  # pragma: no cover
         raise SystemExit(1)
 
-    work_dir = _get_work_dir()
+    work_dir = _get_stack_dir()
     cmd = _get_compose_cmd()
     compose_files = _get_compose_files(work_dir)
 
@@ -350,6 +344,30 @@ prometheus.scrape "celery_exporter" {{
             alloy_config.write_text(existing + scrape_block)
 
 
+def _validate_exporter_broker_url(broker_url: str) -> tuple[bool, str | None]:
+    """Validate broker URL compatibility for celery-exporter container."""
+    if not broker_url:
+        return False, "broker URL is empty"
+
+    parsed = urlparse(broker_url)
+    scheme = (parsed.scheme or "").lower()
+
+    if scheme in {"memory", "filesystem"}:
+        return (
+            False,
+            f"unsupported broker transport '{scheme}://' for exporter container",
+        )
+
+    host = (parsed.hostname or "").lower()
+    if host in {"localhost", "127.0.0.1", "::1"}:
+        return (
+            False,
+            "broker host resolves to loopback from inside exporter container",
+        )
+
+    return True, None
+
+
 def _get_compose_files(work_dir: Path) -> list[str]:
     """Return the list of -f flags for docker compose commands."""
     files = ["-f", "docker-compose.yml"]
@@ -410,24 +428,25 @@ def _get_compose_cmd():
     return ["docker-compose"]  # pragma: no cover
 
 
-def _copy_stack_file(config_file, dest, app_url=None, app_container=None):
+def _copy_stack_file(config_file, dest, app_url=None):
     """Copy a single stack config file, substituting placeholders if needed."""
     # For alloy-config.alloy, substitute the metrics scrape URL
-    # and the Docker container name for log scraping
-    if config_file.name == "alloy-config.alloy" and (
-        app_url or app_container
-    ):  # pragma: no cover
+    if config_file.name == "alloy-config.alloy" and app_url:  # pragma: no cover
         content = config_file.read_text()
-        if app_url:
-            content = content.replace('"host.docker.internal:8000"', f'"{app_url}"')
-        if app_container:
-            content = content.replace('"django-app"', f'"{app_container}"')
+        content = content.replace('"host.docker.internal:8000"', f'"{app_url}"')
         dest.write_text(content)
     else:
         shutil.copy(config_file, dest)
 
 
-def _get_work_dir(app_url=None, app_container=None):
+def _get_stack_dir() -> Path:
+    """Return the stack working directory without modifying any files."""
+    work_dir = Path.home() / ".django-o11y"
+    work_dir.mkdir(exist_ok=True)
+    return work_dir
+
+
+def _get_work_dir(app_url=None):
     """Get or create working directory and copy stack configs."""
     work_dir = Path.home() / ".django-o11y"
     work_dir.mkdir(exist_ok=True)
@@ -442,7 +461,7 @@ def _get_work_dir(app_url=None, app_container=None):
             for config_file in stack_path.glob("*"):
                 if config_file.is_file():
                     dest = work_dir / config_file.name
-                    _copy_stack_file(config_file, dest, app_url, app_container)
+                    _copy_stack_file(config_file, dest, app_url)
     except Exception as e:  # pragma: no cover
         click.secho(f"Warning: Could not copy stack files: {e}", fg="yellow")
 
@@ -450,8 +469,24 @@ def _get_work_dir(app_url=None, app_container=None):
     if _is_celery_enabled():
         broker_url = _get_broker_url()
         if broker_url:
-            _write_celery_exporter_override(work_dir, broker_url)
-            click.echo(f"  celery-exporter: broker {broker_url}")
+            valid, reason = _validate_exporter_broker_url(broker_url)
+            if valid:
+                _write_celery_exporter_override(work_dir, broker_url)
+                click.echo(f"  celery-exporter: broker {broker_url}")
+            else:
+                click.secho(
+                    "  celery-exporter disabled: broker URL is not "
+                    f"container-compatible ({reason}).",
+                    fg="yellow",
+                )
+                click.echo(
+                    "  Set DJANGO_SETTINGS_MODULE to your dev/prod settings "
+                    "(for example tests.config.settings.dev) before running "
+                    "`manage.py o11y stack start`."
+                )
+                override = work_dir / CELERY_EXPORTER_COMPOSE_FILE
+                if override.exists():
+                    override.unlink()
         else:
             # Remove stale override if broker is no longer configured
             override = work_dir / CELERY_EXPORTER_COMPOSE_FILE

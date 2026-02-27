@@ -154,3 +154,10 @@ def reset_o11y_cache():
     get_o11y_config.cache_clear()
     yield
     get_o11y_config.cache_clear()
+
+
+@pytest.fixture(autouse=True)
+def mock_worker_metrics_server(mocker):
+    """Prevent tests from binding a real port for the worker metrics server."""
+    mocker.patch("django_o11y.tracing.setup.setup_worker_metrics")
+    mocker.patch("django_o11y.tracing.setup.prepare_worker_metrics_dir")

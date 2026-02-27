@@ -27,9 +27,11 @@ def register_post_fork_handler() -> None:
 
 
 def _reinit_after_fork() -> None:
-    """Re-initialise tracing provider in a freshly forked worker."""
+    """Re-initialise tracing and metrics in a freshly forked worker."""
     try:
         config = get_o11y_config()
+
+        _reinit_metrics_after_fork(config)
 
         if not config.get("TRACING", {}).get("ENABLED"):
             return
@@ -50,4 +52,21 @@ def _reinit_after_fork() -> None:
     except Exception:  # pylint: disable=broad-exception-caught
         logger.warning(
             "django_o11y: failed to re-initialise tracing after fork", exc_info=True
+        )
+
+
+def _reinit_metrics_after_fork(config: dict) -> None:
+    """Re-set PROMETHEUS_MULTIPROC_DIR in a forked child process."""
+    try:
+        metrics_setup = import_module("django_o11y.metrics.setup")
+        metrics = config.get("METRICS", {})
+        if (
+            metrics.get("PROMETHEUS_ENABLED", True)
+            and metrics_setup.is_prefork_web_server()
+        ):
+            metrics_setup._prepare_metrics_multiproc_dir(metrics)
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.warning(
+            "django_o11y: failed to re-set PROMETHEUS_MULTIPROC_DIR after fork",
+            exc_info=True,
         )
