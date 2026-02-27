@@ -79,7 +79,7 @@ make dev-logs     # follow logs
 
 The Django process listens on `http://localhost:8000`. The Celery worker metrics
 server listens on `http://localhost:8009/metrics`. Both use
-`tests/config/settings/dev.py`, which wires up JSON structured logging, a real
+`tests/config/settings/local.py`, which wires up JSON structured logging, a real
 Redis broker, and tracing pointed at `host.docker.internal:4317`.
 
 To see traces and logs you need the observability stack running as well (see below).
