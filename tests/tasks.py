@@ -3,6 +3,8 @@
 import structlog
 from celery import shared_task
 
+from tests.metrics_registry import tasks_total
+
 log = structlog.get_logger(__name__)
 
 
@@ -21,6 +23,7 @@ def add(x, y, order_id=None):
     from tests.models import Order, TaskResult
 
     log.info("task_started", x=x, y=y, order_id=order_id)
+    tasks_total.add(1, {"task_name": "add"})
     result = x + y
 
     # UPDATE the order created by the web process

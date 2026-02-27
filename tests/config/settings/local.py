@@ -13,6 +13,8 @@ Or simply:
     docker compose -f docker-compose.dev.yml up --build
 """
 
+import os
+
 from django_o11y.logging.setup import build_logging_dict
 from tests.config.settings.test import *  # noqa: F401,F403  # pylint: disable=wildcard-import,unused-wildcard-import
 
@@ -21,7 +23,7 @@ DEBUG = False
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": "/data/dev_db.sqlite3",
+        "NAME": os.environ.get("DJANGO_O11Y_DEV_DB_NAME", "/data/dev_db.sqlite3"),
     }
 }
 

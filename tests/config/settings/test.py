@@ -1,14 +1,27 @@
 """Django settings for tests."""
 
+import os
+import tempfile
+
 SECRET_KEY = "test-secret-key"
 DEBUG = True
 ALLOWED_HOSTS = ["*"]
 
+# Set PROMETHEUS_MULTIPROC_DIR before django_prometheus is imported so that
+# prometheus_client sees the env var and the directory exists at that moment.
+# django_o11y is listed first in INSTALLED_APPS for the same reason — its
+# AppConfig.ready() must run before django_prometheus's.
+_PROM_MULTIPROC_DIR = os.path.join(
+    tempfile.gettempdir(), "django-o11y-test-prom-django"
+)
+os.makedirs(_PROM_MULTIPROC_DIR, exist_ok=True)
+os.environ["PROMETHEUS_MULTIPROC_DIR"] = _PROM_MULTIPROC_DIR
+
 INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
-    "django_prometheus",
     "django_o11y",
+    "django_prometheus",
     "tests",
 ]
 

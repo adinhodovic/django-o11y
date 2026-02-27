@@ -172,4 +172,3 @@ def reset_o11y_cache():
 def mock_worker_metrics_server(mocker):
     """Prevent tests from binding a real port for the worker metrics server."""
     mocker.patch("django_o11y.tracing.setup.setup_worker_metrics")
-    mocker.patch("django_o11y.tracing.setup.prepare_worker_metrics_dir")

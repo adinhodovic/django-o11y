@@ -51,39 +51,29 @@ pyroscope.write "default" {
 }
 
 // ============================================================
-// Logs: Docker stdout scrape path → Loki
-// Picks up logs when OTLP log push is disabled (the default).
-// Django writes JSON logs to stdout; Alloy tails them here.
+// Logs: file tail → Loki
+// Each service writes JSON logs to its own file under
+// /tmp/django-o11y/ (bind-mounted from the host). Separate
+// files give each service its own Loki stream so timestamps
+// are always monotonically increasing within a stream.
 // ============================================================
 
-discovery.docker "django" {
-  host = "unix:///var/run/docker.sock"
+local.file_match "django_files" {
+  path_targets = [{"__path__" = "/tmp/django-o11y/*.log"}]
+}
 
-  filter {
-    name   = "name"
-    values = ["django-app"]
+loki.source.file "django_files" {
+  targets    = local.file_match.django_files.targets
+  forward_to = [loki.process.django_files.receiver]
+}
+
+loki.process "django_files" {
+  // Derive service_name from the filename (e.g. "celery.log" → "celery")
+  stage.regex {
+    source     = "filename"
+    expression = "/(?P<service_name>[^/]+)\\.log$"
   }
-}
 
-discovery.relabel "django" {
-  targets = discovery.docker.django.targets
-
-  // Strip the leading "/" from the container name (e.g. "/django-app" → "django-app")
-  rule {
-    source_labels = ["__meta_docker_container_name"]
-    regex         = "/(.*)"
-    target_label  = "service_name"
-  }
-}
-
-loki.source.docker "django" {
-  host       = "unix:///var/run/docker.sock"
-  targets    = discovery.relabel.django.output
-  forward_to = [loki.process.django.receiver]
-}
-
-loki.process "django" {
-  // Parse JSON log lines emitted by structlog in production format
   stage.json {
     expressions = {
       level     = "level",
@@ -106,28 +96,6 @@ loki.process "django" {
   }
 
   forward_to = [loki.write.default.receiver]
-}
-
-// ============================================================
-// Logs: file tail → Loki
-// Each service writes JSON logs to its own file under
-// /tmp/django-o11y/ (bind-mounted from the host). Separate
-// files give each service its own Loki stream so timestamps
-// are always monotonically increasing within a stream.
-// ============================================================
-
-loki.source.file "django_files" {
-  targets = [
-    {
-      __path__     = "/tmp/django-o11y/django.log",
-      service_name = "django-app",
-    },
-    {
-      __path__     = "/tmp/django-o11y/celery.log",
-      service_name = "celery-worker",
-    },
-  ]
-  forward_to = [loki.process.django.receiver]
 }
 
 loki.write "default" {

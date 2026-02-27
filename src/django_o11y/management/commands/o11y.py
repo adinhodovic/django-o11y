@@ -532,7 +532,15 @@ def _resolve_stack_dir() -> Path:
 
 
 def _resolve_stack_log_dir() -> Path:
-    """Resolve host log dir to mount into the Alloy container."""
+    """Resolve host log dir to mount into the Alloy container.
+
+    Explicit override via DJANGO_O11Y_STACK_LOG_DIR takes precedence,
+    which is useful when log files land in a Docker volume mount that
+    differs from the path Django would derive from its config.
+    """
+    if override := os.environ.get("DJANGO_O11Y_STACK_LOG_DIR"):
+        return Path(override).expanduser()
+
     try:
         from django_o11y.config.setup import get_config
 

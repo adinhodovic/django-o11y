@@ -1,6 +1,5 @@
 """Configuration setup for django-o11y."""
 
-import hashlib
 import os
 import re
 from functools import lru_cache
@@ -77,7 +76,6 @@ def get_config() -> dict[str, Any]:
             "PROMETHEUS_ENABLED": True,
             "PROMETHEUS_ENDPOINT": "/metrics",
             "EXPORT_MIGRATIONS": True,
-            "MULTIPROC_BASE_DIR": str(runtime_base_dir / "prometheus-multiproc"),
         },
         "CELERY": {
             "ENABLED": False,
@@ -139,11 +137,6 @@ def _apply_env_overrides(config: dict[str, Any], default_sample_rate: float) -> 
     _set_bool(m, "PROMETHEUS_ENABLED", "DJANGO_O11Y_METRICS_PROMETHEUS_ENABLED", True)
     _set_str(m, "PROMETHEUS_ENDPOINT", "DJANGO_O11Y_METRICS_PROMETHEUS_ENDPOINT")
     _set_bool(m, "EXPORT_MIGRATIONS", "DJANGO_O11Y_METRICS_EXPORT_MIGRATIONS", True)
-    _set_str(m, "MULTIPROC_BASE_DIR", "DJANGO_O11Y_METRICS_MULTIPROC_BASE_DIR")
-    # Subdirs are always derived from the base — not user-configurable.
-    base = m["MULTIPROC_BASE_DIR"]
-    m["MULTIPROC_DIR"] = f"{base}/django"
-    c["METRICS_MULTIPROC_DIR"] = f"{base}/celery"
 
     _set_bool(c, "ENABLED", "DJANGO_O11Y_CELERY_ENABLED")
     _set_bool(c, "TRACING_ENABLED", "DJANGO_O11Y_CELERY_TRACING_ENABLED", True)
@@ -179,15 +172,15 @@ def _default_runtime_base_dir() -> Path:
 
 
 def _default_project_id() -> str:
-    """Return a collision-resistant project id for runtime files."""
-    if explicit_id := os.getenv("DJANGO_O11Y_PROJECT_ID"):
-        return _slugify(explicit_id)
+    """Return the runtime project id used in file paths.
 
-    base_dir = getattr(settings, "BASE_DIR", None)
-    project_root = Path(base_dir) if base_dir else Path.cwd()
-    resolved_root = project_root.expanduser().resolve()
-    short_hash = hashlib.sha1(str(resolved_root).encode("utf-8")).hexdigest()[:8]
-    return f"{_slugify(resolved_root.name)}-{short_hash}"
+    Derived exclusively from env vars so that the value is consistent
+    between import time (where Django settings are not yet available)
+    and config-resolution time.
+    """
+    if otel_service_name := os.getenv("OTEL_SERVICE_NAME"):
+        return _slugify(otel_service_name)
+    return "django-app"
 
 
 def _slugify(value: str) -> str:

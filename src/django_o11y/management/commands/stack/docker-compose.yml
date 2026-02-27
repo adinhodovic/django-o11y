@@ -70,7 +70,6 @@ services:
       - "4318:4318"
     volumes:
       - ./alloy-config.alloy:/etc/alloy/config.alloy
-      - /var/run/docker.sock:/var/run/docker.sock
       - __DJANGO_O11Y_STACK_LOG_DIR__:/tmp/django-o11y:ro
     tmpfs:
       - /var/lib/alloy/data

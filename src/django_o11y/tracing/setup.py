@@ -177,29 +177,33 @@ def setup_celery_o11y(app: Any, config: dict[str, Any] | None = None) -> None:
 
 
 def setup_worker_metrics(celery_config: dict[str, Any]) -> None:
-    """Prepare multiprocess dir and start the metrics HTTP server.
+    """Start the Prometheus metrics HTTP server in the Celery parent process.
 
     Must be called in the prefork **parent** process (``worker_init``) so that:
-    - The multiproc dir exists before children are forked.
-    - ``PROMETHEUS_MULTIPROC_DIR`` is inherited by all child processes.
+    - ``PROMETHEUS_MULTIPROC_DIR`` is already set in the environment (by the
+      operator's entrypoint) before this runs.
     - The HTTP server is only bound once (in the parent).
+    - Child processes inherit ``PROMETHEUS_MULTIPROC_DIR`` via fork.
 
-    Child processes (``worker_process_init``) should call
-    ``prepare_worker_metrics_dir`` instead — they only need the env var set so
-    prometheus_client writes their .db files into the shared dir.
+    ``PROMETHEUS_MULTIPROC_DIR`` must be pre-created by the process entrypoint.
+    django-o11y does not create it.
     """
     import pathlib
 
     from prometheus_client import CollectorRegistry, start_http_server
     from prometheus_client.multiprocess import MultiProcessCollector
 
-    multiproc_dir = celery_config["METRICS_MULTIPROC_DIR"]
-    multiproc_path = pathlib.Path(multiproc_dir)
-    multiproc_path.mkdir(parents=True, exist_ok=True)
-    os.environ["PROMETHEUS_MULTIPROC_DIR"] = multiproc_dir
+    multiproc_dir = os.environ.get("PROMETHEUS_MULTIPROC_DIR")
+    if not multiproc_dir:
+        provider_logger.warning(
+            "PROMETHEUS_MULTIPROC_DIR is not set; "
+            "Celery worker metrics server will not be started."
+        )
+        return
 
     # Clear stale files from previous runs. In multiprocess mode these files
     # are append-only snapshots; keeping old ones causes stale metrics.
+    multiproc_path = pathlib.Path(multiproc_dir)
     for db_file in multiproc_path.glob("*.db"):
         db_file.unlink(missing_ok=True)
 
@@ -238,19 +242,6 @@ def _configure_celery_metrics_events(config: dict[str, Any]) -> None:
             "Failed to enable Celery task events in Django/worker process",
             exc_info=True,
         )
-
-
-def prepare_worker_metrics_dir(celery_config: dict[str, Any]) -> None:
-    """Set PROMETHEUS_MULTIPROC_DIR in prefork child processes.
-
-    Children inherit the env var from the parent but prometheus_client checks
-    it at import time, so we set it explicitly here as a safety net.
-    """
-    import pathlib
-
-    multiproc_dir = celery_config["METRICS_MULTIPROC_DIR"]
-    pathlib.Path(multiproc_dir).mkdir(parents=True, exist_ok=True)
-    os.environ["PROMETHEUS_MULTIPROC_DIR"] = multiproc_dir
 
 
 def _setup_celery_tracing() -> None:

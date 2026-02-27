@@ -144,32 +144,26 @@ def test_runtime_defaults_use_xdg_runtime_dir(monkeypatch):
     from django_o11y.config.setup import get_config
 
     monkeypatch.setenv("XDG_RUNTIME_DIR", "/run/user/1000")
-    monkeypatch.delenv("DJANGO_O11Y_PROJECT_ID", raising=False)
-
-    config = get_config()
-
-    assert config["LOGGING"]["FILE_PATH"].startswith(
-        "/run/user/1000/django-o11y/example-project-"
-    )
-    assert config["METRICS"]["MULTIPROC_BASE_DIR"].startswith(
-        "/run/user/1000/django-o11y/example-project-"
-    )
-
-
-@override_settings(BASE_DIR="/srv/example-project", DJANGO_O11Y={})
-def test_runtime_defaults_respect_explicit_project_id(monkeypatch):
-    from django_o11y.config.setup import get_config
-
-    monkeypatch.setenv("XDG_RUNTIME_DIR", "/run/user/1000")
-    monkeypatch.setenv("DJANGO_O11Y_PROJECT_ID", "Billing API")
+    monkeypatch.delenv("OTEL_SERVICE_NAME", raising=False)
 
     config = get_config()
 
     assert (
         config["LOGGING"]["FILE_PATH"]
-        == "/run/user/1000/django-o11y/billing-api/django.log"
+        == "/run/user/1000/django-o11y/django-app/django.log"
     )
+
+
+@override_settings(BASE_DIR="/srv/example-project", DJANGO_O11Y={})
+def test_runtime_defaults_use_otel_service_name(monkeypatch):
+    from django_o11y.config.setup import get_config
+
+    monkeypatch.setenv("XDG_RUNTIME_DIR", "/run/user/1000")
+    monkeypatch.setenv("OTEL_SERVICE_NAME", "FindWork API")
+
+    config = get_config()
+
     assert (
-        config["METRICS"]["MULTIPROC_BASE_DIR"]
-        == "/run/user/1000/django-o11y/billing-api/prometheus-multiproc"
+        config["LOGGING"]["FILE_PATH"]
+        == "/run/user/1000/django-o11y/findwork-api/django.log"
     )
