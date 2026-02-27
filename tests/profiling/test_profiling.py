@@ -4,6 +4,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from tests.conftest import make_config
+
 
 def test_profiling_disabled_by_default():
     # The hardcoded default for PROFILING.ENABLED is False
@@ -88,15 +90,17 @@ def test_setup_profiling_with_namespace():
 
     mock_pyroscope = MagicMock()
 
-    config = {
-        "SERVICE_NAME": "test-service",
-        "NAMESPACE": "production",
-        "ENVIRONMENT": "prod",
-        "PROFILING": {
-            "ENABLED": True,
-            "PYROSCOPE_URL": "http://localhost:4040",
-        },
-    }
+    config = make_config(
+        {
+            "SERVICE_NAME": "test-service",
+            "NAMESPACE": "production",
+            "ENVIRONMENT": "prod",
+            "PROFILING": {
+                "ENABLED": True,
+                "PYROSCOPE_URL": "http://localhost:4040",
+            },
+        }
+    )
 
     with patch.dict("sys.modules", {"pyroscope": mock_pyroscope}):
         setup_profiling(config)
@@ -112,14 +116,17 @@ def test_setup_profiling_without_namespace():
 
     mock_pyroscope = MagicMock()
 
-    config = {
-        "SERVICE_NAME": "test-service",
-        "ENVIRONMENT": "dev",
-        "PROFILING": {
-            "ENABLED": True,
-            "PYROSCOPE_URL": "http://localhost:4040",
-        },
-    }
+    config = make_config(
+        {
+            "SERVICE_NAME": "test-service",
+            "ENVIRONMENT": "dev",
+            "NAMESPACE": None,
+            "PROFILING": {
+                "ENABLED": True,
+                "PYROSCOPE_URL": "http://localhost:4040",
+            },
+        }
+    )
 
     with patch.dict("sys.modules", {"pyroscope": mock_pyroscope}):
         setup_profiling(config)
@@ -134,18 +141,20 @@ def test_setup_profiling_with_custom_tags():
 
     mock_pyroscope = MagicMock()
 
-    config = {
-        "SERVICE_NAME": "test-service",
-        "ENVIRONMENT": "staging",
-        "RESOURCE_ATTRIBUTES": {
-            "region": "us-west-2",
-            "team": "backend",
-        },
-        "PROFILING": {
-            "ENABLED": True,
-            "PYROSCOPE_URL": "http://localhost:4040",
-        },
-    }
+    config = make_config(
+        {
+            "SERVICE_NAME": "test-service",
+            "ENVIRONMENT": "staging",
+            "RESOURCE_ATTRIBUTES": {
+                "region": "us-west-2",
+                "team": "backend",
+            },
+            "PROFILING": {
+                "ENABLED": True,
+                "PYROSCOPE_URL": "http://localhost:4040",
+            },
+        }
+    )
 
     with patch.dict("sys.modules", {"pyroscope": mock_pyroscope}):
         setup_profiling(config)
@@ -184,13 +193,15 @@ def test_setup_profiling_raises_on_configure_error():
     mock_pyroscope = MagicMock()
     mock_pyroscope.configure.side_effect = RuntimeError("Connection failed")
 
-    config = {
-        "SERVICE_NAME": "test-service",
-        "PROFILING": {
-            "ENABLED": True,
-            "PYROSCOPE_URL": "http://localhost:4040",
-        },
-    }
+    config = make_config(
+        {
+            "SERVICE_NAME": "test-service",
+            "PROFILING": {
+                "ENABLED": True,
+                "PYROSCOPE_URL": "http://localhost:4040",
+            },
+        }
+    )
 
     with patch.dict("sys.modules", {"pyroscope": mock_pyroscope}):
         with pytest.raises(RuntimeError, match="Connection failed"):
@@ -224,13 +235,15 @@ def test_setup_profiling_allows_prefork_child_process():
 
     mock_pyroscope = MagicMock()
 
-    config = {
-        "SERVICE_NAME": "test-service",
-        "PROFILING": {
-            "ENABLED": True,
-            "PYROSCOPE_URL": "http://localhost:4040",
-        },
-    }
+    config = make_config(
+        {
+            "SERVICE_NAME": "test-service",
+            "PROFILING": {
+                "ENABLED": True,
+                "PYROSCOPE_URL": "http://localhost:4040",
+            },
+        }
+    )
 
     with patch("sys.argv", ["celery", "-A", "proj", "worker"]):
         with patch(
