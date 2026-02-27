@@ -60,7 +60,6 @@ DJANGO_O11Y = {
     "PROFILING": {
         "ENABLED": True,
         "PYROSCOPE_URL": "http://host.docker.internal:4041",
-        "TAGS": {"environment": "dev"},
     },
 }
 
