@@ -1,23 +1,18 @@
 # Contributing to django-o11y
 
-Thanks for contributing to django-o11y.
-
 ## Development setup
 
 ### Prerequisites
 
 - Python 3.12 or later
-- Docker and Docker Compose (for E2E testing with observability stack)
-- uv (recommended) or pip
+- [uv](https://github.com/astral-sh/uv)
+- Docker and Docker Compose
 
 ### Installation
 
 ```bash
-# Clone the repository
 git clone https://github.com/adinhodovic/django-o11y.git
 cd django-o11y
-
-# Install all dependencies (including all extras)
 uv sync --all-extras
 ```
 
@@ -25,141 +20,108 @@ uv sync --all-extras
 
 ```text
 django-o11y/
-├── src/django_o11y/        # Main package
-│   ├── apps.py                      # Django app config
-│   ├── config/setup.py              # Configuration management
-│   ├── logging/utils.py             # Logging helper utilities
-│   ├── tracing/utils.py             # Trace context helper utilities
-│   ├── middleware/                  # Tracing, Logging, Correlation middleware
-│   ├── tracing/                     # OpenTelemetry tracing
-│   ├── logging/                     # Structured logging
-│   ├── metrics/                     # Prometheus metrics
-│   ├── profiling/                   # Pyroscope profiling
-│   ├── celery/                      # Celery instrumentation
-│   └── management/commands/         # Django management commands
-│       └── observability.py         # Unified CLI command
+├── src/django_o11y/        # The library
+│   ├── apps.py             # AppConfig — all wiring happens in ready()
+│   ├── config/setup.py     # Configuration: defaults → DJANGO_O11Y dict → env vars
+│   ├── logging/            # Structured logging (structlog)
+│   ├── tracing/            # OpenTelemetry tracing
+│   ├── metrics/            # Prometheus metrics
+│   ├── profiling/          # Pyroscope profiling
+│   ├── celery/             # Celery instrumentation
+│   └── management/commands/  # o11y CLI (stack start/stop, check)
 │
-├── tests/                           # Test Django project
-│   ├── settings.py                  # Django settings for tests
-│   ├── conftest.py                  # Shared pytest fixtures
-│   ├── test_*.py                    # All test files
-│   └── models.py                    # Test models
+├── tests/                  # Embedded Django project used for tests and local dev
+│   ├── config/settings/
+│   │   ├── test.py         # Used by tox — no real broker, no LOGGING wiring
+│   │   └── dev.py          # Used by Docker Compose — JSON logs, real Redis
+│   ├── conftest.py         # Shared fixtures, make_config() helper
+│   └── Dockerfile          # Multi-stage uv build for dev containers
 │
-└── docs/                            # Documentation (guides & examples)
+├── docker-compose.dev.yml  # Local dev stack (Django + Celery + Redis + task generator)
+├── Makefile                # Shortcuts: make dev, make o11y-stack, etc.
+└── docs/                   # Usage and configuration guides
 ```
 
 ## Running tests
 
-### Quick test
-
-Run all tests:
+Always use tox, not bare pytest:
 
 ```bash
-uv run pytest
+# Single environment (fast)
+tox -e py312-django52
+
+# Full matrix (Django 5.2 + 6.0, Python 3.12 + 3.13)
+tox
+
+# Integration tests (requires observability stack — see below)
+tox -e integration
 ```
 
-### Test categories
+## Linting
 
-**Unit tests** - No external dependencies:
+Always use tox, not ruff or pylint directly:
 
 ```bash
-uv run pytest -m "not integration"
+tox -e ruff     # ruff lint + format check
+tox -e pylint   # pylint
 ```
 
-**Integration tests** - Requires observability stack running:
+## Local dev with Docker Compose
+
+`make dev` starts a full local environment with Django, a Celery worker, Redis,
+and a task-generator that hits `/trigger/` every five seconds:
 
 ```bash
-# Start stack first
-python manage.py o11y stack start
-
-# Run integration tests
-uv run pytest -m "integration" -v
-
-# Stop stack
-python manage.py o11y stack stop
+make dev          # build and start (docker compose up --build)
+make dev-stop     # tear down
+make dev-logs     # follow logs
 ```
 
-### Test configuration
+The Django process listens on `http://localhost:8000`. The Celery worker metrics
+server listens on `http://localhost:8009/metrics`. Both use
+`tests/config/settings/dev.py`, which wires up JSON structured logging, a real
+Redis broker, and tracing pointed at `host.docker.internal:4317`.
 
-Tests use `tests/config/settings/test.py` with sane defaults:
+To see traces and logs you need the observability stack running as well (see below).
 
-- All instrumentation enabled by default (tests should reflect production)
-- File-based SQLite database (not :memory:) for manual testing
-- Shared fixtures in `tests/conftest.py`
+## Observability stack
 
-## Code style
-
-### Formatting and linting
+`make o11y-stack` starts Grafana, Tempo, Loki, Prometheus, Pyroscope, and Alloy:
 
 ```bash
-# Format code
-ruff format .
-
-# Lint
-ruff check . --fix
-
-# Type checking
-mypy src/
+make o11y-stack           # start
+make o11y-stack-stop      # stop
+make o11y-stack-logs      # follow logs
 ```
 
-### Pre-commit checks
-
-Before committing, ensure:
-
-1. All tests pass: `uv run pytest`
-2. Code is formatted: `uv run ruff format .`
-3. No linting errors: `uv run ruff check .`
-4. Type checking passes: `uv run mypy src/`
-
-## Testing your changes
-
-### Manual testing
-
-Start the observability stack and test manually:
+After it's up, verify everything is reachable:
 
 ```bash
-# Start stack
-python manage.py o11y stack start
-
-# Run Django dev server (uses tests/ as Django project)
-python manage.py runserver
-
-# Generate some traffic
-curl http://localhost:8000/
-
-# Check setup
 python manage.py o11y check
-
-# View in Grafana
-open http://localhost:3000
-
-# Stop stack
-python manage.py o11y stack stop
 ```
 
-### Testing CLI commands
+Then open Grafana at `http://localhost:3000` to explore traces, logs, and metrics.
 
-Test the new Click-based CLI:
+Run both stacks together for a full local observability loop:
 
 ```bash
-# Show help
-python manage.py o11y --help
-python manage.py o11y stack --help
-python manage.py o11y check --help
-
-# Test commands
-python manage.py o11y stack start
-python manage.py o11y stack status
-python manage.py o11y check
-python manage.py o11y stack logs --follow
-python manage.py o11y stack stop
+make o11y-stack
+make dev
 ```
+
+## Pre-commit checklist
+
+Before opening a PR:
+
+1. Tests pass: `tox -e py312-django52`
+2. Lint clean: `tox -e ruff && tox -e pylint`
+3. Integration tests pass if you changed signal handlers or Celery setup: `tox -e integration`
 
 ## Need help?
 
-- **Questions?** Open a [Discussion](https://github.com/adinhodovic/django-o11y/discussions)
-- **Bug report?** Open an [Issue](https://github.com/adinhodovic/django-o11y/issues)
-- **Feature request?** Open an [Issue](https://github.com/adinhodovic/django-o11y/issues) with `enhancement` label
+- Questions: open a [Discussion](https://github.com/adinhodovic/django-o11y/discussions)
+- Bug report: open an [Issue](https://github.com/adinhodovic/django-o11y/issues)
+- Feature request: open an [Issue](https://github.com/adinhodovic/django-o11y/issues) with the `enhancement` label
 
 ## License
 
