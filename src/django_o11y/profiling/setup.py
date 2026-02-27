@@ -14,6 +14,20 @@ from django_o11y.utils.process import get_process_identity
 logger = get_logger()
 
 
+def _parse_otel_resource_attributes() -> dict[str, str]:
+    """Parse OTEL_RESOURCE_ATTRIBUTES env var (key=val,key2=val2) into a dict."""
+    raw = os.environ.get("OTEL_RESOURCE_ATTRIBUTES", "")
+    if not raw:
+        return {}
+    result = {}
+    for pair in raw.split(","):
+        pair = pair.strip()
+        if "=" in pair:
+            k, v = pair.split("=", 1)
+            result[k.strip()] = v.strip()
+    return result
+
+
 def setup_profiling(config: dict[str, Any]) -> None:
     """Configure Pyroscope with standard tags (service, version, env, host, pid)."""
     if config.get("CELERY", {}).get("ENABLED", False):
@@ -50,19 +64,23 @@ def setup_profiling(config: dict[str, Any]) -> None:
         )
         return
 
-    tags = {
-        "service_version": config.get("SERVICE_VERSION", "unknown"),
-        "environment": config.get("ENVIRONMENT", "development"),
-        "host": socket.gethostname(),
-        "process_id": str(os.getpid()),
-    }
+    # RESOURCE_ATTRIBUTES (and OTEL_RESOURCE_ATTRIBUTES) are the base; automatic
+    # attributes override them so runtime values like process_id are always accurate.
+    resource_attrs = _parse_otel_resource_attributes()
+    resource_attrs.update(config.get("RESOURCE_ATTRIBUTES", {}))
+    tags = resource_attrs
+
+    tags.update(
+        {
+            "service_version": config.get("SERVICE_VERSION", "unknown"),
+            "environment": config.get("ENVIRONMENT", "development"),
+            "host": socket.gethostname(),
+            "process_id": str(os.getpid()),
+        }
+    )
 
     if config.get("NAMESPACE"):
         tags["service_namespace"] = config["NAMESPACE"]
-
-    custom_tags = profiling_config.get("TAGS", {})
-    if custom_tags:
-        tags.update(custom_tags)
 
     try:
         pyroscope.configure(

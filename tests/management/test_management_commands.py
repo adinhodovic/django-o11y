@@ -1,5 +1,6 @@
 """Tests for management commands - minimal mocking, integration-first."""
 
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -240,6 +241,34 @@ def test_celery_exporter_override_includes_ce_buckets(tmp_path):
     assert "CE_BUCKETS" in content
     # Ensure the buckets are appropriate for long-running async tasks (seconds range)
     assert "1,2.5,5,10,30,60" in content
+
+
+def test_validate_exporter_broker_url_rejects_memory_transport():
+    from django_o11y.management.commands.o11y import _validate_exporter_broker_url
+
+    valid, reason = _validate_exporter_broker_url("memory://")
+
+    assert valid is False
+    assert reason is not None
+    assert "unsupported broker transport" in reason
+
+
+def test_get_work_dir_skips_exporter_for_incompatible_broker(tmp_path, monkeypatch):
+    from django_o11y.management.commands.o11y import _get_work_dir
+
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    monkeypatch.setattr(
+        "django_o11y.management.commands.o11y._is_celery_enabled", lambda: True
+    )
+    monkeypatch.setattr(
+        "django_o11y.management.commands.o11y._get_broker_url",
+        lambda: "memory://",
+    )
+
+    work_dir = _get_work_dir()
+
+    assert work_dir == tmp_path / ".django-o11y"
+    assert not (work_dir / "docker-compose.celery-exporter.yml").exists()
 
 
 def test_helper_functions_dont_crash():

@@ -67,6 +67,11 @@ services:
       DJANGO_SETTINGS_MODULE: tests.config.settings.dev
       OTEL_SERVICE_NAME: celery-worker
       DJANGO_O11Y_LOGGING_FILE_PATH: /tmp/django-o11y/celery.log
+      DJANGO_O11Y_CELERY_METRICS_PORT: "8009"
+      DJANGO_O11Y_CELERY_METRICS_MULTIPROC_DIR: /tmp/django-o11y/prometheus-multiproc
+      PROMETHEUS_MULTIPROC_DIR: /tmp/django-o11y/prometheus-multiproc
+    ports:
+      - "8009:8009"
     volumes:
       - /tmp/django-o11y:/tmp/django-o11y
       - sqlite-data:/data

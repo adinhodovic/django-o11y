@@ -31,8 +31,7 @@ Precedence (lowest to highest):
 | `SERVICE_INSTANCE_ID` | str | `"<hostname>:<pid>"` | `OTEL_SERVICE_INSTANCE_ID` |
 | `ENVIRONMENT` | str | `"development"` | `DJANGO_O11Y_ENVIRONMENT` |
 | `NAMESPACE` | str | `""` | `DJANGO_O11Y_NAMESPACE` |
-| `RESOURCE_ATTRIBUTES` | dict | `{}` | — |
-| `CUSTOM_TAGS` | dict | `{}` | — |
+| `RESOURCE_ATTRIBUTES` | dict | `{}` | `OTEL_RESOURCE_ATTRIBUTES` |
 
 ### Tracing
 
@@ -42,7 +41,7 @@ Precedence (lowest to highest):
 | `TRACING.OTLP_ENDPOINT` | str | `"http://localhost:4317"` | `OTEL_EXPORTER_OTLP_ENDPOINT` |
 | `TRACING.SAMPLE_RATE` | float | `1.0` (`DEBUG=True`) / `0.01` (`DEBUG=False`) | `OTEL_TRACES_SAMPLER_ARG` |
 | `TRACING.CONSOLE_EXPORTER` | bool | `False` | `DJANGO_O11Y_TRACING_CONSOLE_EXPORTER` |
-| `TRACING.AWS_ENABLED` | bool | `True` | `DJANGO_O11Y_TRACING_AWS_ENABLED` |
+| `TRACING.AWS_ENABLED` | bool | `False` | `DJANGO_O11Y_TRACING_AWS_ENABLED` |
 
 ### Logging
 
@@ -67,6 +66,7 @@ Precedence (lowest to highest):
 | `METRICS.PROMETHEUS_ENABLED` | bool | `True` | `DJANGO_O11Y_METRICS_PROMETHEUS_ENABLED` |
 | `METRICS.PROMETHEUS_ENDPOINT` | str | `"/metrics"` | `DJANGO_O11Y_METRICS_PROMETHEUS_ENDPOINT` |
 | `METRICS.EXPORT_MIGRATIONS` | bool | `True` | `DJANGO_O11Y_METRICS_EXPORT_MIGRATIONS` |
+| `METRICS.MULTIPROC_DIR` | str | `"/tmp/django-o11y/prometheus-multiproc-django"` | `DJANGO_O11Y_METRICS_MULTIPROC_DIR` |
 
 ### Celery
 
@@ -76,6 +76,8 @@ Precedence (lowest to highest):
 | `CELERY.TRACING_ENABLED` | bool | `True` | `DJANGO_O11Y_CELERY_TRACING_ENABLED` |
 | `CELERY.LOGGING_ENABLED` | bool | `True` | `DJANGO_O11Y_CELERY_LOGGING_ENABLED` |
 | `CELERY.METRICS_ENABLED` | bool | `True` | `DJANGO_O11Y_CELERY_METRICS_ENABLED` |
+| `CELERY.METRICS_PORT` | int | `8009` | `DJANGO_O11Y_CELERY_METRICS_PORT` |
+| `CELERY.METRICS_MULTIPROC_DIR` | str | `"/tmp/django-o11y/prometheus-multiproc"` | `DJANGO_O11Y_CELERY_METRICS_MULTIPROC_DIR` |
 
 ### Profiling
 
@@ -83,7 +85,7 @@ Precedence (lowest to highest):
 | ------- | ---- | ------- | ------- |
 | `PROFILING.ENABLED` | bool | `False` | `DJANGO_O11Y_PROFILING_ENABLED` |
 | `PROFILING.PYROSCOPE_URL` | str | `"http://localhost:4040"` | `DJANGO_O11Y_PROFILING_PYROSCOPE_URL` |
-| `PROFILING.TAGS` | dict | `{}` | — |
+
 
 ## Examples
 

@@ -86,8 +86,8 @@ Starts a Docker Compose stack and imports the Grafana dashboards. Stack configs 
 # Start
 python manage.py o11y stack start
 
-# App running in Docker with a custom container name
-python manage.py o11y stack start --app-url django-app:8000 --app-container myapp
+# App running in Docker
+python manage.py o11y stack start --app-url django-app:8000
 
 # Stop
 python manage.py o11y stack stop
@@ -105,7 +105,7 @@ python manage.py o11y stack logs
 python manage.py o11y stack logs --follow
 ```
 
-`--app-url` controls where Prometheus scrapes `/metrics` (default: `host.docker.internal:8000`). `--app-container` sets the Docker container name Alloy tails for logs (default: `django-app`).
+`--app-url` controls where Prometheus scrapes `/metrics` (default: `host.docker.internal:8000`).
 
 ### check
 
@@ -121,7 +121,7 @@ python manage.py o11y check
 
 ### Django metrics
 
-Django metrics are provided by [django-prometheus](https://github.com/korfuri/django-prometheus). It instruments request/response cycles, database queries, cache operations, and model saves. The Grafana dashboards and alerts are sourced from [django-mixin](https://github.com/adinhodovic/django-mixin).
+Django metrics come from [django-prometheus](https://github.com/korfuri/django-prometheus), which instruments request/response cycles, database queries, cache operations, and model saves. Grafana dashboards and alerts are from [django-mixin](https://github.com/adinhodovic/django-mixin).
 
 Migration metrics (`django_migrations_applied_total`, `django_migrations_unapplied_total`) are enabled automatically. They power the migrations panel in the Django Overview dashboard and the `DjangoMigrationsUnapplied` alert. To disable them:
 
@@ -164,9 +164,11 @@ urlpatterns = [
 
 ### Celery metrics
 
-Celery metrics are exported by [celery-exporter](https://github.com/danihodovic/celery-exporter), a standalone Prometheus exporter that connects to your broker and exposes task state, queue length, and worker status. The Grafana dashboards and alerts are sourced from the [celery-mixin](https://github.com/danihodovic/celery-exporter/tree/master/celery-mixin) bundled within celery-exporter.
+Celery metrics come from [celery-exporter](https://github.com/danihodovic/celery-exporter), a standalone Prometheus exporter that connects to your broker and exposes task state, queue length, and worker status. Grafana dashboards and alerts are from the [celery-mixin](https://github.com/danihodovic/celery-exporter/tree/master/celery-mixin) bundled within celery-exporter.
 
 celery-exporter is added to the local dev stack automatically when `CELERY.ENABLED` is `True` and a broker URL is found in your Django or Celery settings (`CELERY_BROKER_URL` or `broker_url`). See the [celery-exporter docs](https://github.com/danihodovic/celery-exporter) for production deployment.
+
+django-prometheus also runs inside Celery workers and exposes model metrics (insert, update, delete counts per model) via the worker metrics endpoint. Request and database query metrics are not available there — those only exist in the Django web process. If your tasks do a lot of database writes, model metrics are worth monitoring: they show which models are being mutated by background work and at what rate.
 
 ### Custom metrics
 
@@ -356,22 +358,25 @@ DJANGO_O11Y = {
 
 Profiles are pushed to Pyroscope on startup. View them in Grafana under **Explore → Pyroscope**.
 
-For Celery prefork workers, profiling is initialized in each worker child process (post-fork), not in the prefork parent process.
+For Celery prefork workers, profiling starts in each worker child process after fork, not in the parent.
 
 ### Custom tags
 
-Tag profiles with extra context for filtering:
+`RESOURCE_ATTRIBUTES` are merged into Pyroscope tags automatically, so profiles carry the same metadata as traces. Set them in Python config:
 
 ```python
 DJANGO_O11Y = {
-    "PROFILING": {
-        "ENABLED": True,
-        "TAGS": {
-            "region": "us-east-1",
-            "tier": "premium",
-        },
+    "RESOURCE_ATTRIBUTES": {
+        "region": "us-east-1",
+        "tier": "premium",
     }
 }
+```
+
+Or via the standard OTel env var:
+
+```bash
+OTEL_RESOURCE_ATTRIBUTES=region=us-east-1,tier=premium
 ```
 
 ---
@@ -471,3 +476,61 @@ python manage.py o11y check
 ```
 
 This checks the OTLP endpoint, installed packages, and sends a test trace you can find in Tempo.
+
+---
+
+## Multiprocess deployments
+
+### Gunicorn
+
+No configuration required. Run Gunicorn normally:
+
+```bash
+gunicorn myproject.wsgi --workers 4
+```
+
+When Gunicorn is detected, django-o11y sets `PROMETHEUS_MULTIPROC_DIR` so each worker writes metrics to a shared directory, and the standard `/metrics` endpoint aggregates them. Override the directory if needed:
+
+```python
+DJANGO_O11Y = {
+    "METRICS": {
+        "MULTIPROC_DIR": "/tmp/django-o11y/prometheus-multiproc-django",  # default
+    }
+}
+```
+
+### Celery prefork workers
+
+Tracing and profiling work out of the box. No extra configuration is needed beyond enabling Celery:
+
+```python
+DJANGO_O11Y = {
+    "CELERY": {
+        "ENABLED": True,
+    }
+}
+```
+
+Individual tasks are short-lived, so they can't serve an HTTP endpoint themselves. django-o11y runs the metrics HTTP server in the long-lived parent worker process instead. Each child writes its metrics to a per-PID file in a shared directory; on each scrape, the parent reads all those files and returns the combined result via `MultiProcessCollector`. The parent stays up for the lifetime of the worker, so Prometheus can scrape it on a normal pull interval — no pushgateway required.
+
+#### Prometheus metrics
+
+Each prefork worker child writes metrics to a shared directory (`METRICS_MULTIPROC_DIR`), and the parent process serves them on port `8009`. Unlike the Django web process, Celery workers don't normally expose any ports — you'll need to explicitly open port `8009` on your worker hosts or containers so Prometheus can scrape it.
+
+```python
+DJANGO_O11Y = {
+    "CELERY": {
+        "ENABLED": True,
+        "METRICS_PORT": 8009,                                          # default
+        "METRICS_MULTIPROC_DIR": "/tmp/django-o11y/prometheus-multiproc",  # default
+    }
+}
+```
+
+```yaml
+# prometheus.yml
+scrape_configs:
+  - job_name: celery
+    static_configs:
+      - targets: ["worker-host:8009"]
+```

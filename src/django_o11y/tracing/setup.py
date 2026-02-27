@@ -121,6 +121,7 @@ def setup_tracing_for_django(config: dict[str, Any]) -> None:
 
         try:
             importlib.import_module("django_o11y.tracing.signals")
+            _configure_celery_metrics_events(config)
         except ImportError:
             logger.warning(
                 "CELERY.ENABLED is true but Celery is not installed. "
@@ -175,6 +176,86 @@ def setup_celery_o11y(app: Any, config: dict[str, Any] | None = None) -> None:
         _setup_celery_tracing()
 
     _instrumented_pid = os.getpid()
+
+
+def setup_worker_metrics(celery_config: dict[str, Any]) -> None:
+    """Prepare multiprocess dir and start the metrics HTTP server.
+
+    Must be called in the prefork **parent** process (``worker_init``) so that:
+    - The multiproc dir exists before children are forked.
+    - ``PROMETHEUS_MULTIPROC_DIR`` is inherited by all child processes.
+    - The HTTP server is only bound once (in the parent).
+
+    Child processes (``worker_process_init``) should call
+    ``prepare_worker_metrics_dir`` instead — they only need the env var set so
+    prometheus_client writes their .db files into the shared dir.
+    """
+    import pathlib
+
+    from prometheus_client import CollectorRegistry, start_http_server
+    from prometheus_client.multiprocess import MultiProcessCollector
+
+    multiproc_dir = celery_config.get(
+        "METRICS_MULTIPROC_DIR", "/tmp/django-o11y/prometheus-multiproc"
+    )
+    multiproc_path = pathlib.Path(multiproc_dir)
+    multiproc_path.mkdir(parents=True, exist_ok=True)
+    os.environ["PROMETHEUS_MULTIPROC_DIR"] = multiproc_dir
+
+    # Clear stale files from previous runs. In multiprocess mode these files
+    # are append-only snapshots; keeping old ones causes stale metrics.
+    for db_file in multiproc_path.glob("*.db"):
+        db_file.unlink(missing_ok=True)
+
+    port = celery_config.get("METRICS_PORT", 8009)
+    registry = CollectorRegistry()
+    MultiProcessCollector(registry)
+    start_http_server(port, registry=registry)
+    provider_logger.info(
+        "Celery worker metrics server started on port %d (multiproc dir: %s)",
+        port,
+        multiproc_dir,
+    )
+
+
+def _configure_celery_metrics_events(config: dict[str, Any]) -> None:
+    """Enable producer-side Celery events needed by celery-exporter.
+
+    Workers set their event flags in ``setup_celery_o11y``. This function
+    covers the Django web process that publishes tasks, ensuring
+    ``task-sent`` events are emitted when metrics are enabled.
+    """
+    celery_config = config.get("CELERY", {})
+    if not config.get("METRICS", {}).get("PROMETHEUS_ENABLED", True):
+        return
+    if not celery_config.get("METRICS_ENABLED", True):
+        return
+
+    try:
+        import celery as celery_module
+
+        app = celery_module.current_app
+        app.conf.task_send_sent_event = True
+    except Exception:  # pragma: no cover
+        provider_logger.debug(
+            "Failed to enable Celery producer task-sent events in Django process",
+            exc_info=True,
+        )
+
+
+def prepare_worker_metrics_dir(celery_config: dict[str, Any]) -> None:
+    """Set PROMETHEUS_MULTIPROC_DIR in prefork child processes.
+
+    Children inherit the env var from the parent but prometheus_client checks
+    it at import time, so we set it explicitly here as a safety net.
+    """
+    import pathlib
+
+    multiproc_dir = celery_config.get(
+        "METRICS_MULTIPROC_DIR", "/tmp/django-o11y/prometheus-multiproc"
+    )
+    pathlib.Path(multiproc_dir).mkdir(parents=True, exist_ok=True)
+    os.environ["PROMETHEUS_MULTIPROC_DIR"] = multiproc_dir
 
 
 def _setup_celery_tracing() -> None:

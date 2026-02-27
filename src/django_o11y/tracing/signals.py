@@ -60,7 +60,13 @@ def _auto_setup_worker(sender) -> None:
 
 @connect_signal(worker_init, dispatch_uid="django_o11y.tracing.worker_init")
 def _auto_setup_on_worker_init(sender, **kwargs) -> None:
-    """worker_init signal handler - runs setup on non-prefork workers."""
+    """worker_init signal handler - runs in the worker parent process.
+
+    For non-prefork pools: full setup (tracing + metrics server).
+    For prefork parent: only start the metrics HTTP server — tracing is
+    deferred to child processes post-fork via worker_process_init.
+    """
+    _maybe_start_metrics_server()
     if is_celery_prefork_pool():
         return
 
@@ -71,11 +77,56 @@ def _auto_setup_on_worker_init(sender, **kwargs) -> None:
     worker_process_init, dispatch_uid="django_o11y.tracing.worker_process_init"
 )
 def _auto_setup_on_worker_process_init(sender=None, **kwargs) -> None:
-    """worker_process_init handler - runs setup in prefork child workers."""
+    """worker_process_init handler - runs in each prefork child worker."""
     if not is_celery_prefork_pool():
         return
 
+    _maybe_prepare_metrics_dir()
     _auto_setup_worker(sender)
+
+
+def _maybe_start_metrics_server() -> None:
+    """Start the Prometheus metrics HTTP server if metrics are enabled."""
+    try:
+        config = get_o11y_config()
+        celery_config = config.get("CELERY", {})
+        if not celery_config.get("ENABLED", False):
+            return
+        if not config.get("METRICS", {}).get("PROMETHEUS_ENABLED", True):
+            return
+        if not celery_config.get("METRICS_ENABLED", True):
+            return
+
+        from django_o11y.tracing.setup import setup_worker_metrics
+
+        setup_worker_metrics(celery_config)
+    except Exception:  # pragma: no cover
+        logger.warning(
+            "Failed to start Celery worker metrics server.",
+            exc_info=True,
+        )
+
+
+def _maybe_prepare_metrics_dir() -> None:
+    """Set PROMETHEUS_MULTIPROC_DIR in prefork child processes."""
+    try:
+        config = get_o11y_config()
+        celery_config = config.get("CELERY", {})
+        if not celery_config.get("ENABLED", False):
+            return
+        if not config.get("METRICS", {}).get("PROMETHEUS_ENABLED", True):
+            return
+        if not celery_config.get("METRICS_ENABLED", True):
+            return
+
+        from django_o11y.tracing.setup import prepare_worker_metrics_dir
+
+        prepare_worker_metrics_dir(celery_config)
+    except Exception:  # pragma: no cover
+        logger.warning(
+            "Failed to prepare Celery worker metrics dir.",
+            exc_info=True,
+        )
 
 
 @connect_signal(
