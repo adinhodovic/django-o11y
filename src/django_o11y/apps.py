@@ -92,30 +92,30 @@ class DjangoO11yConfig(AppConfig):
                 "=" * 60,
             ]
 
-            service = config.get("SERVICE_NAME", "unknown")
+            service = config["SERVICE_NAME"]
             banner.append(f"Service: {service}")
 
-            tracing = config.get("TRACING", {})
-            if tracing.get("ENABLED"):
-                endpoint = tracing.get("OTLP_ENDPOINT", "")
-                sample = tracing.get("SAMPLE_RATE", 1.0)
+            tracing = config["TRACING"]
+            if tracing["ENABLED"]:
+                endpoint = tracing["OTLP_ENDPOINT"]
+                sample = tracing["SAMPLE_RATE"]
                 banner.append(f"✅ Tracing → {endpoint} ({sample * 100:.0f}% sampling)")
 
-            logging_config = config.get("LOGGING", {})
-            fmt = logging_config.get("FORMAT", "console")
+            logging_config = config["LOGGING"]
+            fmt = logging_config["FORMAT"]
             banner.append(f"✅ Logging → format={fmt}")
 
-            metrics_config = config.get("METRICS", {})
-            if metrics_config.get("PROMETHEUS_ENABLED", True):
-                endpoint = metrics_config.get("PROMETHEUS_ENDPOINT", "/metrics")
+            metrics_config = config["METRICS"]
+            if metrics_config["PROMETHEUS_ENABLED"]:
+                endpoint = metrics_config["PROMETHEUS_ENDPOINT"]
                 banner.append(f"✅ Metrics → {endpoint}")
 
-            if config.get("CELERY", {}).get("ENABLED"):
+            if config["CELERY"]["ENABLED"]:
                 banner.append("✅ Celery → auto-instrumented")
 
-            profiling = config.get("PROFILING", {})
-            if profiling.get("ENABLED"):
-                url = profiling.get("PYROSCOPE_URL", "")
+            profiling = config["PROFILING"]
+            if profiling["ENABLED"]:
+                url = profiling["PYROSCOPE_URL"]
                 banner.append(f"✅ Profiling → {url}")
 
             banner.extend(

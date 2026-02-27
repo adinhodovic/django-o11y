@@ -47,7 +47,7 @@ def get_urls() -> list:
     if not metrics.get("PROMETHEUS_ENABLED", True):
         return []
 
-    endpoint = metrics.get("PROMETHEUS_ENDPOINT", "/metrics").lstrip("/")
+    endpoint = metrics["PROMETHEUS_ENDPOINT"].lstrip("/")
     return [
         path(
             endpoint,

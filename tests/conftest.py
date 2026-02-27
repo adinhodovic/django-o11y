@@ -77,42 +77,54 @@ def observability_stack():
     runner.invoke(cli, ["stack", "stop"])
 
 
+def make_config(overrides: dict | None = None) -> dict:
+    """Return a full config dict merged with the library defaults.
+
+    Tests that call setup functions directly should use this instead of
+    building minimal dicts, so that direct key access in the library code
+    does not raise KeyError when a key is not explicitly set.
+    """
+    from django_o11y.config.setup import _deep_merge, get_config
+
+    base = get_config()
+    if overrides:
+        return _deep_merge(base, overrides)
+    return base
+
+
 @pytest.fixture
 def mock_config():
     """Standard test config with all features enabled."""
-    return {
-        "SERVICE_NAME": "test-service",
-        "ENVIRONMENT": "test",
-        "NAMESPACE": "test-namespace",
-        "TRACING": {
-            "ENABLED": True,
-            "OTLP_ENDPOINT": "http://localhost:4317",
-            "SAMPLE_RATE": 1.0,
-            "CONSOLE_EXPORTER": False,
-        },
-        "LOGGING": {
-            "ENABLED": True,
-            "FORMAT": "console",
-            "LEVEL": "INFO",
-            "COLORIZED": False,
-            "RICH_EXCEPTIONS": False,
-            "OTLP_ENABLED": False,
-        },
-        "METRICS": {
-            "PROMETHEUS_ENABLED": True,
-        },
-        "CELERY": {
-            "ENABLED": True,
-        },
-        "PROFILING": {
-            "ENABLED": True,
-            "PYROSCOPE_URL": "http://localhost:4040",
-            "MODE": "push",
-            "TAGS": {},
-        },
-        "RESOURCE_ATTRIBUTES": {},
-        "CUSTOM_TAGS": {},
-    }
+    return make_config(
+        {
+            "SERVICE_NAME": "test-service",
+            "ENVIRONMENT": "test",
+            "NAMESPACE": "test-namespace",
+            "TRACING": {
+                "ENABLED": True,
+                "OTLP_ENDPOINT": "http://localhost:4317",
+                "SAMPLE_RATE": 1.0,
+                "CONSOLE_EXPORTER": False,
+            },
+            "LOGGING": {
+                "FORMAT": "console",
+                "COLORIZED": False,
+                "RICH_EXCEPTIONS": False,
+                "OTLP_ENABLED": False,
+            },
+            "METRICS": {
+                "PROMETHEUS_ENABLED": True,
+            },
+            "CELERY": {
+                "ENABLED": True,
+            },
+            "PROFILING": {
+                "ENABLED": True,
+                "PYROSCOPE_URL": "http://localhost:4040",
+            },
+            "RESOURCE_ATTRIBUTES": {},
+        }
+    )
 
 
 @pytest.fixture

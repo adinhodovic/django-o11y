@@ -13,16 +13,16 @@ logger = get_logger()
 
 def setup_metrics_for_django(config: dict) -> None:
     """Log metrics configuration and warn if endpoint is not routed."""
-    metrics = config.get("METRICS", {})
-    settings.PROMETHEUS_EXPORT_MIGRATIONS = metrics.get("EXPORT_MIGRATIONS", True)
+    metrics = config["METRICS"]
+    settings.PROMETHEUS_EXPORT_MIGRATIONS = metrics["EXPORT_MIGRATIONS"]
 
-    if not metrics.get("PROMETHEUS_ENABLED", True):
+    if not metrics["PROMETHEUS_ENABLED"]:
         return
 
     if is_prefork_web_server():
         _prepare_metrics_multiproc_dir(metrics)
 
-    endpoint = metrics.get("PROMETHEUS_ENDPOINT", "/metrics")
+    endpoint = metrics["PROMETHEUS_ENDPOINT"]
     logger.info("Metrics enabled at %s", endpoint)
 
     normalized = endpoint if endpoint.startswith("/") else f"/{endpoint}"
@@ -56,9 +56,7 @@ def _prepare_metrics_multiproc_dir(metrics: dict) -> None:
 
     Each forked child re-sets the var via the post-fork hook in fork.py.
     """
-    multiproc_dir = metrics.get(
-        "MULTIPROC_DIR", "/tmp/django-o11y/prometheus-multiproc-django"
-    )
+    multiproc_dir = metrics["MULTIPROC_DIR"]
     pathlib.Path(multiproc_dir).mkdir(parents=True, exist_ok=True)
     os.environ["PROMETHEUS_MULTIPROC_DIR"] = multiproc_dir
     logger.info("Prometheus multiprocess metrics dir: %s", multiproc_dir)
