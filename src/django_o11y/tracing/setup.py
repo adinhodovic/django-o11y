@@ -161,8 +161,6 @@ def setup_celery_o11y(app: Any, config: dict[str, Any] | None = None) -> None:
     # Keep Django/structlog logging ownership in workers.
     app.conf.worker_hijack_root_logger = False
     app.conf.worker_redirect_stdouts = False
-    app.conf.worker_send_task_events = True
-    app.conf.task_send_sent_event = True
 
     from django_structlog.celery.steps import DjangoStructLogInitStep
 
@@ -217,11 +215,11 @@ def setup_worker_metrics(celery_config: dict[str, Any]) -> None:
 
 
 def _configure_celery_metrics_events(config: dict[str, Any]) -> None:
-    """Enable producer-side Celery events needed by celery-exporter.
+    """Set Celery event flags needed by celery-exporter on the app conf at startup.
 
-    Workers set their event flags in ``setup_celery_o11y``. This function
-    covers the Django web process that publishes tasks, ensuring
-    ``task-sent`` events are emitted when metrics are enabled.
+    Setting these on the app conf before the worker boots means the worker
+    reads the correct values during its own startup sequence, avoiding the
+    ``task events: OFF`` banner.
     """
     celery_config = config.get("CELERY", {})
     if not config.get("METRICS", {}).get("PROMETHEUS_ENABLED", True):
@@ -233,10 +231,11 @@ def _configure_celery_metrics_events(config: dict[str, Any]) -> None:
         import celery as celery_module
 
         app = celery_module.current_app
+        app.conf.worker_send_task_events = True
         app.conf.task_send_sent_event = True
     except Exception:  # pragma: no cover
         provider_logger.debug(
-            "Failed to enable Celery producer task-sent events in Django process",
+            "Failed to enable Celery task events in Django/worker process",
             exc_info=True,
         )
 

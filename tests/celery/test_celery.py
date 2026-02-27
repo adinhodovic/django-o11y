@@ -93,41 +93,43 @@ def test_auto_setup_skips_when_celery_disabled(celery_app):
         get_o11y_config.cache_clear()
 
 
-def test_celery_setup_enables_task_events(celery_app):
-    """setup_celery_o11y sets worker_send_task_events and task_send_sent_event."""
-    from django_o11y.tracing import setup
+def test_configure_celery_metrics_events_sets_flags(celery_app):
+    """_configure_celery_metrics_events sets worker and task event flags."""
+    from unittest.mock import patch
 
-    original_pid = setup._instrumented_pid
-    setup._instrumented_pid = None
+    from django_o11y.tracing.setup import _configure_celery_metrics_events
 
-    try:
-        config = {"CELERY": {"ENABLED": True}}
-        setup.setup_celery_o11y(celery_app, config=config)
+    config = {
+        "CELERY": {"ENABLED": True, "METRICS_ENABLED": True},
+        "METRICS": {"PROMETHEUS_ENABLED": True},
+    }
 
-        assert celery_app.conf.worker_send_task_events is True
-        assert celery_app.conf.task_send_sent_event is True
-    finally:
-        setup._instrumented_pid = original_pid
+    with patch("celery.current_app", celery_app):
+        _configure_celery_metrics_events(config)
+
+    assert celery_app.conf.worker_send_task_events is True
+    assert celery_app.conf.task_send_sent_event is True
 
 
-def test_celery_setup_does_not_set_events_when_disabled(celery_app):
-    """Task events are not touched when CELERY.ENABLED is False."""
-    from django_o11y.tracing import setup
+def test_configure_celery_metrics_events_skips_when_metrics_disabled(celery_app):
+    """Task events are not set when Prometheus metrics are disabled."""
+    from unittest.mock import patch
 
-    original_pid = setup._instrumented_pid
-    setup._instrumented_pid = None
-    # Reset to a known baseline
+    from django_o11y.tracing.setup import _configure_celery_metrics_events
+
     celery_app.conf.worker_send_task_events = False
     celery_app.conf.task_send_sent_event = False
 
-    try:
-        config = {"CELERY": {"ENABLED": False}}
-        setup.setup_celery_o11y(celery_app, config=config)
+    config = {
+        "CELERY": {"ENABLED": True, "METRICS_ENABLED": True},
+        "METRICS": {"PROMETHEUS_ENABLED": False},
+    }
 
-        assert celery_app.conf.worker_send_task_events is False
-        assert celery_app.conf.task_send_sent_event is False
-    finally:
-        setup._instrumented_pid = original_pid
+    with patch("celery.current_app", celery_app):
+        _configure_celery_metrics_events(config)
+
+    assert celery_app.conf.worker_send_task_events is False
+    assert celery_app.conf.task_send_sent_event is False
 
 
 def test_celery_prefork_pool_detection_defaults_to_prefork():
