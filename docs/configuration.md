@@ -22,7 +22,7 @@ Precedence (lowest to highest):
 2. `DJANGO_O11Y` Django settings dict
 3. Environment variables
 
-Runtime file defaults (log files + Prometheus multiprocess files) are per-project. Set `DJANGO_O11Y_PROJECT_ID` to control the `<project>` directory suffix explicitly.
+Runtime file defaults (log files) are per-project. The `<project>` suffix is derived from `OTEL_SERVICE_NAME`. If that env var is not set, django-o11y uses `django-app`.
 
 ### Core
 
@@ -68,7 +68,8 @@ Runtime file defaults (log files + Prometheus multiprocess files) are per-projec
 | `METRICS.PROMETHEUS_ENABLED` | bool | `True` | `DJANGO_O11Y_METRICS_PROMETHEUS_ENABLED` |
 | `METRICS.PROMETHEUS_ENDPOINT` | str | `"/metrics"` | `DJANGO_O11Y_METRICS_PROMETHEUS_ENDPOINT` |
 | `METRICS.EXPORT_MIGRATIONS` | bool | `True` | `DJANGO_O11Y_METRICS_EXPORT_MIGRATIONS` |
-| `METRICS.MULTIPROC_BASE_DIR` | str | ``"${XDG_RUNTIME_DIR:-/tmp}/django-o11y/<project>/prometheus-multiproc"`` | `DJANGO_O11Y_METRICS_MULTIPROC_BASE_DIR` |
+
+Multiprocess metrics are configured via the standard `PROMETHEUS_MULTIPROC_DIR` environment variable. Set it to a pre-existing directory in your process entrypoint before the Django process starts. See [Multiprocess deployments](usage.md#multiprocess-deployments).
 
 ### Celery
 

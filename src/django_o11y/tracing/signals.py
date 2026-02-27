@@ -81,7 +81,6 @@ def _auto_setup_on_worker_process_init(sender=None, **kwargs) -> None:
     if not is_celery_prefork_pool():
         return
 
-    _maybe_prepare_metrics_dir()
     _auto_setup_worker(sender)
 
 
@@ -103,28 +102,6 @@ def _maybe_start_metrics_server() -> None:
     except Exception:  # pragma: no cover
         logger.warning(
             "Failed to start Celery worker metrics server.",
-            exc_info=True,
-        )
-
-
-def _maybe_prepare_metrics_dir() -> None:
-    """Set PROMETHEUS_MULTIPROC_DIR in prefork child processes."""
-    try:
-        config = get_o11y_config()
-        celery_config = config.get("CELERY", {})
-        if not celery_config.get("ENABLED", False):
-            return
-        if not config.get("METRICS", {}).get("PROMETHEUS_ENABLED", True):
-            return
-        if not celery_config.get("METRICS_ENABLED", True):
-            return
-
-        from django_o11y.tracing.setup import prepare_worker_metrics_dir
-
-        prepare_worker_metrics_dir(celery_config)
-    except Exception:  # pragma: no cover
-        logger.warning(
-            "Failed to prepare Celery worker metrics dir.",
             exc_info=True,
         )
 

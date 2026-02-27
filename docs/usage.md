@@ -481,25 +481,26 @@ This checks the OTLP endpoint, installed packages, and sends a test trace you ca
 
 ## Multiprocess deployments
 
+### How prometheus_client multiprocess mode works
+
+`prometheus_client` decides whether to use multiprocess (mmap file) storage based on whether `PROMETHEUS_MULTIPROC_DIR` is set in the environment **at the moment it is first imported**. This means:
+
+- `PROMETHEUS_MULTIPROC_DIR` must be a process-level environment variable set before the process starts.
+- The directory it points to must already exist at that moment.
+- django-o11y does **not** create this directory. Create it in your entrypoint or Dockerfile.
+- Each container or pod has its own filesystem, so the same path in your web and worker images is fine — they don't share files unless you explicitly mount a shared volume.
+
+Create the directory and set the env var in your Dockerfile:
+
+```dockerfile
+RUN mkdir -p /tmp/myapp-prom-multiproc && \
+    chown -R appuser:appuser /tmp/myapp-prom-multiproc
+ENV PROMETHEUS_MULTIPROC_DIR=/tmp/myapp-prom-multiproc
+```
+
 ### Gunicorn
 
-No configuration required. Run Gunicorn normally:
-
-```bash
-gunicorn myproject.wsgi --workers 4
-```
-
-When Gunicorn is detected, django-o11y sets `PROMETHEUS_MULTIPROC_DIR` so each worker writes metrics to a shared directory, and the standard `/metrics` endpoint aggregates them.
-
-The default base directory is `${XDG_RUNTIME_DIR:-/tmp}/django-o11y/<project>/prometheus-multiproc`. Django workers write to `{base}/django` and Celery workers to `{base}/celery`. Set `MULTIPROC_BASE_DIR` to move both at once:
-
-```python
-DJANGO_O11Y = {
-    "METRICS": {
-        "MULTIPROC_BASE_DIR": "/var/run/prometheus-multiproc",
-    }
-}
-```
+Each Gunicorn worker writes per-PID `.db` files into that directory. The standard `/metrics` endpoint reads and aggregates them via `MultiProcessCollector`.
 
 ### Celery prefork workers
 
@@ -517,7 +518,7 @@ Individual tasks are short-lived, so they can't serve an HTTP endpoint themselve
 
 #### Prometheus metrics
 
-Each prefork worker child writes metrics to a shared directory (`METRICS_MULTIPROC_DIR`), and the parent process serves them on port `8009`. Unlike the Django web process, Celery workers don't normally expose any ports — you'll need to explicitly open port `8009` on your worker hosts or containers so Prometheus can scrape it.
+The Celery parent process serves metrics on port `8009`. Unlike the Django web process, Celery workers don't normally expose any ports — open port `8009` on your worker hosts or containers so Prometheus can scrape it.
 
 ```python
 DJANGO_O11Y = {
