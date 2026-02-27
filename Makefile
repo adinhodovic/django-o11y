@@ -13,7 +13,7 @@ dev-logs:
 	docker compose -f docker-compose.dev.yml logs -f
 
 o11y-stack:
-	python manage.py o11y stack start
+	DJANGO_SETTINGS_MODULE=$${DJANGO_SETTINGS_MODULE:-tests.config.settings.dev} python manage.py o11y stack start
 
 o11y-stack-stop:
 	python manage.py o11y stack stop
