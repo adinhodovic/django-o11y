@@ -45,9 +45,9 @@ def setup_tracing(config: dict[str, Any]) -> TracerProvider:
 
     resource_attrs = {
         SERVICE_NAME: service_name,
-        SERVICE_VERSION: config.get("SERVICE_VERSION", "unknown"),
+        SERVICE_VERSION: config["SERVICE_VERSION"],
         SERVICE_INSTANCE_ID: instance_id,
-        "deployment.environment": config.get("ENVIRONMENT", "development"),
+        "deployment.environment": config["ENVIRONMENT"],
         "host.name": socket.gethostname(),
         "process.pid": os.getpid(),
     }
@@ -55,12 +55,12 @@ def setup_tracing(config: dict[str, Any]) -> TracerProvider:
     if config.get("NAMESPACE"):
         resource_attrs["service.namespace"] = config["NAMESPACE"]
 
-    custom_attrs = config.get("RESOURCE_ATTRIBUTES", {})
+    custom_attrs = config["RESOURCE_ATTRIBUTES"]
     if custom_attrs:
         resource_attrs.update(custom_attrs)
 
     resource = Resource(attributes=resource_attrs)
-    sample_rate = tracing_config.get("SAMPLE_RATE", 1.0)
+    sample_rate = tracing_config["SAMPLE_RATE"]
     sampler = ParentBased(root=TraceIdRatioBased(sample_rate))
     provider = TracerProvider(resource=resource, sampler=sampler)
 
@@ -70,7 +70,7 @@ def setup_tracing(config: dict[str, Any]) -> TracerProvider:
         )
         provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
 
-    if tracing_config.get("CONSOLE_EXPORTER", False):
+    if tracing_config["CONSOLE_EXPORTER"]:
         console_exporter = ConsoleSpanExporter()
         provider.add_span_processor(BatchSpanProcessor(console_exporter))
 
@@ -79,11 +79,11 @@ def setup_tracing(config: dict[str, Any]) -> TracerProvider:
         "Tracing configured for %s, sending to %s (%.0f%% sampling) [%s]",
         service_name,
         tracing_config["OTLP_ENDPOINT"],
-        tracing_config.get("SAMPLE_RATE", 1.0) * 100,
+        tracing_config["SAMPLE_RATE"] * 100,
         get_process_identity(),
     )
 
-    profiling_config = config.get("PROFILING", {})
+    profiling_config = config["PROFILING"]
     if profiling_config.get("ENABLED"):
         is_prefork_parent = (
             is_celery_prefork_pool() and not is_celery_fork_pool_worker()
@@ -195,9 +195,7 @@ def setup_worker_metrics(celery_config: dict[str, Any]) -> None:
     from prometheus_client import CollectorRegistry, start_http_server
     from prometheus_client.multiprocess import MultiProcessCollector
 
-    multiproc_dir = celery_config.get(
-        "METRICS_MULTIPROC_DIR", "/tmp/django-o11y/prometheus-multiproc-celery"
-    )
+    multiproc_dir = celery_config["METRICS_MULTIPROC_DIR"]
     multiproc_path = pathlib.Path(multiproc_dir)
     multiproc_path.mkdir(parents=True, exist_ok=True)
     os.environ["PROMETHEUS_MULTIPROC_DIR"] = multiproc_dir
@@ -207,7 +205,7 @@ def setup_worker_metrics(celery_config: dict[str, Any]) -> None:
     for db_file in multiproc_path.glob("*.db"):
         db_file.unlink(missing_ok=True)
 
-    port = celery_config.get("METRICS_PORT", 8009)
+    port = celery_config["METRICS_PORT"]
     registry = CollectorRegistry()
     MultiProcessCollector(registry)
     start_http_server(port, registry=registry)
@@ -251,9 +249,7 @@ def prepare_worker_metrics_dir(celery_config: dict[str, Any]) -> None:
     """
     import pathlib
 
-    multiproc_dir = celery_config.get(
-        "METRICS_MULTIPROC_DIR", "/tmp/django-o11y/prometheus-multiproc-celery"
-    )
+    multiproc_dir = celery_config["METRICS_MULTIPROC_DIR"]
     pathlib.Path(multiproc_dir).mkdir(parents=True, exist_ok=True)
     os.environ["PROMETHEUS_MULTIPROC_DIR"] = multiproc_dir
 

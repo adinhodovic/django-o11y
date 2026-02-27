@@ -67,13 +67,13 @@ def setup_profiling(config: dict[str, Any]) -> None:
     # RESOURCE_ATTRIBUTES (and OTEL_RESOURCE_ATTRIBUTES) are the base; automatic
     # attributes override them so runtime values like process_id are always accurate.
     resource_attrs = _parse_otel_resource_attributes()
-    resource_attrs.update(config.get("RESOURCE_ATTRIBUTES", {}))
+    resource_attrs.update(config["RESOURCE_ATTRIBUTES"])
     tags = resource_attrs
 
     tags.update(
         {
-            "service_version": config.get("SERVICE_VERSION", "unknown"),
-            "environment": config.get("ENVIRONMENT", "development"),
+            "service_version": config["SERVICE_VERSION"],
+            "environment": config["ENVIRONMENT"],
             "host": socket.gethostname(),
             "process_id": str(os.getpid()),
         }
