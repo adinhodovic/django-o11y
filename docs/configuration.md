@@ -77,7 +77,7 @@ Precedence (lowest to highest):
 | `CELERY.LOGGING_ENABLED` | bool | `True` | `DJANGO_O11Y_CELERY_LOGGING_ENABLED` |
 | `CELERY.METRICS_ENABLED` | bool | `True` | `DJANGO_O11Y_CELERY_METRICS_ENABLED` |
 | `CELERY.METRICS_PORT` | int | `8009` | `DJANGO_O11Y_CELERY_METRICS_PORT` |
-| `CELERY.METRICS_MULTIPROC_DIR` | str | `"/tmp/django-o11y/prometheus-multiproc"` | `DJANGO_O11Y_CELERY_METRICS_MULTIPROC_DIR` |
+| `CELERY.METRICS_MULTIPROC_DIR` | str | `"/tmp/django-o11y/prometheus-multiproc-celery"` | `DJANGO_O11Y_CELERY_METRICS_MULTIPROC_DIR` |
 
 ### Profiling
 
@@ -85,7 +85,6 @@ Precedence (lowest to highest):
 | ------- | ---- | ------- | ------- |
 | `PROFILING.ENABLED` | bool | `False` | `DJANGO_O11Y_PROFILING_ENABLED` |
 | `PROFILING.PYROSCOPE_URL` | str | `"http://localhost:4040"` | `DJANGO_O11Y_PROFILING_PYROSCOPE_URL` |
-
 
 ## Examples
 

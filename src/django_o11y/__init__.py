@@ -9,7 +9,12 @@ This package provides:
 - Profiling support (Pyroscope)
 """
 
-__version__ = "0.4.1"
+from importlib.metadata import PackageNotFoundError, version
+
+try:
+    __version__ = version("django-o11y")
+except PackageNotFoundError:
+    __version__ = "unknown"
 
 default_app_config = "django_o11y.apps.DjangoO11yConfig"
 

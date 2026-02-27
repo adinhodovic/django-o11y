@@ -81,7 +81,7 @@ def get_config() -> dict[str, Any]:
             "LOGGING_ENABLED": True,
             "METRICS_ENABLED": True,
             "METRICS_PORT": 8009,
-            "METRICS_MULTIPROC_DIR": "/tmp/django-o11y/prometheus-multiproc",
+            "METRICS_MULTIPROC_DIR": "/tmp/django-o11y/prometheus-multiproc-celery",
         },
         "PROFILING": {
             "ENABLED": False,

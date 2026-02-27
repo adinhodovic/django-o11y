@@ -522,7 +522,7 @@ DJANGO_O11Y = {
     "CELERY": {
         "ENABLED": True,
         "METRICS_PORT": 8009,                                          # default
-        "METRICS_MULTIPROC_DIR": "/tmp/django-o11y/prometheus-multiproc",  # default
+        "METRICS_MULTIPROC_DIR": "/tmp/django-o11y/prometheus-multiproc-celery",  # default
     }
 }
 ```
