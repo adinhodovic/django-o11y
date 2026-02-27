@@ -747,6 +747,62 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#multiprocess-deployments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multiprocess deployments
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Multiprocess deployments">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gunicorn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gunicorn
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#celery-prefork-workers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Celery prefork workers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Celery prefork workers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prometheus-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prometheus metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1130,6 +1186,62 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#multiprocess-deployments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multiprocess deployments
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Multiprocess deployments">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gunicorn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gunicorn
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#celery-prefork-workers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Celery prefork workers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Celery prefork workers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prometheus-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prometheus metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1299,8 +1411,8 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Start</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>python<span class="w"> </span>manage.py<span class="w"> </span>o11y<span class="w"> </span>stack<span class="w"> </span>start
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># App running in Docker with a custom container name</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>python<span class="w"> </span>manage.py<span class="w"> </span>o11y<span class="w"> </span>stack<span class="w"> </span>start<span class="w"> </span>--app-url<span class="w"> </span>django-app:8000<span class="w"> </span>--app-container<span class="w"> </span>myapp
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># App running in Docker</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>python<span class="w"> </span>manage.py<span class="w"> </span>o11y<span class="w"> </span>stack<span class="w"> </span>start<span class="w"> </span>--app-url<span class="w"> </span>django-app:8000
 <a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
 <a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># Stop</span>
 <a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>python<span class="w"> </span>manage.py<span class="w"> </span>o11y<span class="w"> </span>stack<span class="w"> </span>stop
@@ -1317,7 +1429,7 @@
 <a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="c1"># Follow log output</span>
 <a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>python<span class="w"> </span>manage.py<span class="w"> </span>o11y<span class="w"> </span>stack<span class="w"> </span>logs<span class="w"> </span>--follow
 </code></pre></div>
-<p><code>--app-url</code> controls where Prometheus scrapes <code>/metrics</code> (default: <code>host.docker.internal:8000</code>). <code>--app-container</code> sets the Docker container name Alloy tails for logs (default: <code>django-app</code>).</p>
+<p><code>--app-url</code> controls where Prometheus scrapes <code>/metrics</code> (default: <code>host.docker.internal:8000</code>).</p>
 <h3 id="check">check<a class="headerlink" href="#check" title="Permanent link">&para;</a></h3>
 <p>Checks your configuration, tests the OTLP endpoint, verifies installed packages, and sends a test trace.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>python<span class="w"> </span>manage.py<span class="w"> </span>o11y<span class="w"> </span>check
@@ -1325,7 +1437,7 @@
 <hr />
 <h2 id="metrics">Metrics<a class="headerlink" href="#metrics" title="Permanent link">&para;</a></h2>
 <h3 id="django-metrics">Django metrics<a class="headerlink" href="#django-metrics" title="Permanent link">&para;</a></h3>
-<p>Django metrics are provided by <a href="https://github.com/korfuri/django-prometheus">django-prometheus</a>. It instruments request/response cycles, database queries, cache operations, and model saves. The Grafana dashboards and alerts are sourced from <a href="https://github.com/adinhodovic/django-mixin">django-mixin</a>.</p>
+<p>Django metrics come from <a href="https://github.com/korfuri/django-prometheus">django-prometheus</a>, which instruments request/response cycles, database queries, cache operations, and model saves. Grafana dashboards and alerts are from <a href="https://github.com/adinhodovic/django-mixin">django-mixin</a>.</p>
 <p>Migration metrics (<code>django_migrations_applied_total</code>, <code>django_migrations_unapplied_total</code>) are enabled automatically. They power the migrations panel in the Django Overview dashboard and the <code>DjangoMigrationsUnapplied</code> alert. To disable them:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">DJANGO_O11Y</span> <span class="o">=</span> <span class="p">{</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="s2">&quot;METRICS&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;EXPORT_MIGRATIONS&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
@@ -1356,8 +1468,9 @@
 </code></pre></div>
 <p><code>get_urls()</code> adds the Prometheus metrics endpoint at the path configured by <code>METRICS.PROMETHEUS_ENDPOINT</code> (default <code>/metrics</code>). Returns an empty list when <code>METRICS.PROMETHEUS_ENABLED</code> is <code>False</code>.</p>
 <h3 id="celery-metrics">Celery metrics<a class="headerlink" href="#celery-metrics" title="Permanent link">&para;</a></h3>
-<p>Celery metrics are exported by <a href="https://github.com/danihodovic/celery-exporter">celery-exporter</a>, a standalone Prometheus exporter that connects to your broker and exposes task state, queue length, and worker status. The Grafana dashboards and alerts are sourced from the <a href="https://github.com/danihodovic/celery-exporter/tree/master/celery-mixin">celery-mixin</a> bundled within celery-exporter.</p>
+<p>Celery metrics come from <a href="https://github.com/danihodovic/celery-exporter">celery-exporter</a>, a standalone Prometheus exporter that connects to your broker and exposes task state, queue length, and worker status. Grafana dashboards and alerts are from the <a href="https://github.com/danihodovic/celery-exporter/tree/master/celery-mixin">celery-mixin</a> bundled within celery-exporter.</p>
 <p>celery-exporter is added to the local dev stack automatically when <code>CELERY.ENABLED</code> is <code>True</code> and a broker URL is found in your Django or Celery settings (<code>CELERY_BROKER_URL</code> or <code>broker_url</code>). See the <a href="https://github.com/danihodovic/celery-exporter">celery-exporter docs</a> for production deployment.</p>
+<p>django-prometheus also runs inside Celery workers and exposes model metrics (insert, update, delete counts per model) via the worker metrics endpoint. Request and database query metrics are not available there — those only exist in the Django web process. If your tasks do a lot of database writes, model metrics are worth monitoring: they show which models are being mutated by background work and at what rate.</p>
 <h3 id="custom-metrics">Custom metrics<a class="headerlink" href="#custom-metrics" title="Permanent link">&para;</a></h3>
 <p>Track business events with counters and histograms. Label names must be declared upfront (Prometheus convention):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django_o11y.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">counter</span><span class="p">,</span> <span class="n">histogram</span>
@@ -1484,18 +1597,18 @@
 <a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a><span class="p">}</span>
 </code></pre></div>
 <p>Profiles are pushed to Pyroscope on startup. View them in Grafana under <strong>Explore → Pyroscope</strong>.</p>
-<p>For Celery prefork workers, profiling is initialized in each worker child process (post-fork), not in the prefork parent process.</p>
+<p>For Celery prefork workers, profiling starts in each worker child process after fork, not in the parent.</p>
 <h3 id="custom-tags">Custom tags<a class="headerlink" href="#custom-tags" title="Permanent link">&para;</a></h3>
-<p>Tag profiles with extra context for filtering:</p>
+<p><code>RESOURCE_ATTRIBUTES</code> are merged into Pyroscope tags automatically, so profiles carry the same metadata as traces. Set them in Python config:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="n">DJANGO_O11Y</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>    <span class="s2">&quot;PROFILING&quot;</span><span class="p">:</span> <span class="p">{</span>
-<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>        <span class="s2">&quot;ENABLED&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>        <span class="s2">&quot;TAGS&quot;</span><span class="p">:</span> <span class="p">{</span>
-<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>            <span class="s2">&quot;region&quot;</span><span class="p">:</span> <span class="s2">&quot;us-east-1&quot;</span><span class="p">,</span>
-<a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a>            <span class="s2">&quot;tier&quot;</span><span class="p">:</span> <span class="s2">&quot;premium&quot;</span><span class="p">,</span>
-<a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a>        <span class="p">},</span>
-<a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a>    <span class="p">}</span>
-<a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a><span class="p">}</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>    <span class="s2">&quot;RESOURCE_ATTRIBUTES&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>        <span class="s2">&quot;region&quot;</span><span class="p">:</span> <span class="s2">&quot;us-east-1&quot;</span><span class="p">,</span>
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>        <span class="s2">&quot;tier&quot;</span><span class="p">:</span> <span class="s2">&quot;premium&quot;</span><span class="p">,</span>
+<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>    <span class="p">}</span>
+<a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="p">}</span>
+</code></pre></div>
+<p>Or via the standard OTel env var:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="nv">OTEL_RESOURCE_ATTRIBUTES</span><span class="o">=</span><span class="nv">region</span><span class="o">=</span>us-east-1,tier<span class="o">=</span>premium
 </code></pre></div>
 <hr />
 <h2 id="traces">Traces<a class="headerlink" href="#traces" title="Permanent link">&para;</a></h2>
@@ -1510,24 +1623,24 @@
 <li>AWS SDK: spans for boto3/botocore calls — S3, SQS, SES, etc. (requires <code>django-o11y[aws]</code> and <code>TRACING.AWS_ENABLED: True</code>)</li>
 </ul>
 <h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="n">DJANGO_O11Y</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>    <span class="s2">&quot;TRACING&quot;</span><span class="p">:</span> <span class="p">{</span>
-<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>        <span class="s2">&quot;ENABLED&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>          <span class="c1"># default: False</span>
-<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>        <span class="s2">&quot;OTLP_ENDPOINT&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:4317&quot;</span><span class="p">,</span>
-<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>        <span class="s2">&quot;SAMPLE_RATE&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>       <span class="c1"># 1.0 = 100%; default is 1.0 in DEBUG, 0.01 otherwise</span>
-<a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>    <span class="p">}</span>
-<a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="n">DJANGO_O11Y</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>    <span class="s2">&quot;TRACING&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>        <span class="s2">&quot;ENABLED&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>          <span class="c1"># default: False</span>
+<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a>        <span class="s2">&quot;OTLP_ENDPOINT&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:4317&quot;</span><span class="p">,</span>
+<a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a>        <span class="s2">&quot;SAMPLE_RATE&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>       <span class="c1"># 1.0 = 100%; default is 1.0 in DEBUG, 0.01 otherwise</span>
+<a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a>    <span class="p">}</span>
+<a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a><span class="p">}</span>
 </code></pre></div>
 <p>To disable tracing entirely, set <code>ENABLED: False</code> or <code>DJANGO_O11Y_TRACING_ENABLED=false</code>.</p>
 <h3 id="adding-custom-context">Adding custom context<a class="headerlink" href="#adding-custom-context" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django_o11y.tracing.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">set_custom_tags</span><span class="p">,</span> <span class="n">add_span_attribute</span>
-<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>
-<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">checkout_view</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
-<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a>    <span class="c1"># Attached to both the trace span and all logs in this request</span>
-<a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a>    <span class="n">set_custom_tags</span><span class="p">({</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="s2">&quot;acme&quot;</span><span class="p">,</span> <span class="s2">&quot;experiment&quot;</span><span class="p">:</span> <span class="s2">&quot;new_checkout&quot;</span><span class="p">})</span>
-<a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a>
-<a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a>    <span class="c1"># Span only</span>
-<a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a>    <span class="n">add_span_attribute</span><span class="p">(</span><span class="s2">&quot;cart_size&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">cart</span><span class="o">.</span><span class="n">items</span><span class="p">))</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django_o11y.tracing.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">set_custom_tags</span><span class="p">,</span> <span class="n">add_span_attribute</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>
+<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">checkout_view</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a>    <span class="c1"># Attached to both the trace span and all logs in this request</span>
+<a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a>    <span class="n">set_custom_tags</span><span class="p">({</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="s2">&quot;acme&quot;</span><span class="p">,</span> <span class="s2">&quot;experiment&quot;</span><span class="p">:</span> <span class="s2">&quot;new_checkout&quot;</span><span class="p">})</span>
+<a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a>
+<a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a>    <span class="c1"># Span only</span>
+<a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a>    <span class="n">add_span_attribute</span><span class="p">(</span><span class="s2">&quot;cart_size&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">cart</span><span class="o">.</span><span class="n">items</span><span class="p">))</span>
 </code></pre></div>
 <table>
 <thead>
@@ -1561,36 +1674,74 @@
 </table>
 <h3 id="celery">Celery<a class="headerlink" href="#celery" title="Permanent link">&para;</a></h3>
 <p>Install the extra:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>pip<span class="w"> </span>install<span class="w"> </span>django-o11y<span class="o">[</span>celery<span class="o">]</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>pip<span class="w"> </span>install<span class="w"> </span>django-o11y<span class="o">[</span>celery<span class="o">]</span>
 </code></pre></div>
 <p>Enable in settings:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="n">DJANGO_O11Y</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>    <span class="s2">&quot;CELERY&quot;</span><span class="p">:</span> <span class="p">{</span>
-<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>        <span class="s2">&quot;ENABLED&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-<a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a>    <span class="p">}</span>
-<a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="n">DJANGO_O11Y</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>    <span class="s2">&quot;CELERY&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>        <span class="s2">&quot;ENABLED&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a>    <span class="p">}</span>
+<a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a><span class="p">}</span>
 </code></pre></div>
 <p>Celery signals wire everything up when the worker starts. Each task gets a trace span linked to the originating request, and structured logs with <code>trace_id</code>/<code>span_id</code>.</p>
 <p>To reduce span loss in prefork workers, django-o11y force-flushes tracing on <code>worker_process_shutdown</code>.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">structlog</span>
-<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">celery</span><span class="w"> </span><span class="kn">import</span> <span class="n">shared_task</span>
-<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django_o11y.tracing.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">set_custom_tags</span>
-<a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a>
-<a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a><span class="n">logger</span> <span class="o">=</span> <span class="n">structlog</span><span class="o">.</span><span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
-<a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a>
-<a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a><span class="nd">@shared_task</span>
-<a id="__codelineno-27-8" name="__codelineno-27-8" href="#__codelineno-27-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">process_order</span><span class="p">(</span><span class="n">order_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
-<a id="__codelineno-27-9" name="__codelineno-27-9" href="#__codelineno-27-9"></a>    <span class="n">set_custom_tags</span><span class="p">({</span><span class="s2">&quot;order_id&quot;</span><span class="p">:</span> <span class="n">order_id</span><span class="p">})</span>
-<a id="__codelineno-27-10" name="__codelineno-27-10" href="#__codelineno-27-10"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;order_processing_started&quot;</span><span class="p">,</span> <span class="n">order_id</span><span class="o">=</span><span class="n">order_id</span><span class="p">)</span>
-<a id="__codelineno-27-11" name="__codelineno-27-11" href="#__codelineno-27-11"></a>    <span class="n">result</span> <span class="o">=</span> <span class="n">do_processing</span><span class="p">(</span><span class="n">order_id</span><span class="p">)</span>
-<a id="__codelineno-27-12" name="__codelineno-27-12" href="#__codelineno-27-12"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;order_processing_completed&quot;</span><span class="p">,</span> <span class="n">order_id</span><span class="o">=</span><span class="n">order_id</span><span class="p">)</span>
-<a id="__codelineno-27-13" name="__codelineno-27-13" href="#__codelineno-27-13"></a>    <span class="k">return</span> <span class="n">result</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">structlog</span>
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">celery</span><span class="w"> </span><span class="kn">import</span> <span class="n">shared_task</span>
+<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django_o11y.tracing.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">set_custom_tags</span>
+<a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a>
+<a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a><span class="n">logger</span> <span class="o">=</span> <span class="n">structlog</span><span class="o">.</span><span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a>
+<a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a><span class="nd">@shared_task</span>
+<a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">process_order</span><span class="p">(</span><span class="n">order_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a>    <span class="n">set_custom_tags</span><span class="p">({</span><span class="s2">&quot;order_id&quot;</span><span class="p">:</span> <span class="n">order_id</span><span class="p">})</span>
+<a id="__codelineno-28-10" name="__codelineno-28-10" href="#__codelineno-28-10"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;order_processing_started&quot;</span><span class="p">,</span> <span class="n">order_id</span><span class="o">=</span><span class="n">order_id</span><span class="p">)</span>
+<a id="__codelineno-28-11" name="__codelineno-28-11" href="#__codelineno-28-11"></a>    <span class="n">result</span> <span class="o">=</span> <span class="n">do_processing</span><span class="p">(</span><span class="n">order_id</span><span class="p">)</span>
+<a id="__codelineno-28-12" name="__codelineno-28-12" href="#__codelineno-28-12"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;order_processing_completed&quot;</span><span class="p">,</span> <span class="n">order_id</span><span class="o">=</span><span class="n">order_id</span><span class="p">)</span>
+<a id="__codelineno-28-13" name="__codelineno-28-13" href="#__codelineno-28-13"></a>    <span class="k">return</span> <span class="n">result</span>
 </code></pre></div>
 <h3 id="verification">Verification<a class="headerlink" href="#verification" title="Permanent link">&para;</a></h3>
 <p>Run the built-in health check:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>python<span class="w"> </span>manage.py<span class="w"> </span>o11y<span class="w"> </span>check
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>python<span class="w"> </span>manage.py<span class="w"> </span>o11y<span class="w"> </span>check
 </code></pre></div>
 <p>This checks the OTLP endpoint, installed packages, and sends a test trace you can find in Tempo.</p>
+<hr />
+<h2 id="multiprocess-deployments">Multiprocess deployments<a class="headerlink" href="#multiprocess-deployments" title="Permanent link">&para;</a></h2>
+<h3 id="gunicorn">Gunicorn<a class="headerlink" href="#gunicorn" title="Permanent link">&para;</a></h3>
+<p>No configuration required. Run Gunicorn normally:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>gunicorn<span class="w"> </span>myproject.wsgi<span class="w"> </span>--workers<span class="w"> </span><span class="m">4</span>
+</code></pre></div>
+<p>When Gunicorn is detected, django-o11y sets <code>PROMETHEUS_MULTIPROC_DIR</code> so each worker writes metrics to a shared directory, and the standard <code>/metrics</code> endpoint aggregates them.</p>
+<p>The default base directory is <code>/tmp/django-o11y/prometheus-multiproc</code>. Django workers write to <code>{base}/django</code> and Celery workers to <code>{base}/celery</code>. Set <code>MULTIPROC_BASE_DIR</code> to move both at once:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="n">DJANGO_O11Y</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a>    <span class="s2">&quot;METRICS&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a>        <span class="s2">&quot;MULTIPROC_BASE_DIR&quot;</span><span class="p">:</span> <span class="s2">&quot;/var/run/prometheus-multiproc&quot;</span><span class="p">,</span>
+<a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a>    <span class="p">}</span>
+<a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a><span class="p">}</span>
+</code></pre></div>
+<h3 id="celery-prefork-workers">Celery prefork workers<a class="headerlink" href="#celery-prefork-workers" title="Permanent link">&para;</a></h3>
+<p>Tracing and profiling work out of the box. No extra configuration is needed beyond enabling Celery:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="n">DJANGO_O11Y</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>    <span class="s2">&quot;CELERY&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a>        <span class="s2">&quot;ENABLED&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a>    <span class="p">}</span>
+<a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a><span class="p">}</span>
+</code></pre></div>
+<p>Individual tasks are short-lived, so they can't serve an HTTP endpoint themselves. django-o11y runs the metrics HTTP server in the long-lived parent worker process instead. Each child writes its metrics to a per-PID file in a shared directory; on each scrape, the parent reads all those files and returns the combined result via <code>MultiProcessCollector</code>. The parent stays up for the lifetime of the worker, so Prometheus can scrape it on a normal pull interval — no pushgateway required.</p>
+<h4 id="prometheus-metrics">Prometheus metrics<a class="headerlink" href="#prometheus-metrics" title="Permanent link">&para;</a></h4>
+<p>Each prefork worker child writes metrics to a shared directory (<code>METRICS_MULTIPROC_DIR</code>), and the parent process serves them on port <code>8009</code>. Unlike the Django web process, Celery workers don't normally expose any ports — you'll need to explicitly open port <code>8009</code> on your worker hosts or containers so Prometheus can scrape it.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="n">DJANGO_O11Y</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>    <span class="s2">&quot;CELERY&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a>        <span class="s2">&quot;ENABLED&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a>        <span class="s2">&quot;METRICS_PORT&quot;</span><span class="p">:</span> <span class="mi">8009</span><span class="p">,</span>  <span class="c1"># default</span>
+<a id="__codelineno-33-5" name="__codelineno-33-5" href="#__codelineno-33-5"></a>    <span class="p">}</span>
+<a id="__codelineno-33-6" name="__codelineno-33-6" href="#__codelineno-33-6"></a><span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="c1"># prometheus.yml</span>
+<a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a><span class="nt">scrape_configs</span><span class="p">:</span>
+<a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">celery</span>
+<a id="__codelineno-34-4" name="__codelineno-34-4" href="#__codelineno-34-4"></a><span class="w">    </span><span class="nt">static_configs</span><span class="p">:</span>
+<a id="__codelineno-34-5" name="__codelineno-34-5" href="#__codelineno-34-5"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">targets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;worker-host:8009&quot;</span><span class="p p-Indicator">]</span>
+</code></pre></div>
 
 
 

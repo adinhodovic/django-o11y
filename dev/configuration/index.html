@@ -868,13 +868,7 @@ honoured where they naturally map.</p>
 <td><code>RESOURCE_ATTRIBUTES</code></td>
 <td>dict</td>
 <td><code>{}</code></td>
-<td>—</td>
-</tr>
-<tr>
-<td><code>CUSTOM_TAGS</code></td>
-<td>dict</td>
-<td><code>{}</code></td>
-<td>—</td>
+<td><code>OTEL_RESOURCE_ATTRIBUTES</code></td>
 </tr>
 </tbody>
 </table>
@@ -916,7 +910,7 @@ honoured where they naturally map.</p>
 <tr>
 <td><code>TRACING.AWS_ENABLED</code></td>
 <td>bool</td>
-<td><code>True</code></td>
+<td><code>False</code></td>
 <td><code>DJANGO_O11Y_TRACING_AWS_ENABLED</code></td>
 </tr>
 </tbody>
@@ -1029,6 +1023,12 @@ honoured where they naturally map.</p>
 <td><code>True</code></td>
 <td><code>DJANGO_O11Y_METRICS_EXPORT_MIGRATIONS</code></td>
 </tr>
+<tr>
+<td><code>METRICS.MULTIPROC_BASE_DIR</code></td>
+<td>str</td>
+<td><code>"/tmp/django-o11y/prometheus-multiproc"</code></td>
+<td><code>DJANGO_O11Y_METRICS_MULTIPROC_BASE_DIR</code></td>
+</tr>
 </tbody>
 </table>
 <h3 id="celery">Celery<a class="headerlink" href="#celery" title="Permanent link">&para;</a></h3>
@@ -1066,6 +1066,12 @@ honoured where they naturally map.</p>
 <td><code>True</code></td>
 <td><code>DJANGO_O11Y_CELERY_METRICS_ENABLED</code></td>
 </tr>
+<tr>
+<td><code>CELERY.METRICS_PORT</code></td>
+<td>int</td>
+<td><code>8009</code></td>
+<td><code>DJANGO_O11Y_CELERY_METRICS_PORT</code></td>
+</tr>
 </tbody>
 </table>
 <h3 id="profiling">Profiling<a class="headerlink" href="#profiling" title="Permanent link">&para;</a></h3>
@@ -1090,12 +1096,6 @@ honoured where they naturally map.</p>
 <td>str</td>
 <td><code>"http://localhost:4040"</code></td>
 <td><code>DJANGO_O11Y_PROFILING_PYROSCOPE_URL</code></td>
-</tr>
-<tr>
-<td><code>PROFILING.TAGS</code></td>
-<td>dict</td>
-<td><code>{}</code></td>
-<td>—</td>
 </tr>
 </tbody>
 </table>
