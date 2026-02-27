@@ -71,7 +71,7 @@ services:
     volumes:
       - ./alloy-config.alloy:/etc/alloy/config.alloy
       - /var/run/docker.sock:/var/run/docker.sock
-      - /tmp/django-o11y:/tmp/django-o11y:ro
+      - __DJANGO_O11Y_STACK_LOG_DIR__:/tmp/django-o11y:ro
     tmpfs:
       - /var/lib/alloy/data
     command: run --server.http.listen-addr=0.0.0.0:12345 --server.http.enable-pprof=false --storage.path=/var/lib/alloy/data --stability.level=experimental /etc/alloy/config.alloy

@@ -52,7 +52,6 @@ DJANGO_O11Y = {
         "REQUEST_LEVEL": "INFO",
         "CELERY_LEVEL": "INFO",
         "FILE_ENABLED": True,
-        "FILE_PATH": "/tmp/django-o11y/django.log",
     },
     "METRICS": {
         "PROMETHEUS_ENABLED": True,

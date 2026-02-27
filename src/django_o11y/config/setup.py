@@ -1,7 +1,10 @@
 """Configuration setup for django-o11y."""
 
+import hashlib
 import os
+import re
 from functools import lru_cache
+from pathlib import Path
 from typing import Any
 
 from django.conf import settings
@@ -39,6 +42,7 @@ def _set_float(config: dict, key: str, env: str, default: float = 0.0) -> None:
 def get_config() -> dict[str, Any]:
     """Return merged django-o11y configuration."""
     default_sample_rate = 1.0 if settings.DEBUG else 0.01
+    runtime_base_dir = _default_runtime_base_dir()
 
     defaults: dict[str, Any] = {
         "SERVICE_NAME": "django-app",
@@ -67,13 +71,13 @@ def get_config() -> dict[str, Any]:
             "OTLP_ENABLED": False,
             "OTLP_ENDPOINT": "http://localhost:4317",
             "FILE_ENABLED": settings.DEBUG,
-            "FILE_PATH": "/tmp/django-o11y/django.log",
+            "FILE_PATH": str(runtime_base_dir / "django.log"),
         },
         "METRICS": {
             "PROMETHEUS_ENABLED": True,
             "PROMETHEUS_ENDPOINT": "/metrics",
             "EXPORT_MIGRATIONS": True,
-            "MULTIPROC_BASE_DIR": "/tmp/django-o11y/prometheus-multiproc",
+            "MULTIPROC_BASE_DIR": str(runtime_base_dir / "prometheus-multiproc"),
         },
         "CELERY": {
             "ENABLED": False,
@@ -166,3 +170,27 @@ def _deep_merge(default: dict, override: dict) -> dict:
 def get_o11y_config() -> dict[str, Any]:
     """Get global o11y configuration."""
     return get_config()
+
+
+def _default_runtime_base_dir() -> Path:
+    """Return per-project runtime base dir for temporary o11y files."""
+    runtime_home = Path(os.getenv("XDG_RUNTIME_DIR", "/tmp")).expanduser()
+    return runtime_home / "django-o11y" / _default_project_id()
+
+
+def _default_project_id() -> str:
+    """Return a collision-resistant project id for runtime files."""
+    if explicit_id := os.getenv("DJANGO_O11Y_PROJECT_ID"):
+        return _slugify(explicit_id)
+
+    base_dir = getattr(settings, "BASE_DIR", None)
+    project_root = Path(base_dir) if base_dir else Path.cwd()
+    resolved_root = project_root.expanduser().resolve()
+    short_hash = hashlib.sha1(str(resolved_root).encode("utf-8")).hexdigest()[:8]
+    return f"{_slugify(resolved_root.name)}-{short_hash}"
+
+
+def _slugify(value: str) -> str:
+    """Normalize string for filesystem-safe directory names."""
+    slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+    return slug or "django-app"
