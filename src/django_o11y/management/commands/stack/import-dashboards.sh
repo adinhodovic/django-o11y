@@ -12,6 +12,7 @@ DASHBOARDS="
 17617:django-overview
 17616:django-requests-overview
 17613:django-requests-by-view
+24933:django-models-overview
 "
 
 echo "Waiting for Grafana to be ready..."
