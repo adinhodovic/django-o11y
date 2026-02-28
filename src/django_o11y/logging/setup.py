@@ -28,7 +28,7 @@ class DevEventFilter(logging.Filter):
 def build_logging_dict(
     logging_config: dict[str, Any] | None = None,
     extra: dict[str, Any] | None = None,
-) -> dict[str, Any]:
+) -> dict[str, Any]:  # pylint: disable=too-many-locals,too-many-branches
     """Build and return a Django-compatible LOGGING dict wired for structlog."""
     if logging_config is None:
         from django_o11y.config.setup import get_config

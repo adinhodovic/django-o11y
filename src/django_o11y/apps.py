@@ -1,6 +1,7 @@
 """Django app configuration for django-o11y."""
 
 from importlib.metadata import PackageNotFoundError, version
+from pathlib import Path
 
 from django.apps import AppConfig
 from django.conf import settings
@@ -103,7 +104,11 @@ class DjangoO11yConfig(AppConfig):
 
             logging_config = config["LOGGING"]
             fmt = logging_config["FORMAT"]
-            banner.append(f"✅ Logging → format={fmt}")
+            if logging_config.get("FILE_ENABLED"):
+                file_dir = Path(logging_config["FILE_PATH"]).parent
+                banner.append(f"✅ Logging → format={fmt}, file_dir={file_dir}")
+            else:
+                banner.append(f"✅ Logging → format={fmt}")
 
             metrics_config = config["METRICS"]
             if metrics_config["PROMETHEUS_ENABLED"]:

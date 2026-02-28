@@ -216,7 +216,7 @@ Call `build_logging_dict()` in each settings file. The defaults are keyed off `D
 from django_o11y.logging.setup import build_logging_dict
 
 LOGGING = build_logging_dict()
-# DEBUG=True: console format, colorized, file output to ${XDG_RUNTIME_DIR:-/tmp}/django-o11y/<project>/django.log
+# DEBUG=True: console format, colorized, file output to ${XDG_STATE_HOME:-~/.local/state}/django-o11y/<project>/django.log
 ```
 
 **`settings/production.py`**
@@ -285,7 +285,7 @@ Or via env var: `DJANGO_O11Y_LOGGING_FORMAT=json`.
 
 ### Log file (dev only)
 
-When `DEBUG=True`, logs are also written as JSON to `${XDG_RUNTIME_DIR:-/tmp}/django-o11y/<project>/django.log`. The local dev stack (`o11y stack start`) tails this file with Alloy and ships it to Loki, so logs show up in Grafana without needing OTLP push enabled. Useful when running `runserver` or `runserver_plus` directly on the host.
+When `DEBUG=True`, logs are also written as JSON to `${XDG_STATE_HOME:-~/.local/state}/django-o11y/<project>/django.log`. The local dev stack (`o11y stack start`) tails this file with Alloy and ships it to Loki, so logs show up in Grafana without needing OTLP push enabled. Useful when running `runserver` or `runserver_plus` directly on the host.
 
 Override the path:
 

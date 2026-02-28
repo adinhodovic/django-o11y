@@ -1,7 +1,7 @@
 """Tests for configuration."""
 
-import sys
 import logging
+import sys
 from unittest.mock import MagicMock, patch
 
 import structlog

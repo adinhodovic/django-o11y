@@ -1,5 +1,6 @@
 """Tests for management commands - minimal mocking, integration-first."""
 
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -240,16 +241,73 @@ def test_work_dir_contains_stack_files(monkeypatch, tmp_path):
 def test_work_dir_renders_stack_log_mount_path(monkeypatch, tmp_path):
     from django_o11y.management.commands.o11y import _get_work_dir
 
+    stack_log_dir = tmp_path / "o11y" / "myproj"
     monkeypatch.setenv("DJANGO_O11Y_STACK_DIR", str(tmp_path / "stack"))
     monkeypatch.setenv(
-        "DJANGO_O11Y_LOGGING_FILE_PATH", "/run/user/1000/o11y/myproj/django.log"
+        "DJANGO_O11Y_LOGGING_FILE_PATH", str(stack_log_dir / "django.log")
     )
+    monkeypatch.setattr(
+        "django_o11y.management.commands.o11y.os.access", lambda *_: True
+    )
+    monkeypatch.setenv("DJANGO_O11Y_LOGGING_FILE_ENABLED", "true")
 
     work_dir = _get_work_dir()
     compose_text = (work_dir / "docker-compose.yml").read_text()
 
     assert "__DJANGO_O11Y_STACK_LOG_DIR__" not in compose_text
-    assert "/run/user/1000/o11y/myproj:/tmp/django-o11y:ro" in compose_text
+    assert f"source: {stack_log_dir}" in compose_text
+    assert "target: /tmp/django-o11y" in compose_text
+    assert "create_host_path: false" in compose_text
+
+
+def test_prepare_stack_log_dir_falls_back_when_not_writable(monkeypatch, tmp_path):
+    from django_o11y.management.commands.o11y import _prepare_stack_log_dir
+
+    target = tmp_path / "not-writable"
+
+    # Simulate existing dir with no write access for current process.
+    monkeypatch.setattr(
+        "django_o11y.management.commands.o11y.os.access", lambda *_: False
+    )
+
+    resolved = _prepare_stack_log_dir(target)
+
+    assert resolved == Path("/tmp/django-o11y")
+
+
+def test_work_dir_uses_fallback_mount_when_log_dir_not_writable(monkeypatch, tmp_path):
+    from django_o11y.management.commands.o11y import _get_work_dir
+
+    monkeypatch.setenv("DJANGO_O11Y_STACK_DIR", str(tmp_path / "stack"))
+    monkeypatch.setenv(
+        "DJANGO_O11Y_LOGGING_FILE_PATH", "/run/user/1000/o11y/myproj/django.log"
+    )
+    monkeypatch.setattr(
+        "django_o11y.management.commands.o11y.os.access", lambda *_: False
+    )
+    monkeypatch.setenv("DJANGO_O11Y_LOGGING_FILE_ENABLED", "true")
+
+    work_dir = _get_work_dir()
+    compose_text = (work_dir / "docker-compose.yml").read_text()
+
+    assert "source: /tmp/django-o11y" in compose_text
+    assert "target: /tmp/django-o11y" in compose_text
+
+
+def test_work_dir_omits_file_log_mount_when_file_logging_disabled(
+    monkeypatch, tmp_path
+):
+    from django_o11y.management.commands.o11y import _get_work_dir
+
+    monkeypatch.setenv("DJANGO_O11Y_STACK_DIR", str(tmp_path / "stack"))
+    monkeypatch.setenv("DJANGO_O11Y_LOGGING_FILE_ENABLED", "false")
+
+    work_dir = _get_work_dir()
+    compose_text = (work_dir / "docker-compose.yml").read_text()
+
+    assert "__DJANGO_O11Y_STACK_LOG_MOUNT_START__" not in compose_text
+    assert "source: __DJANGO_O11Y_STACK_LOG_DIR__" not in compose_text
+    assert "target: /tmp/django-o11y" not in compose_text
 
 
 def test_celery_exporter_override_includes_ce_buckets(tmp_path):

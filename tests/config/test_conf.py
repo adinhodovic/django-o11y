@@ -140,9 +140,10 @@ def test_env_vars_take_precedence_over_django_settings(monkeypatch):
 
 
 @override_settings(BASE_DIR="/srv/example-project", DJANGO_O11Y={})
-def test_runtime_defaults_use_xdg_runtime_dir(monkeypatch):
+def test_runtime_defaults_use_xdg_state_home(monkeypatch):
     from django_o11y.config.setup import get_config
 
+    monkeypatch.setenv("XDG_STATE_HOME", "/state/home")
     monkeypatch.setenv("XDG_RUNTIME_DIR", "/run/user/1000")
     monkeypatch.delenv("OTEL_SERVICE_NAME", raising=False)
 
@@ -150,7 +151,7 @@ def test_runtime_defaults_use_xdg_runtime_dir(monkeypatch):
 
     assert (
         config["LOGGING"]["FILE_PATH"]
-        == "/run/user/1000/django-o11y/django-app/django.log"
+        == "/state/home/django-o11y/django-app/django.log"
     )
 
 
@@ -158,12 +159,28 @@ def test_runtime_defaults_use_xdg_runtime_dir(monkeypatch):
 def test_runtime_defaults_use_otel_service_name(monkeypatch):
     from django_o11y.config.setup import get_config
 
-    monkeypatch.setenv("XDG_RUNTIME_DIR", "/run/user/1000")
+    monkeypatch.setenv("XDG_STATE_HOME", "/state/home")
     monkeypatch.setenv("OTEL_SERVICE_NAME", "FindWork API")
 
     config = get_config()
 
     assert (
         config["LOGGING"]["FILE_PATH"]
-        == "/run/user/1000/django-o11y/findwork-api/django.log"
+        == "/state/home/django-o11y/findwork-api/django.log"
+    )
+
+
+@override_settings(BASE_DIR="/srv/example-project", DJANGO_O11Y={})
+def test_runtime_defaults_fallback_to_local_state_home(monkeypatch):
+    from django_o11y.config.setup import get_config
+
+    monkeypatch.delenv("XDG_STATE_HOME", raising=False)
+    monkeypatch.setenv("HOME", "/home/example")
+    monkeypatch.delenv("OTEL_SERVICE_NAME", raising=False)
+
+    config = get_config()
+
+    assert (
+        config["LOGGING"]["FILE_PATH"]
+        == "/home/example/.local/state/django-o11y/django-app/django.log"
     )

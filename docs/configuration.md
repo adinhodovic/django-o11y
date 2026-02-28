@@ -59,7 +59,7 @@ Runtime file defaults (log files) are per-project. The `<project>` suffix is der
 | `LOGGING.OTLP_ENABLED` | bool | `False` | `DJANGO_O11Y_LOGGING_OTLP_ENABLED` |
 | `LOGGING.OTLP_ENDPOINT` | str | `"http://localhost:4317"` | `OTEL_EXPORTER_OTLP_ENDPOINT` |
 | `LOGGING.FILE_ENABLED` | bool | Same as `DEBUG` | `DJANGO_O11Y_LOGGING_FILE_ENABLED` |
-| `LOGGING.FILE_PATH` | str | ``"${XDG_RUNTIME_DIR:-/tmp}/django-o11y/<project>/django.log"`` | `DJANGO_O11Y_LOGGING_FILE_PATH` |
+| `LOGGING.FILE_PATH` | str | ``"${XDG_STATE_HOME:-~/.local/state}/django-o11y/<project>/django.log"`` | `DJANGO_O11Y_LOGGING_FILE_PATH` |
 
 ### Metrics
 
