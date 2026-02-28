@@ -1527,7 +1527,7 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django_o11y.logging.setup</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_logging_dict</span>
 <a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
 <a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">LOGGING</span> <span class="o">=</span> <span class="n">build_logging_dict</span><span class="p">()</span>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1"># DEBUG=True: console format, colorized, file output to ${XDG_RUNTIME_DIR:-/tmp}/django-o11y/&lt;project&gt;/django.log</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1"># DEBUG=True: console format, colorized, file output to ${XDG_STATE_HOME:-~/.local/state}/django-o11y/&lt;project&gt;/django.log</span>
 </code></pre></div>
 <p><strong><code>settings/production.py</code></strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django_o11y.logging.setup</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_logging_dict</span>
@@ -1573,7 +1573,7 @@
 </code></pre></div>
 <p>Or via env var: <code>DJANGO_O11Y_LOGGING_FORMAT=json</code>.</p>
 <h3 id="log-file-dev-only">Log file (dev only)<a class="headerlink" href="#log-file-dev-only" title="Permanent link">&para;</a></h3>
-<p>When <code>DEBUG=True</code>, logs are also written as JSON to <code>${XDG_RUNTIME_DIR:-/tmp}/django-o11y/&lt;project&gt;/django.log</code>. The local dev stack (<code>o11y stack start</code>) tails this file with Alloy and ships it to Loki, so logs show up in Grafana without needing OTLP push enabled. Useful when running <code>runserver</code> or <code>runserver_plus</code> directly on the host.</p>
+<p>When <code>DEBUG=True</code>, logs are also written as JSON to <code>${XDG_STATE_HOME:-~/.local/state}/django-o11y/&lt;project&gt;/django.log</code>. The local dev stack (<code>o11y stack start</code>) tails this file with Alloy and ships it to Loki, so logs show up in Grafana without needing OTLP push enabled. Useful when running <code>runserver</code> or <code>runserver_plus</code> directly on the host.</p>
 <p>Override the path:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="nv">DJANGO_O11Y_LOGGING_FILE_PATH</span><span class="o">=</span>/var/log/myapp/django.log
 </code></pre></div>
