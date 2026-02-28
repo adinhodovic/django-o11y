@@ -452,9 +452,9 @@ def _copy_stack_file(
         content = config_file.read_text()
         content = content.replace('"host.docker.internal:8000"', f'"{app_url}"')
         dest.write_text(content)
-    elif config_file.name == "docker-compose.yml" and stack_log_dir:
+    elif config_file.name == "docker-compose.yml":
         content = config_file.read_text()
-        content = content.replace("__DJANGO_O11Y_STACK_LOG_DIR__", str(stack_log_dir))
+        content = _render_stack_compose(content, stack_log_dir)
         dest.write_text(content)
     else:
         shutil.copy(config_file, dest)
@@ -471,7 +471,9 @@ def _get_work_dir(app_url=None):
     """Get or create working directory and copy stack configs."""
     work_dir = _resolve_stack_dir()
     work_dir.mkdir(parents=True, exist_ok=True)
-    stack_log_dir = _resolve_stack_log_dir()
+    stack_log_dir: Path | None = None
+    if _is_file_logging_enabled():
+        stack_log_dir = _prepare_stack_log_dir(_resolve_stack_log_dir())
 
     # Copy stack files from package to work directory
     try:
@@ -517,6 +519,83 @@ def _get_work_dir(app_url=None):
                 override.unlink()
 
     return work_dir
+
+
+def _is_file_logging_enabled() -> bool:
+    """Return whether host file logging is enabled in effective config."""
+    try:
+        from django_o11y.config.setup import get_config
+
+        config = get_config()
+        return bool(config.get("LOGGING", {}).get("FILE_ENABLED", False))
+    except Exception:  # pragma: no cover  # pylint: disable=broad-exception-caught
+        return False
+
+
+def _render_stack_compose(content: str, stack_log_dir: Path | None) -> str:
+    """Render docker-compose.yml, conditionally injecting file-log bind mount."""
+    start_marker = "__DJANGO_O11Y_STACK_LOG_MOUNT_START__"
+    end_marker = "__DJANGO_O11Y_STACK_LOG_MOUNT_END__"
+
+    if stack_log_dir is None:
+        lines = content.splitlines()
+        rendered: list[str] = []
+        skip = False
+        for line in lines:
+            if start_marker in line:
+                skip = True
+                continue
+            if end_marker in line:
+                skip = False
+                continue
+            if not skip:
+                rendered.append(line)
+        return "\n".join(rendered) + "\n"
+
+    content = content.replace(start_marker, "")
+    content = content.replace(end_marker, "")
+    return content.replace("__DJANGO_O11Y_STACK_LOG_DIR__", str(stack_log_dir))
+
+
+def _prepare_stack_log_dir(stack_log_dir: Path) -> Path:
+    """Ensure stack log dir exists and is writable by the current user.
+
+    Docker bind mounts may create missing host directories as root. To avoid
+    ownership drift, we pre-create the directory before docker compose runs.
+
+    If the target exists but is not writable, fall back to ``/tmp/django-o11y``
+    with a warning so stack startup can still proceed.
+    """
+    # Fast path: if the directory already exists and is writable, avoid
+    # touching the filesystem hierarchy further.
+    if os.access(stack_log_dir, os.W_OK):
+        return stack_log_dir
+
+    try:
+        stack_log_dir.mkdir(parents=True, exist_ok=True)
+    except PermissionError:
+        return _fallback_stack_log_dir(stack_log_dir)
+
+    if not os.access(stack_log_dir, os.W_OK):
+        return _fallback_stack_log_dir(stack_log_dir)
+
+    return stack_log_dir
+
+
+def _fallback_stack_log_dir(original: Path) -> Path:
+    """Return a writable fallback stack log dir and emit a warning."""
+    fallback = Path("/tmp/django-o11y")
+    fallback.mkdir(parents=True, exist_ok=True)
+    click.secho(
+        "Warning: stack log dir is not writable "
+        f"({original}). Falling back to {fallback}.",
+        fg="yellow",
+    )
+    click.echo(
+        "Set DJANGO_O11Y_STACK_LOG_DIR and DJANGO_O11Y_LOGGING_FILE_PATH to a "
+        "writable path to avoid this warning."
+    )
+    return fallback
 
 
 def _resolve_stack_dir() -> Path:

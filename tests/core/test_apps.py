@@ -165,3 +165,52 @@ def test_configure_metrics_no_warning_when_metrics_url_exists():
         app_config._configure_metrics(config)
 
     mock_warning.assert_not_called()
+
+
+def test_startup_banner_includes_file_dir_when_file_logging_enabled(capsys):
+    from django_o11y.apps import DjangoO11yConfig
+
+    config = make_config(
+        {
+            "LOGGING": {
+                "FORMAT": "console",
+                "FILE_ENABLED": True,
+                "FILE_PATH": "/tmp/django-o11y/django-app/django.log",
+            },
+            "TRACING": {"ENABLED": False},
+            "METRICS": {"PROMETHEUS_ENABLED": False},
+            "CELERY": {"ENABLED": False},
+            "PROFILING": {"ENABLED": False},
+        }
+    )
+    app_config = DjangoO11yConfig("django_o11y", __import__("django_o11y"))
+
+    app_config._print_startup_banner(config)
+    out = capsys.readouterr().out
+
+    assert "Logging → format=console, file_dir=/tmp/django-o11y/django-app" in out
+
+
+def test_startup_banner_omits_file_dir_when_file_logging_disabled(capsys):
+    from django_o11y.apps import DjangoO11yConfig
+
+    config = make_config(
+        {
+            "LOGGING": {
+                "FORMAT": "console",
+                "FILE_ENABLED": False,
+                "FILE_PATH": "/tmp/django-o11y/django-app/django.log",
+            },
+            "TRACING": {"ENABLED": False},
+            "METRICS": {"PROMETHEUS_ENABLED": False},
+            "CELERY": {"ENABLED": False},
+            "PROFILING": {"ENABLED": False},
+        }
+    )
+    app_config = DjangoO11yConfig("django_o11y", __import__("django_o11y"))
+
+    app_config._print_startup_banner(config)
+    out = capsys.readouterr().out
+
+    assert "Logging → format=console" in out
+    assert "file_dir=" not in out

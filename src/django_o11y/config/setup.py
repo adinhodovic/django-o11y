@@ -169,9 +169,20 @@ def get_o11y_config() -> dict[str, Any]:
 
 
 def _default_runtime_base_dir() -> Path:
-    """Return per-project runtime base dir for temporary o11y files."""
-    runtime_home = Path(os.getenv("XDG_RUNTIME_DIR", "/tmp")).expanduser()
-    return runtime_home / "django-o11y" / _default_project_id()
+    """Return per-project state dir used for host log files.
+
+    We intentionally prefer XDG *state* storage over XDG runtime storage.
+    ``XDG_RUNTIME_DIR`` is ephemeral and commonly causes ownership issues when
+    bind-mounted into Docker containers (directories may be created by root).
+    Logs are better treated as local state.
+    """
+    state_home = os.getenv("XDG_STATE_HOME")
+    if state_home:
+        base = Path(state_home).expanduser()
+    else:
+        base = Path.home() / ".local" / "state"
+
+    return base / "django-o11y" / _default_project_id()
 
 
 def _default_project_id() -> str:
