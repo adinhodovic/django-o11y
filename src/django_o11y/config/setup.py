@@ -71,6 +71,7 @@ def get_config() -> dict[str, Any]:
             "OTLP_ENDPOINT": "http://localhost:4317",
             "FILE_ENABLED": settings.DEBUG,
             "FILE_PATH": str(runtime_base_dir / "django.log"),
+            "DEV_FILTERED_EVENTS": ["request_started"],
         },
         "METRICS": {
             "PROMETHEUS_ENABLED": True,
@@ -133,6 +134,8 @@ def _apply_env_overrides(config: dict[str, Any], default_sample_rate: float) -> 
     _set_bool(lg, "RICH_EXCEPTIONS", "DJANGO_O11Y_LOGGING_RICH_EXCEPTIONS", True)
     _set_bool(lg, "OTLP_ENABLED", "DJANGO_O11Y_LOGGING_OTLP_ENABLED")
     _set_bool(lg, "FILE_ENABLED", "DJANGO_O11Y_LOGGING_FILE_ENABLED", settings.DEBUG)
+    if (v := os.getenv("DJANGO_O11Y_LOGGING_DEV_FILTERED_EVENTS")) is not None:
+        lg["DEV_FILTERED_EVENTS"] = [e.strip() for e in v.split(",") if e.strip()]
 
     _set_bool(m, "PROMETHEUS_ENABLED", "DJANGO_O11Y_METRICS_PROMETHEUS_ENABLED", True)
     _set_str(m, "PROMETHEUS_ENDPOINT", "DJANGO_O11Y_METRICS_PROMETHEUS_ENDPOINT")

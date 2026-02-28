@@ -1,5 +1,6 @@
 """Logging setup and Celery logging signal integration."""
 
+import logging
 import sys
 from pathlib import Path
 from typing import Any
@@ -9,6 +10,19 @@ import structlog
 from django_o11y.logging.utils import OTLPHandler, add_open_telemetry_spans, get_logger
 
 logger = get_logger()
+
+
+class DevEventFilter(logging.Filter):
+    """Filter out selected structlog events in dev console output."""
+
+    def __init__(self, filtered_events: list[str]) -> None:
+        super().__init__()
+        self._filtered_events = frozenset(filtered_events)
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if not isinstance(record.msg, dict):
+            return True
+        return record.msg.get("event") not in self._filtered_events
 
 
 def build_logging_dict(
@@ -59,12 +73,18 @@ def build_logging_dict(
     if foreign_pre_chain is not None:
         json_formatter["foreign_pre_chain"] = foreign_pre_chain
 
+    console_handler: dict[str, Any] = {
+        "class": "logging.StreamHandler",
+        "formatter": "default",
+        "stream": sys.stdout,
+    }
+    if cfg["FORMAT"] == "console":
+        filtered = cfg.get("DEV_FILTERED_EVENTS") or []
+        if filtered:
+            console_handler["filters"] = [DevEventFilter(filtered)]
+
     handlers: dict[str, Any] = {
-        "console": {
-            "class": "logging.StreamHandler",
-            "formatter": "default",
-            "stream": sys.stdout,
-        },
+        "console": console_handler,
         "null": {
             "class": "logging.NullHandler",
         },

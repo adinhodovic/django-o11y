@@ -1,6 +1,7 @@
 """Tests for configuration."""
 
 import sys
+import logging
 from unittest.mock import MagicMock, patch
 
 import structlog
@@ -180,3 +181,54 @@ def test_build_logging_dict_rich_exceptions_enabled_with_rich():
     assert isinstance(
         renderer._exception_formatter, structlog.dev.RichTracebackFormatter
     )
+
+
+def test_dev_event_filter_filters_configured_event():
+    from django_o11y.logging.setup import DevEventFilter
+
+    event_filter = DevEventFilter(["request_started"])
+
+    filtered = logging.LogRecord(
+        name="test",
+        level=logging.INFO,
+        pathname=__file__,
+        lineno=1,
+        msg={"event": "request_started"},
+        args=(),
+        exc_info=None,
+    )
+    kept = logging.LogRecord(
+        name="test",
+        level=logging.INFO,
+        pathname=__file__,
+        lineno=1,
+        msg={"event": "request_finished"},
+        args=(),
+        exc_info=None,
+    )
+
+    assert event_filter.filter(filtered) is False
+    assert event_filter.filter(kept) is True
+
+
+def test_build_logging_dict_applies_dev_event_filter_in_console_mode():
+    from django_o11y.logging.setup import DevEventFilter, build_logging_dict
+
+    logging_config = {
+        "FORMAT": "console",
+        "LEVEL": "INFO",
+        "REQUEST_LEVEL": "INFO",
+        "DATABASE_LEVEL": "WARNING",
+        "CELERY_LEVEL": "INFO",
+        "COLORIZED": False,
+        "RICH_EXCEPTIONS": False,
+        "OTLP_ENABLED": False,
+        "FILE_ENABLED": False,
+        "DEV_FILTERED_EVENTS": ["request_started"],
+    }
+
+    result = build_logging_dict(logging_config)
+    filters = result["handlers"]["console"].get("filters", [])
+
+    assert len(filters) == 1
+    assert isinstance(filters[0], DevEventFilter)
