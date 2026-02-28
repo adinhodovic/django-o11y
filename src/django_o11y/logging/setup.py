@@ -25,10 +25,11 @@ class DevEventFilter(logging.Filter):
         return record.msg.get("event") not in self._filtered_events
 
 
+# pylint: disable=too-many-locals,too-many-branches
 def build_logging_dict(
     logging_config: dict[str, Any] | None = None,
     extra: dict[str, Any] | None = None,
-) -> dict[str, Any]:  # pylint: disable=too-many-locals,too-many-branches
+) -> dict[str, Any]:
     """Build and return a Django-compatible LOGGING dict wired for structlog."""
     if logging_config is None:
         from django_o11y.config.setup import get_config
