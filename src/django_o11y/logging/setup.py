@@ -25,6 +25,8 @@ def build_logging_dict(
     cfg: dict[str, Any] = logging_config
 
     _configure_structlog(cfg)
+    use_foreign_pre_chain = cfg["FORMAT"] == "json"
+    foreign_pre_chain = _build_foreign_pre_chain() if use_foreign_pre_chain else None
 
     if cfg["FORMAT"] == "console":
         console_renderer_kwargs: dict[str, Any] = {"colors": cfg["COLORIZED"]}
@@ -46,12 +48,16 @@ def build_logging_dict(
         default_formatter = {
             "()": structlog.stdlib.ProcessorFormatter,
             "processor": structlog.processors.JSONRenderer(),
+            "foreign_pre_chain": foreign_pre_chain,
         }
 
     json_formatter: dict[str, Any] = {
         "()": structlog.stdlib.ProcessorFormatter,
         "processor": structlog.processors.JSONRenderer(),
     }
+
+    if foreign_pre_chain is not None:
+        json_formatter["foreign_pre_chain"] = foreign_pre_chain
 
     handlers: dict[str, Any] = {
         "console": {
@@ -215,3 +221,31 @@ def _configure_structlog(logging_config: dict[str, Any]) -> None:
         + [structlog.stdlib.ProcessorFormatter.wrap_for_formatter],
         logger_factory=structlog.stdlib.LoggerFactory(),
     )
+
+
+def _build_foreign_pre_chain() -> list[Any]:
+    """Processors used for stdlib log records.
+
+    These run for non-structlog loggers via ProcessorFormatter's
+    ``foreign_pre_chain`` and keep enrichment parity with structlog events.
+    Without this, Django/Celery/third-party stdlib logs would skip our
+    processor chain and miss fields like trace_id, span_id, timestamp, and
+    callsite metadata.
+    """
+    return [
+        structlog.contextvars.merge_contextvars,
+        structlog.stdlib.add_logger_name,
+        structlog.stdlib.add_log_level,
+        add_open_telemetry_spans,
+        structlog.stdlib.PositionalArgumentsFormatter(),
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.StackInfoRenderer(),
+        structlog.processors.UnicodeDecoder(),
+        structlog.processors.CallsiteParameterAdder(
+            {
+                structlog.processors.CallsiteParameter.FILENAME,
+                structlog.processors.CallsiteParameter.FUNC_NAME,
+                structlog.processors.CallsiteParameter.LINENO,
+            }
+        ),
+    ]

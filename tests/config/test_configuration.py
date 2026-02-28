@@ -51,6 +51,8 @@ def test_build_logging_dict_json_format():
     result = build_logging_dict(logging_config)
     assert result["version"] == 1
     assert "json" in result["formatters"]
+    assert "foreign_pre_chain" in result["formatters"]["default"]
+    assert "foreign_pre_chain" in result["formatters"]["json"]
 
 
 def test_build_logging_dict_with_otlp_enabled():

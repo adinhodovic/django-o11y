@@ -7,7 +7,7 @@ packages = ["src/django_o11y"]
 
 [project]
 name = "django-o11y"
-version = "0.5.2"
+version = "0.5.3"
 description = "Comprehensive OpenTelemetry observability for Django with traces, logs, metrics, and profiling"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -86,7 +86,9 @@ aws = ["opentelemetry-instrumentation-botocore>=0.60b1"]
 dev-logging = ["rich>=14.3.3"]
 
 # All features
-all = ["django-o11y[celery,profiling,postgres,sqlite,redis,http,aws,dev-logging]"]
+all = [
+  "django-o11y[celery,profiling,postgres,sqlite,redis,http,aws,dev-logging]",
+]
 
 # Documentation
 docs = ["mkdocs>=1.6.1,<2.0", "mkdocs-material>=9.7.2", "mike>=2.1.3"]
