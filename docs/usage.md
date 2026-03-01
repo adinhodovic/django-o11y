@@ -37,8 +37,11 @@ from django_o11y.logging.setup import build_logging_dict
 LOGGING = build_logging_dict()
 
 INSTALLED_APPS = [
-    "django_prometheus",
+    # django_o11y should come first so it can set
+    # DJANGO_STRUCTLOG_CELERY_ENABLED before django_structlog initializes.
     "django_o11y",
+    "django_structlog",
+    "django_prometheus",
     # ...
 ]
 
@@ -60,6 +63,7 @@ MIDDLEWARE = [
 
     "django_prometheus.middleware.PrometheusAfterMiddleware",
 ]
+
 ```
 
 ---
@@ -452,11 +456,12 @@ Celery signals wire everything up when the worker starts. Each task gets a trace
 To reduce span loss in prefork workers, django-o11y force-flushes tracing on `worker_process_shutdown`.
 
 ```python
-import structlog
 from celery import shared_task
+
+from django_o11y.logging.utils import get_logger
 from django_o11y.tracing.utils import set_custom_tags
 
-logger = structlog.get_logger(__name__)
+logger = get_logger()
 
 @shared_task
 def process_order(order_id: int):
