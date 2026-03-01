@@ -31,7 +31,6 @@ def test_configure_tracing_calls_setup_and_registers_fork_handler():
         "SERVICE_NAME": "test",
         "SERVICE_INSTANCE_ID": None,
         "SERVICE_VERSION": "1.0",
-        "ENVIRONMENT": "test",
         "RESOURCE_ATTRIBUTES": {},
     }
 
@@ -54,7 +53,6 @@ def test_configure_tracing_skips_in_celery_prefork_parent():
         "SERVICE_NAME": "test",
         "SERVICE_INSTANCE_ID": None,
         "SERVICE_VERSION": "1.0",
-        "ENVIRONMENT": "test",
         "RESOURCE_ATTRIBUTES": {},
     }
 

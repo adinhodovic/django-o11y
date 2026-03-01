@@ -71,3 +71,5 @@ nav:
   - Home: index.md
   - Usage Guide: usage.md
   - Configuration Reference: configuration.md
+  - Utility Functions: utils.md
+  - Demo Images: demo-images.md

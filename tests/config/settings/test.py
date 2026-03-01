@@ -48,7 +48,10 @@ CELERY_TASK_EAGER_PROPAGATES = True
 
 DJANGO_O11Y = {
     "SERVICE_NAME": "test-service",
-    "ENVIRONMENT": "test",
+    "RESOURCE_ATTRIBUTES": {
+        "deployment.environment": "test",
+        "service.namespace": "tests",
+    },
     "TRACING": {
         "ENABLED": True,
         "OTLP_ENDPOINT": "",  # No collector in tests

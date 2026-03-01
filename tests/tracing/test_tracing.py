@@ -57,13 +57,13 @@ def test_setup_tracing_skips_override_when_provider_already_set():
             set_tp.assert_not_called()
 
 
-def test_setup_tracing_with_namespace():
+def test_setup_tracing_with_service_namespace_resource_attribute():
     from django_o11y.tracing.setup import setup_tracing
 
     config = make_config(
         {
             "SERVICE_NAME": "test-service",
-            "NAMESPACE": "production",
+            "RESOURCE_ATTRIBUTES": {"service.namespace": "production"},
             "TRACING": {"OTLP_ENDPOINT": "http://localhost:4317"},
         }
     )
