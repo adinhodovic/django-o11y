@@ -1,5 +1,6 @@
 """Logging setup and Celery logging signal integration."""
 
+import importlib
 import logging
 import sys
 from pathlib import Path
@@ -189,8 +190,14 @@ def build_logging_dict(
 
 def setup_logging_for_django(config: dict) -> None:
     """Configure logging during Django startup."""
-    if config.get("CELERY", {}).get("ENABLED", False):
-        import importlib
+    celery_config = config.get("CELERY", {})
+    if celery_config.get("ENABLED", False) and celery_config.get(
+        "LOGGING_ENABLED", True
+    ):
+        from django.conf import settings
+
+        if not getattr(settings, "DJANGO_STRUCTLOG_CELERY_ENABLED", False):
+            settings.DJANGO_STRUCTLOG_CELERY_ENABLED = True
 
         try:
             importlib.import_module("django_o11y.logging.signals")

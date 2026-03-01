@@ -24,6 +24,21 @@ _SERVER_COMMANDS = frozenset(
     }
 )
 
+_RUNTIME_BINARIES = frozenset({"celery", "daphne", "gunicorn", "uvicorn"})
+
+_PYTHON_BINARIES = frozenset(
+    {
+        "python",
+        "python3",
+        "python3.10",
+        "python3.11",
+        "python3.12",
+        "python3.13",
+    }
+)
+
+_PYTHON_MODULE_RUNTIMES = frozenset({"celery", "daphne", "gunicorn", "uvicorn"})
+
 
 def get_default_server_commands() -> list[str]:
     """Return the default long-running management command allowlist."""
@@ -85,3 +100,33 @@ def is_management_command(server_commands: Iterable[str] | None = None) -> bool:
 
     command = argv[1].lower()
     return command not in _normalize_server_commands(server_commands)
+
+
+def should_setup_observability(server_commands: Iterable[str] | None = None) -> bool:
+    """Return True only for known long-running runtime processes.
+
+    This is an explicit allowlist so one-off tooling (linters, tests, migrations,
+    shell commands) does not initialize the full observability stack by accident.
+    """
+    argv = sys.argv
+    if not argv:
+        return False
+
+    script = os.path.basename(argv[0]).lower()
+
+    if script in ("manage.py", "django-admin", "django-admin.py"):
+        if len(argv) < 2:
+            return False
+        command = argv[1].strip().lower()
+        return command in _normalize_server_commands(server_commands)
+
+    if script in _RUNTIME_BINARIES:
+        return True
+
+    if script in _PYTHON_BINARIES:
+        for idx, arg in enumerate(argv):
+            if arg == "-m" and idx + 1 < len(argv):
+                module = argv[idx + 1].strip().lower()
+                return module in _PYTHON_MODULE_RUNTIMES
+
+    return False
