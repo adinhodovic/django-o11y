@@ -8,6 +8,8 @@ from typing import Any
 
 from django.conf import settings
 
+from django_o11y.utils.process import get_default_server_commands
+
 
 def _bool_env(key: str, default: bool) -> bool:
     value = os.getenv(key)
@@ -88,6 +90,9 @@ def get_config() -> dict[str, Any]:
             "ENABLED": False,
             "PYROSCOPE_URL": "http://localhost:4040",
         },
+        "STARTUP": {
+            "SERVER_COMMANDS": get_default_server_commands(),
+        },
     }
 
     user_config = getattr(settings, "DJANGO_O11Y", {})
@@ -106,12 +111,13 @@ def get_config() -> dict[str, Any]:
 
 
 def _apply_env_overrides(config: dict[str, Any], default_sample_rate: float) -> None:
-    t, lg, m, c, p = (
+    t, lg, m, c, p, st = (
         config["TRACING"],
         config["LOGGING"],
         config["METRICS"],
         config["CELERY"],
         config["PROFILING"],
+        config["STARTUP"],
     )
 
     _set_str(config, "SERVICE_NAME", "OTEL_SERVICE_NAME")
@@ -158,6 +164,9 @@ def _apply_env_overrides(config: dict[str, Any], default_sample_rate: float) -> 
 
     _set_bool(p, "ENABLED", "DJANGO_O11Y_PROFILING_ENABLED")
     _set_str(p, "PYROSCOPE_URL", "DJANGO_O11Y_PROFILING_PYROSCOPE_URL")
+
+    if (v := os.getenv("DJANGO_O11Y_STARTUP_SERVER_COMMANDS")) is not None:
+        st["SERVER_COMMANDS"] = [item.strip() for item in v.split(",") if item.strip()]
 
 
 def _deep_merge(default: dict, override: dict) -> dict:

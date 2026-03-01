@@ -108,6 +108,60 @@ def test_app_ready_initializes_logging():
     assert bound_logger is not None
 
 
+def test_app_ready_skips_o11y_for_management_commands_by_default():
+    from unittest.mock import patch
+
+    from django_o11y.apps import DjangoO11yConfig
+
+    config = make_config()
+    app_config = DjangoO11yConfig("django_o11y", __import__("django_o11y"))
+
+    with (
+        patch("django_o11y.apps.get_o11y_config", return_value=config),
+        patch("django_o11y.apps.is_management_command", return_value=True),
+        patch("django_o11y.apps.validate_config") as mock_validate,
+        patch.object(app_config, "_configure_tracing") as mock_tracing,
+        patch.object(app_config, "_configure_logging") as mock_logging,
+        patch.object(app_config, "_configure_metrics") as mock_metrics,
+        patch.object(app_config, "_configure_profiling") as mock_profiling,
+    ):
+        app_config.ready()
+
+    mock_validate.assert_not_called()
+    mock_tracing.assert_not_called()
+    mock_logging.assert_not_called()
+    mock_metrics.assert_not_called()
+    mock_profiling.assert_not_called()
+
+
+def test_app_ready_respects_configured_server_command_allowlist():
+    from unittest.mock import patch
+
+    from django_o11y.apps import DjangoO11yConfig
+
+    config = make_config({"STARTUP": {"SERVER_COMMANDS": ["runserver", "tailwind"]}})
+    app_config = DjangoO11yConfig("django_o11y", __import__("django_o11y"))
+
+    with (
+        patch("django_o11y.apps.get_o11y_config", return_value=config),
+        patch(
+            "django_o11y.apps.is_management_command", return_value=False
+        ) as mock_check,
+        patch("django_o11y.apps.validate_config", return_value=[]),
+        patch.object(app_config, "_configure_tracing") as mock_tracing,
+        patch.object(app_config, "_configure_logging") as mock_logging,
+        patch.object(app_config, "_configure_metrics") as mock_metrics,
+        patch.object(app_config, "_configure_profiling") as mock_profiling,
+    ):
+        app_config.ready()
+
+    mock_check.assert_called_once_with(server_commands=["runserver", "tailwind"])
+    mock_tracing.assert_called_once_with(config)
+    mock_logging.assert_called_once_with(config)
+    mock_metrics.assert_called_once_with(config)
+    mock_profiling.assert_called_once_with(config)
+
+
 def test_app_ready_raises_on_invalid_config():
     from django_o11y.config.setup import get_o11y_config
 
