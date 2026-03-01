@@ -32,6 +32,7 @@ provider_logger = logging.getLogger("django_o11y.tracing")
 
 # Track instrumentation per-process to remain fork-safe.
 _instrumented_pid: int | None = None
+_tracing_initialized_pid: int | None = None
 
 
 def setup_tracing(config: dict[str, Any]) -> TracerProvider:
@@ -75,6 +76,8 @@ def setup_tracing(config: dict[str, Any]) -> TracerProvider:
         provider.add_span_processor(BatchSpanProcessor(console_exporter))
 
     trace.set_tracer_provider(provider)
+    global _tracing_initialized_pid
+    _tracing_initialized_pid = os.getpid()
     provider_logger.info(
         "Tracing configured for %s, sending to %s (%.0f%% sampling) [%s]",
         service_name,
@@ -137,6 +140,9 @@ def setup_tracing_for_django(config: dict[str, Any]) -> None:
             "Skipping tracing setup in Celery prefork parent; "
             "child workers initialize tracing post-fork"
         )
+        return
+
+    if _tracing_initialized_pid == os.getpid():
         return
 
     setup_instrumentation(config)

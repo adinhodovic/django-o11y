@@ -102,6 +102,16 @@ def test_config_profiling_defaults():
     assert "ENABLED" in config["PROFILING"]
 
 
+def test_config_startup_defaults():
+    from django_o11y.config.setup import get_o11y_config
+    from django_o11y.utils.process import get_default_server_commands
+
+    config = get_o11y_config()
+
+    assert "STARTUP" in config
+    assert config["STARTUP"]["SERVER_COMMANDS"] == get_default_server_commands()
+
+
 def test_config_banner_defaults():
     from django_o11y.config.setup import get_o11y_config
 
@@ -120,6 +130,7 @@ def test_env_vars_take_precedence_over_django_settings(monkeypatch):
     monkeypatch.setenv("DJANGO_O11Y_LOGGING_LEVEL", "DEBUG")
     monkeypatch.setenv("DJANGO_O11Y_CELERY_ENABLED", "true")
     monkeypatch.setenv("DJANGO_O11Y_PROFILING_ENABLED", "true")
+    monkeypatch.setenv("DJANGO_O11Y_STARTUP_SERVER_COMMANDS", "runserver,tailwind")
 
     with override_settings(
         DJANGO_O11Y={
@@ -128,6 +139,7 @@ def test_env_vars_take_precedence_over_django_settings(monkeypatch):
             "LOGGING": {"LEVEL": "ERROR"},
             "CELERY": {"ENABLED": False},
             "PROFILING": {"ENABLED": False},
+            "STARTUP": {"SERVER_COMMANDS": ["runserver"]},
         }
     ):
         config = get_config()
@@ -137,6 +149,7 @@ def test_env_vars_take_precedence_over_django_settings(monkeypatch):
     assert config["LOGGING"]["LEVEL"] == "DEBUG"
     assert config["CELERY"]["ENABLED"] is True
     assert config["PROFILING"]["ENABLED"] is True
+    assert config["STARTUP"]["SERVER_COMMANDS"] == ["runserver", "tailwind"]
 
 
 @override_settings(BASE_DIR="/srv/example-project", DJANGO_O11Y={})

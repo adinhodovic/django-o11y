@@ -88,6 +88,18 @@ Multiprocess metrics are configured via the standard `PROMETHEUS_MULTIPROC_DIR` 
 | `PROFILING.ENABLED` | bool | `False` | `DJANGO_O11Y_PROFILING_ENABLED` |
 | `PROFILING.PYROSCOPE_URL` | str | `"http://localhost:4040"` | `DJANGO_O11Y_PROFILING_PYROSCOPE_URL` |
 
+### Startup
+
+django-o11y always skips full observability setup for non-server Django management
+commands (for example `migrate`, `shell`, `tailwind start`).
+
+Only commands in the server allowlist are treated as long-running processes and run
+full startup instrumentation.
+
+| Setting | Type | Default | Env var |
+| ------- | ---- | ------- | ------- |
+| `STARTUP.SERVER_COMMANDS` | list[str] | `['celery', 'daphne', 'gunicorn', 'run_gunicorn', 'runserver', 'runserver_plus', 'uvicorn']` | `DJANGO_O11Y_STARTUP_SERVER_COMMANDS` (comma-separated) |
+
 ## Examples
 
 ### Development

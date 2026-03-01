@@ -6,7 +6,10 @@ from pathlib import Path
 from django.apps import AppConfig
 from django.conf import settings
 
+from django_o11y.config.setup import get_o11y_config
+from django_o11y.config.utils import validate_config
 from django_o11y.logging.utils import get_logger
+from django_o11y.utils.process import is_management_command
 
 logger = get_logger()
 
@@ -23,10 +26,11 @@ class DjangoO11yConfig(AppConfig):
         """Initialize observability when Django starts."""
         from django.core.exceptions import ImproperlyConfigured
 
-        from django_o11y.config.setup import get_o11y_config
-        from django_o11y.config.utils import validate_config
-
         config = get_o11y_config()
+
+        server_commands = config.get("STARTUP", {}).get("SERVER_COMMANDS")
+        if is_management_command(server_commands=server_commands):
+            return
 
         errors = validate_config(config)
         if errors:

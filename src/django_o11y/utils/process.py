@@ -3,6 +3,7 @@
 import multiprocessing
 import os
 import sys
+from collections.abc import Iterable
 
 # Management commands that are long-running server/worker processes — these
 # should go through full observability setup just like a normal process.
@@ -24,6 +25,27 @@ _SERVER_COMMANDS = frozenset(
 )
 
 
+def get_default_server_commands() -> list[str]:
+    """Return the default long-running management command allowlist."""
+    return sorted(_SERVER_COMMANDS)
+
+
+def _normalize_server_commands(server_commands: Iterable[str] | None) -> set[str]:
+    if server_commands is None:
+        return set(_SERVER_COMMANDS)
+
+    normalized: set[str] = set()
+    for command in server_commands:
+        if not isinstance(command, str):
+            continue
+
+        cleaned = command.strip().lower()
+        if cleaned:
+            normalized.add(cleaned)
+
+    return normalized
+
+
 def get_process_identity() -> str:
     """Return process identity details for startup diagnostics."""
     return (
@@ -32,7 +54,7 @@ def get_process_identity() -> str:
     )
 
 
-def is_management_command() -> bool:
+def is_management_command(server_commands: Iterable[str] | None = None) -> bool:
     """Return True when the process was started via ``manage.py <command>``.
 
     Returns False for:
@@ -61,5 +83,5 @@ def is_management_command() -> bool:
     if script not in ("manage.py", "django-admin", "django-admin.py"):
         return False
 
-    command = argv[1]
-    return command not in _SERVER_COMMANDS
+    command = argv[1].lower()
+    return command not in _normalize_server_commands(server_commands)
