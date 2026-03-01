@@ -51,10 +51,10 @@ All signals are correlated by `trace_id`, so you can jump from a slow request me
 
 ## Acknowledgments
 
-- [OpenTelemetry Python](https://github.com/open-telemetry/opentelemetry-python)
-- [Structlog](https://github.com/hynek/structlog)
+- [opentelemetry-python](https://github.com/open-telemetry/opentelemetry-python)
+- [structlog](https://github.com/hynek/structlog)
 - [django-structlog](https://github.com/jrobichaud/django-structlog)
 - [django-prometheus](https://github.com/korfuri/django-prometheus)
 - [django-mixin](https://github.com/adinhodovic/django-mixin)
 - [celery-exporter](https://github.com/danihodovic/celery-exporter)
-- [Grafana](https://grafana.com/)
+- [grafana](https://github.com/grafana/grafana)

@@ -40,6 +40,21 @@ def _set_float(config: dict, key: str, env: str, default: float = 0.0) -> None:
         config[key] = _float_env(env, default)
 
 
+def _parse_resource_attributes(raw: str | None) -> dict[str, str]:
+    """Parse OTEL_RESOURCE_ATTRIBUTES (key=value,key2=value2) into a dict."""
+    if not raw:
+        return {}
+
+    result: dict[str, str] = {}
+    for pair in raw.split(","):
+        pair = pair.strip()
+        if not pair or "=" not in pair:
+            continue
+        key, value = pair.split("=", 1)
+        result[key.strip()] = value.strip()
+    return result
+
+
 def get_config() -> dict[str, Any]:
     """Return merged django-o11y configuration."""
     default_sample_rate = 1.0 if settings.DEBUG else 0.01
@@ -48,8 +63,6 @@ def get_config() -> dict[str, Any]:
         "SERVICE_NAME": "django-app",
         "SERVICE_VERSION": "unknown",
         "SERVICE_INSTANCE_ID": None,
-        "ENVIRONMENT": "development",
-        "NAMESPACE": "",
         "RESOURCE_ATTRIBUTES": {},
         "TRACING": {
             "ENABLED": False,
@@ -122,10 +135,15 @@ def _apply_env_overrides(config: dict[str, Any], default_sample_rate: float) -> 
 
     _set_str(config, "SERVICE_NAME", "OTEL_SERVICE_NAME")
     _set_str(config, "SERVICE_VERSION", "OTEL_SERVICE_VERSION")
-    _set_str(config, "ENVIRONMENT", "DJANGO_O11Y_ENVIRONMENT")
-    _set_str(config, "NAMESPACE", "DJANGO_O11Y_NAMESPACE")
     if (v := os.getenv("OTEL_SERVICE_INSTANCE_ID")) is not None:
         config["SERVICE_INSTANCE_ID"] = v or None
+
+    if (raw_attrs := os.getenv("OTEL_RESOURCE_ATTRIBUTES")) is not None:
+        parsed_attrs = _parse_resource_attributes(raw_attrs)
+        config["RESOURCE_ATTRIBUTES"] = {
+            **config.get("RESOURCE_ATTRIBUTES", {}),
+            **parsed_attrs,
+        }
 
     if (v := os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")) is not None:
         t["OTLP_ENDPOINT"] = v

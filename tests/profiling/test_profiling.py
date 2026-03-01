@@ -85,7 +85,7 @@ def test_setup_profiling_when_disabled():
     setup_profiling(config)
 
 
-def test_setup_profiling_with_namespace():
+def test_setup_profiling_with_service_namespace_resource_attribute():
     from django_o11y.profiling import setup_profiling
 
     mock_pyroscope = MagicMock()
@@ -93,8 +93,10 @@ def test_setup_profiling_with_namespace():
     config = make_config(
         {
             "SERVICE_NAME": "test-service",
-            "NAMESPACE": "production",
-            "ENVIRONMENT": "prod",
+            "RESOURCE_ATTRIBUTES": {
+                "service.namespace": "production",
+                "deployment.environment": "prod",
+            },
             "PROFILING": {
                 "ENABLED": True,
                 "PYROSCOPE_URL": "http://localhost:4040",
@@ -111,7 +113,7 @@ def test_setup_profiling_with_namespace():
         assert call_kwargs["tags"]["service_namespace"] == "production"
 
 
-def test_setup_profiling_without_namespace():
+def test_setup_profiling_without_service_namespace_resource_attribute():
     from django_o11y.profiling import setup_profiling
 
     mock_pyroscope = MagicMock()
@@ -119,8 +121,10 @@ def test_setup_profiling_without_namespace():
     config = make_config(
         {
             "SERVICE_NAME": "test-service",
-            "ENVIRONMENT": "dev",
-            "NAMESPACE": None,
+            "RESOURCE_ATTRIBUTES": {
+                "deployment.environment": "dev",
+                "service.namespace": "",
+            },
             "PROFILING": {
                 "ENABLED": True,
                 "PYROSCOPE_URL": "http://localhost:4040",
@@ -144,8 +148,8 @@ def test_setup_profiling_with_custom_tags():
     config = make_config(
         {
             "SERVICE_NAME": "test-service",
-            "ENVIRONMENT": "staging",
             "RESOURCE_ATTRIBUTES": {
+                "deployment.environment": "staging",
                 "region": "us-west-2",
                 "team": "backend",
             },

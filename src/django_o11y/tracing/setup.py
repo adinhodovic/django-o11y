@@ -61,13 +61,9 @@ def setup_tracing(config: dict[str, Any]) -> Any:
         SERVICE_NAME: service_name,
         SERVICE_VERSION: config["SERVICE_VERSION"],
         SERVICE_INSTANCE_ID: instance_id,
-        "deployment.environment": config["ENVIRONMENT"],
         "host.name": socket.gethostname(),
         "process.pid": os.getpid(),
     }
-
-    if config.get("NAMESPACE"):
-        resource_attrs["service.namespace"] = config["NAMESPACE"]
 
     custom_attrs = config["RESOURCE_ATTRIBUTES"]
     if custom_attrs:

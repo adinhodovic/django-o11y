@@ -98,8 +98,6 @@ def mock_config():
     return make_config(
         {
             "SERVICE_NAME": "test-service",
-            "ENVIRONMENT": "test",
-            "NAMESPACE": "test-namespace",
             "TRACING": {
                 "ENABLED": True,
                 "OTLP_ENDPOINT": "http://localhost:4317",
@@ -122,7 +120,10 @@ def mock_config():
                 "ENABLED": True,
                 "PYROSCOPE_URL": "http://localhost:4040",
             },
-            "RESOURCE_ATTRIBUTES": {},
+            "RESOURCE_ATTRIBUTES": {
+                "deployment.environment": "test",
+                "service.namespace": "test-namespace",
+            },
         }
     )
 

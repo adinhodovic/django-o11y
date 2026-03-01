@@ -37,10 +37,7 @@ from django_o11y.logging.setup import build_logging_dict
 LOGGING = build_logging_dict()
 
 INSTALLED_APPS = [
-    # django_o11y should come first so it can set
-    # DJANGO_STRUCTLOG_CELERY_ENABLED before django_structlog initializes.
     "django_o11y",
-    "django_structlog",
     "django_prometheus",
     # ...
 ]
@@ -65,6 +62,12 @@ MIDDLEWARE = [
 ]
 
 ```
+
+### Utility function reference
+
+Utility docs for logs, traces, and metrics live in one page:
+
+- [Utility functions](utils.md)
 
 ---
 
@@ -204,6 +207,8 @@ with payment_latency.time({"method": "card"}):
 
 Custom metrics appear on the same `/metrics` endpoint alongside infrastructure metrics.
 
+For full metric helper signatures and examples, see [Utility functions](utils.md#metrics-django_o11ymetrics).
+
 ---
 
 ## Logs
@@ -212,15 +217,34 @@ Structured logging via [Structlog](https://www.structlog.org/). Every log line i
 
 ### Setup
 
-Call `build_logging_dict()` in each settings file. The defaults are keyed off `DEBUG`, so most of the difference between environments is handled automatically.
+Call `build_logging_dict()` in each environment settings module. A common split is `base.py`, `local.py`, `production.py` (or `prod.py`), and `test.py`.
+
+**`settings/base.py`**
+
+```python
+DJANGO_O11Y = {
+    "SERVICE_NAME": "my-django-app",
+    "RESOURCE_ATTRIBUTES": {
+        "deployment.environment": "local",
+        "service.namespace": "web",
+    },
+    "TRACING": {"ENABLED": True},
+    "METRICS": {"PROMETHEUS_ENABLED": True},
+}
+
+# Optional project-specific logger overrides reused by env-specific modules.
+EXTRA_LOGGING: dict[str, object] = {}
+```
 
 **`settings/local.py`**
 
 ```python
 from django_o11y.logging.setup import build_logging_dict
 
-LOGGING = build_logging_dict()
-# DEBUG=True: console format, colorized, file output to ${XDG_STATE_HOME:-~/.local/state}/django-o11y/<project>/django.log
+from .base import *  # noqa
+
+DEBUG = True
+LOGGING = build_logging_dict(extra=EXTRA_LOGGING)  # console logs + dev file sink
 ```
 
 **`settings/production.py`**
@@ -228,8 +252,17 @@ LOGGING = build_logging_dict()
 ```python
 from django_o11y.logging.setup import build_logging_dict
 
-LOGGING = build_logging_dict()
-# DEBUG=False: JSON format, no file output
+from .base import *  # noqa
+
+DEBUG = False
+DJANGO_O11Y = {
+    **DJANGO_O11Y,  # noqa: F405
+    "RESOURCE_ATTRIBUTES": {
+        **DJANGO_O11Y.get("RESOURCE_ATTRIBUTES", {}),  # noqa: F405
+        "deployment.environment": "production",
+    },
+}
+LOGGING = build_logging_dict(extra=EXTRA_LOGGING)  # JSON logs
 ```
 
 **`settings/test.py`**
@@ -237,8 +270,17 @@ LOGGING = build_logging_dict()
 ```python
 from django_o11y.logging.setup import build_logging_dict
 
-LOGGING = build_logging_dict({"LEVEL": "WARNING", "FILE_ENABLED": False})
-# Quiet in tests regardless of DEBUG
+from .base import *  # noqa
+
+DJANGO_O11Y = {
+    **DJANGO_O11Y,  # noqa: F405
+    "TRACING": {"ENABLED": False},
+    "METRICS": {"PROMETHEUS_ENABLED": False},
+    "CELERY": {"ENABLED": False},
+    "PROFILING": {"ENABLED": False},
+    "LOGGING": {"LEVEL": "WARNING", "FILE_ENABLED": False},
+}
+LOGGING = build_logging_dict(extra=EXTRA_LOGGING)
 ```
 
 ### Usage
@@ -253,6 +295,8 @@ logger.error("payment_failed", error=str(e), order_id=order_id)
 ```
 
 `get_logger()` infers the module name automatically — no need to pass `__name__`. Use keyword arguments, not f-strings. This keeps logs machine-readable and queryable in Loki.
+
+For all logging helper APIs (`get_logger`, `add_log_context`, `clear_custom_context`), see [Utility functions](utils.md#logging-django_o11yloggingutils).
 
 ### Output formats
 
@@ -432,6 +476,8 @@ def checkout_view(request):
 | `set_custom_tags()` | Yes | Yes | Business context |
 | `add_span_attribute()` | Yes | No | Technical span data |
 | `add_log_context()` | No | Yes | Debug info |
+
+For complete tracing helper docs (including `get_current_trace_id()` and `get_current_span_id()`), see [Utility functions](utils.md#tracing-django_o11ytracingutils).
 
 ### Celery
 

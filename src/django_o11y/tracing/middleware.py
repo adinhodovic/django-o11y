@@ -5,6 +5,8 @@ from collections.abc import Callable
 from django.http import HttpRequest, HttpResponse
 from opentelemetry import trace
 
+from django_o11y.tracing.utils import get_tracer
+
 
 class TracingMiddleware:
     """
@@ -16,7 +18,7 @@ class TracingMiddleware:
 
     def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]):
         self.get_response = get_response
-        self.tracer = trace.get_tracer(__name__)
+        self.tracer = get_tracer()
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
         span = trace.get_current_span()

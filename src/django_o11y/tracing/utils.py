@@ -8,6 +8,16 @@ from typing import Any
 
 import structlog
 from opentelemetry import trace
+from opentelemetry.trace import Tracer
+
+
+def get_tracer(name: str | None = None) -> Tracer:
+    """Return an OpenTelemetry tracer for the caller module by default."""
+    tracer_name = name
+    if tracer_name is None:
+        frame = sys._getframe(1)
+        tracer_name = frame.f_globals.get("__name__", __name__)
+    return trace.get_tracer(tracer_name)
 
 
 def set_custom_tags(tags: dict[str, Any]) -> None:

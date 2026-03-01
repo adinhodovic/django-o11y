@@ -31,8 +31,6 @@ Runtime file defaults (log files) are per-project. The `<project>` suffix is der
 | `SERVICE_NAME` | str | `"django-app"` | `OTEL_SERVICE_NAME` |
 | `SERVICE_VERSION` | str | `"unknown"` | `OTEL_SERVICE_VERSION` |
 | `SERVICE_INSTANCE_ID` | str | `"<hostname>:<pid>"` | `OTEL_SERVICE_INSTANCE_ID` |
-| `ENVIRONMENT` | str | `"development"` | `DJANGO_O11Y_ENVIRONMENT` |
-| `NAMESPACE` | str | `""` | `DJANGO_O11Y_NAMESPACE` |
 | `RESOURCE_ATTRIBUTES` | dict | `{}` | `OTEL_RESOURCE_ATTRIBUTES` |
 
 ### Tracing
@@ -124,7 +122,11 @@ DJANGO_O11Y = {
 ```python
 DJANGO_O11Y = {
     "SERVICE_NAME": "my-app",
-    "ENVIRONMENT": "production",
+    "RESOURCE_ATTRIBUTES": {
+        "deployment.environment": "production",
+        "service.namespace": "web",
+        "cloud.region": "eu-west-1",
+    },
     "TRACING": {"SAMPLE_RATE": 0.01},
     "LOGGING": {
         "FORMAT": "json",
@@ -141,6 +143,7 @@ Added to all traces:
 - `service.name`
 - `service.version`
 - `service.instance.id`
-- `deployment.environment`
 - `host.name`
 - `process.pid`
+
+Set environment and namespace through `RESOURCE_ATTRIBUTES` (or `OTEL_RESOURCE_ATTRIBUTES`), for example `deployment.environment=production,service.namespace=web`.

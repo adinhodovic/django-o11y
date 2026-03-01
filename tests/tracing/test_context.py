@@ -87,6 +87,30 @@ def test_add_span_attribute_without_recording_span():
         add_span_attribute("key", "value")
 
 
+def test_get_tracer_uses_caller_module_name():
+    from django_o11y.tracing.utils import get_tracer
+
+    with patch(
+        "django_o11y.tracing.utils.trace.get_tracer", return_value="mock-tracer"
+    ) as mock_get_tracer:
+        tracer = get_tracer()
+
+    assert tracer == "mock-tracer"
+    mock_get_tracer.assert_called_once_with(__name__)
+
+
+def test_get_tracer_allows_explicit_name():
+    from django_o11y.tracing.utils import get_tracer
+
+    with patch(
+        "django_o11y.tracing.utils.trace.get_tracer", return_value="mock-tracer"
+    ) as mock_get_tracer:
+        tracer = get_tracer("custom.module")
+
+    assert tracer == "mock-tracer"
+    mock_get_tracer.assert_called_once_with("custom.module")
+
+
 def test_add_log_context():
     from django_o11y.logging.utils import add_log_context
 

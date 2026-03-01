@@ -130,7 +130,6 @@ def test_setup_tracing_uses_worker_pid_after_fork():
             "SERVICE_NAME": "test-service",
             "SERVICE_VERSION": "1.0",
             "SERVICE_INSTANCE_ID": None,  # no explicit override → use hostname:pid
-            "ENVIRONMENT": "test",
             "TRACING": {"OTLP_ENDPOINT": None, "CONSOLE_EXPORTER": False},
             "PROFILING": {"ENABLED": False},
             "RESOURCE_ATTRIBUTES": {},
