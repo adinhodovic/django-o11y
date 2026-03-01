@@ -7,7 +7,7 @@ packages = ["src/django_o11y"]
 
 [project]
 name = "django-o11y"
-version = "0.5.4"
+version = "0.5.5"
 description = "Comprehensive OpenTelemetry observability for Django with traces, logs, metrics, and profiling"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -103,6 +103,7 @@ dev = [
   "mypy>=1.19.1",
   "pylint>=4.0.5",
   "pylint-django>=2.7.0",
+  "prek>=0.3.4",
   "pytest>=9.0.2",
   "pytest-cov>=7.0.0",
   "pytest-django>=4.12.0",

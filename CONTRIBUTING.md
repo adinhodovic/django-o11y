@@ -37,7 +37,7 @@ django-o11y/
 │   ├── conftest.py         # Shared fixtures, make_config() helper
 │   └── Dockerfile          # Multi-stage uv build for dev containers
 │
-├── docker-compose.dev.yml  # Local dev stack (Django + Celery + Redis + task generator)
+├── docker-compose.yml      # Local dev stack (Django + Celery + Redis + task generator)
 ├── Makefile                # Shortcuts: make dev, make o11y-stack, etc.
 └── docs/                   # Usage and configuration guides
 ```
@@ -113,6 +113,7 @@ make dev
 
 Before opening a PR:
 
+0. Run hooks with prek: `prek run --all-files` (config is in `.pre-commit-config.yaml`)
 1. Tests pass: `tox -e py312-django52`
 2. Lint clean: `tox -e ruff && tox -e pylint`
 3. Integration tests pass if you changed signal handlers or Celery setup: `tox -e integration`
