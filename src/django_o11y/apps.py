@@ -45,8 +45,8 @@ class DjangoO11yConfig(AppConfig):
             return
         self._o11y_ready = True
 
-        self._configure_tracing(config)
         self._configure_logging(config)
+        self._configure_tracing(config)
         self._configure_metrics(config)
         self._configure_profiling(config)
 

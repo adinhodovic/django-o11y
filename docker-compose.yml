@@ -31,20 +31,16 @@ services:
     build:
       context: .
       dockerfile: tests/Dockerfile
-    entrypoint: >
-      sh -c "mkdir -p /tmp/django-o11y/prometheus-multiproc/django &&
-             exec python manage.py runserver 0.0.0.0:8000"
+    entrypoint: python manage.py runserver 0.0.0.0:8000
     environment:
       DJANGO_SETTINGS_MODULE: tests.config.settings.local
       OTEL_SERVICE_NAME: django-app
-      PROMETHEUS_MULTIPROC_DIR: /tmp/django-o11y/prometheus-multiproc/django
-      DJANGO_O11Y_LOGGING_FILE_ENABLED: "true"
       DJANGO_O11Y_LOGGING_FILE_PATH: /tmp/django-o11y/django.log
+    volumes:
+      - ${DJANGO_O11Y_STACK_LOG_MOUNT}:/tmp/django-o11y
+      - sqlite-data:/data
     ports:
       - "8000:8000"
-    volumes:
-      - ${DJANGO_O11Y_DEV_TMP_DIR:-/tmp/django-o11y-${COMPOSE_PROJECT_NAME:-django-o11y}}:/tmp/django-o11y
-      - sqlite-data:/data
     extra_hosts:
       - "host.docker.internal:host-gateway"
     develop:
@@ -67,21 +63,16 @@ services:
     build:
       context: .
       dockerfile: tests/Dockerfile
-    entrypoint: >
-      sh -c "mkdir -p /tmp/django-o11y/prometheus-multiproc/celery &&
-             exec celery -A tests.celery_app worker -l info"
+    entrypoint: celery -A tests.celery_app worker
     environment:
       DJANGO_SETTINGS_MODULE: tests.config.settings.local
       OTEL_SERVICE_NAME: celery-worker
-      DJANGO_O11Y_LOGGING_FILE_ENABLED: "true"
       DJANGO_O11Y_LOGGING_FILE_PATH: /tmp/django-o11y/celery.log
-      DJANGO_O11Y_CELERY_METRICS_PORT: "8009"
-      PROMETHEUS_MULTIPROC_DIR: /tmp/django-o11y/prometheus-multiproc/celery
+    volumes:
+      - ${DJANGO_O11Y_STACK_LOG_MOUNT}:/tmp/django-o11y
+      - sqlite-data:/data
     ports:
       - "8009:8009"
-    volumes:
-      - ${DJANGO_O11Y_DEV_TMP_DIR:-/tmp/django-o11y-${COMPOSE_PROJECT_NAME:-django-o11y}}:/tmp/django-o11y
-      - sqlite-data:/data
     extra_hosts:
       - "host.docker.internal:host-gateway"
     develop:

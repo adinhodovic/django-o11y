@@ -256,14 +256,18 @@ def test_celery_setup_configures_tracing_provider_when_enabled(celery_app):
     }
 
     try:
-        with patch(
-            "django_o11y.tracing.setup.setup_instrumentation"
-        ) as mock_setup_instrumentation:
-            with patch("django_o11y.tracing.setup.setup_tracing") as mock_setup_tracing:
-                with patch("django_o11y.tracing.setup._setup_celery_tracing"):
-                    setup.setup_celery_o11y(celery_app, config=config)
-                    mock_setup_instrumentation.assert_called_once_with(config)
-                    mock_setup_tracing.assert_called_once_with(config)
+        with patch("django_o11y.tracing.setup.setup_celery_logging") as mock_logging:
+            with patch(
+                "django_o11y.tracing.setup.setup_instrumentation"
+            ) as mock_setup_instrumentation:
+                with patch(
+                    "django_o11y.tracing.setup.setup_tracing"
+                ) as mock_setup_tracing:
+                    with patch("django_o11y.tracing.setup._setup_celery_tracing"):
+                        setup.setup_celery_o11y(celery_app, config=config)
+                        mock_logging.assert_called_once_with(celery_app)
+                        mock_setup_instrumentation.assert_called_once_with(config)
+                        mock_setup_tracing.assert_called_once_with(config)
     finally:
         setup._instrumented_pid = original_pid
 
@@ -321,7 +325,7 @@ def test_celery_setup_disables_worker_root_logger_hijack(celery_app):
 def test_setup_celery_adds_django_structlog_worker_step(celery_app):
     """setup_celery_o11y registers django-structlog worker init step."""
     from types import SimpleNamespace
-    from unittest.mock import Mock
+    from unittest.mock import Mock, patch
 
     from django_o11y.tracing import setup
 
@@ -334,7 +338,14 @@ def test_setup_celery_adds_django_structlog_worker_step(celery_app):
         fake_app.conf = SimpleNamespace()
         fake_app.steps = {"worker": fake_worker_steps}
         config = {"CELERY": {"ENABLED": True}}
-        setup.setup_celery_o11y(fake_app, config=config)
+        with patch("django_o11y.logging.celery.logger.info") as mock_info:
+            setup.setup_celery_o11y(fake_app, config=config)
+
         fake_worker_steps.add.assert_called_once()
+        mock_info.assert_any_call(
+            "celery_worker_step_registered",
+            step="DjangoStructLogInitStep",
+            pid=setup.os.getpid(),
+        )
     finally:
         setup._instrumented_pid = original_pid

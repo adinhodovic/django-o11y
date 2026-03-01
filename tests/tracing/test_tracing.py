@@ -2,7 +2,20 @@
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+from opentelemetry.trace import ProxyTracerProvider
+
 from tests.conftest import make_config
+
+
+@pytest.fixture(autouse=True)
+def _unconfigured_global_tracer_provider():
+    """Default to an unconfigured OTel provider in setup_tracing tests."""
+    with patch(
+        "django_o11y.tracing.setup.trace.get_tracer_provider",
+        return_value=ProxyTracerProvider(),
+    ):
+        yield
 
 
 def test_setup_tracing_creates_provider():
@@ -20,6 +33,28 @@ def test_setup_tracing_creates_provider():
             provider = setup_tracing(config)
 
             assert provider is not None
+
+
+def test_setup_tracing_skips_override_when_provider_already_set():
+    from django_o11y.tracing.setup import setup_tracing
+
+    config = make_config(
+        {
+            "SERVICE_NAME": "test-service",
+            "TRACING": {"OTLP_ENDPOINT": "http://localhost:4317"},
+        }
+    )
+
+    existing_provider = MagicMock()
+    with patch(
+        "django_o11y.tracing.setup.trace.get_tracer_provider",
+        return_value=existing_provider,
+    ):
+        with patch("django_o11y.tracing.setup.trace.set_tracer_provider") as set_tp:
+            provider = setup_tracing(config)
+
+            assert provider is existing_provider
+            set_tp.assert_not_called()
 
 
 def test_setup_tracing_with_namespace():

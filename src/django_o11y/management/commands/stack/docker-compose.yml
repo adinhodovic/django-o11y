@@ -11,7 +11,9 @@ services:
 
   loki:
     image: grafana/loki:3.6.6
-    command: -config.file=/etc/loki/local-config.yaml
+    command:
+      - -config.file=/etc/loki/local-config.yaml
+      - -distributor.max-line-size=2MB
     ports:
       - "3100:3100"
     volumes:

@@ -1,6 +1,5 @@
 """Tracing setup and Celery tracing signal integration."""
 
-import logging
 import os
 import socket
 from typing import Any
@@ -16,8 +15,10 @@ from opentelemetry.sdk.resources import (
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 from opentelemetry.sdk.trace.sampling import ParentBased, TraceIdRatioBased
+from opentelemetry.trace import ProxyTracerProvider
 
 from django_o11y.config.setup import get_o11y_config
+from django_o11y.logging.celery import setup_celery_logging
 from django_o11y.logging.utils import get_logger
 from django_o11y.tracing.fork import register_post_fork_handler
 from django_o11y.tracing.instrumentation import setup_instrumentation
@@ -28,17 +29,29 @@ from django_o11y.tracing.utils import (
 from django_o11y.utils.process import get_process_identity
 
 logger = get_logger()
-provider_logger = logging.getLogger("django_o11y.tracing")
 
 # Track instrumentation per-process to remain fork-safe.
 _instrumented_pid: int | None = None
 _tracing_initialized_pid: int | None = None
 
 
-def setup_tracing(config: dict[str, Any]) -> TracerProvider:
+def setup_tracing(config: dict[str, Any]) -> Any:
     """Set up OpenTelemetry tracing provider and span processors."""
+    global _tracing_initialized_pid
+
     service_name = config["SERVICE_NAME"]
     tracing_config = config["TRACING"]
+
+    existing_provider = trace.get_tracer_provider()
+    if not isinstance(existing_provider, ProxyTracerProvider):
+        _tracing_initialized_pid = os.getpid()
+        logger.debug(
+            "Tracing provider already configured by %s.%s; skipping override [%s]",
+            existing_provider.__class__.__module__,
+            existing_provider.__class__.__name__,
+            get_process_identity(),
+        )
+        return existing_provider
 
     instance_id = config.get("SERVICE_INSTANCE_ID") or (
         f"{os.getenv('HOSTNAME', socket.gethostname())}:{os.getpid()}"
@@ -76,9 +89,8 @@ def setup_tracing(config: dict[str, Any]) -> TracerProvider:
         provider.add_span_processor(BatchSpanProcessor(console_exporter))
 
     trace.set_tracer_provider(provider)
-    global _tracing_initialized_pid
     _tracing_initialized_pid = os.getpid()
-    provider_logger.info(
+    logger.info(
         "Tracing configured for %s, sending to %s (%.0f%% sampling) [%s]",
         service_name,
         tracing_config["OTLP_ENDPOINT"],
@@ -86,35 +98,40 @@ def setup_tracing(config: dict[str, Any]) -> TracerProvider:
         get_process_identity(),
     )
 
-    profiling_config = config["PROFILING"]
-    if profiling_config.get("ENABLED"):
-        is_prefork_parent = (
-            is_celery_prefork_pool() and not is_celery_fork_pool_worker()
-        )
-        if is_prefork_parent:
-            provider_logger.warning(
-                "Skipping Pyroscope profile-trace correlation in Celery prefork "
-                "parent process [%s]. Correlation is initialized in worker "
-                "child processes post-fork.",
-                get_process_identity(),
-            )
-            return provider
-
-        try:
-            from pyroscope.otel import PyroscopeSpanProcessor
-
-            provider.add_span_processor(PyroscopeSpanProcessor())
-            provider_logger.info(
-                "Pyroscope span processor added for profile-to-trace correlation [%s]",
-                get_process_identity(),
-            )
-        except ImportError:
-            provider_logger.debug(
-                "django_o11y: pyroscope-otel not installed, skipping profile-trace "
-                "correlation. Install with: pip install django-o11y[profiling]"
-            )
+    _setup_pyroscope_correlation(provider, config)
 
     return provider
+
+
+def _setup_pyroscope_correlation(
+    provider: TracerProvider, config: dict[str, Any]
+) -> None:
+    """Attach Pyroscope span correlation when profiling is enabled."""
+    if not config["PROFILING"].get("ENABLED"):
+        return
+
+    if is_celery_prefork_pool() and not is_celery_fork_pool_worker():
+        logger.warning(
+            "Skipping Pyroscope profile-trace correlation in Celery prefork "
+            "parent process [%s]. Correlation is initialized in worker "
+            "child processes post-fork.",
+            get_process_identity(),
+        )
+        return
+
+    try:
+        from pyroscope.otel import PyroscopeSpanProcessor
+
+        provider.add_span_processor(PyroscopeSpanProcessor())
+        logger.info(
+            "Pyroscope span processor added for profile-to-trace correlation [%s]",
+            get_process_identity(),
+        )
+    except ImportError:
+        logger.debug(
+            "django_o11y: pyroscope-otel not installed, skipping profile-trace "
+            "correlation. Install with: pip install django-o11y[profiling]"
+        )
 
 
 def setup_tracing_for_django(config: dict[str, Any]) -> None:
@@ -151,7 +168,7 @@ def setup_tracing_for_django(config: dict[str, Any]) -> None:
 
 
 def setup_celery_o11y(app: Any, config: dict[str, Any] | None = None) -> None:
-    """Set up tracing and worker defaults for Celery tasks."""
+    """Set up Celery worker logging and tracing bootstrap."""
     global _instrumented_pid
 
     if _instrumented_pid == os.getpid():
@@ -164,13 +181,7 @@ def setup_celery_o11y(app: Any, config: dict[str, Any] | None = None) -> None:
     if not celery_config.get("ENABLED", False):
         return
 
-    # Keep Django/structlog logging ownership in workers.
-    app.conf.worker_hijack_root_logger = False
-    app.conf.worker_redirect_stdouts = False
-
-    from django_structlog.celery.steps import DjangoStructLogInitStep
-
-    app.steps["worker"].add(DjangoStructLogInitStep)
+    setup_celery_logging(app)
 
     if config.get("TRACING", {}).get("ENABLED") and celery_config.get(
         "TRACING_ENABLED", True
@@ -201,7 +212,7 @@ def setup_worker_metrics(celery_config: dict[str, Any]) -> None:
 
     multiproc_dir = os.environ.get("PROMETHEUS_MULTIPROC_DIR")
     if not multiproc_dir:
-        provider_logger.warning(
+        logger.warning(
             "PROMETHEUS_MULTIPROC_DIR is not set; "
             "Celery worker metrics server will not be started."
         )
@@ -217,7 +228,7 @@ def setup_worker_metrics(celery_config: dict[str, Any]) -> None:
     registry = CollectorRegistry()
     MultiProcessCollector(registry)
     start_http_server(port, registry=registry)
-    provider_logger.info(
+    logger.info(
         "Celery worker metrics server started on port %d (multiproc dir: %s)",
         port,
         multiproc_dir,
@@ -244,7 +255,7 @@ def _configure_celery_metrics_events(config: dict[str, Any]) -> None:
         app.conf.worker_send_task_events = True
         app.conf.task_send_sent_event = True
     except Exception:  # pragma: no cover
-        provider_logger.debug(
+        logger.debug(
             "Failed to enable Celery task events in Django/worker process",
             exc_info=True,
         )

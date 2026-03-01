@@ -25,7 +25,9 @@ RUN --mount=type=cache,target=/root/.cache \
 FROM python:3.12-slim
 
 ENV PATH=/app/bin:$PATH \
-  PYTHONUNBUFFERED=1
+  PYTHONUNBUFFERED=1 \
+  DJANGO_O11Y_METRICS_MULTIPROC_BASE_DIR=/tmp/django-wtf-prom-multiproc \
+  PROMETHEUS_MULTIPROC_DIR=/tmp/django-wtf-prom-multiproc
 
 COPY --from=build /app /app
 COPY --from=build /src /app
