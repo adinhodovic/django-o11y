@@ -539,6 +539,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#startup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Startup
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -711,6 +722,17 @@
     <span class="md-ellipsis">
       
         Profiling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#startup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Startup
       
     </span>
   </a>
@@ -1092,6 +1114,29 @@ honoured where they naturally map.</p>
 <td>str</td>
 <td><code>"http://localhost:4040"</code></td>
 <td><code>DJANGO_O11Y_PROFILING_PYROSCOPE_URL</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="startup">Startup<a class="headerlink" href="#startup" title="Permanent link">&para;</a></h3>
+<p>django-o11y always skips full observability setup for non-server Django management
+commands (for example <code>migrate</code>, <code>shell</code>, <code>tailwind start</code>).</p>
+<p>Only commands in the server allowlist are treated as long-running processes and run
+full startup instrumentation.</p>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Type</th>
+<th>Default</th>
+<th>Env var</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>STARTUP.SERVER_COMMANDS</code></td>
+<td>list[str]</td>
+<td><code>['celery', 'daphne', 'gunicorn', 'run_gunicorn', 'runserver', 'runserver_plus', 'uvicorn']</code></td>
+<td><code>DJANGO_O11Y_STARTUP_SERVER_COMMANDS</code> (comma-separated)</td>
 </tr>
 </tbody>
 </table>
