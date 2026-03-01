@@ -353,3 +353,30 @@ def test_setup_celery_adds_django_structlog_worker_step(celery_app):
         )
     finally:
         setup._instrumented_pid = original_pid
+
+
+def test_connect_worker_receivers_once_per_pid():
+    """CeleryReceiver worker signals are connected once per process."""
+    from unittest.mock import patch
+
+    from django_o11y.logging import celery as celery_logging
+
+    original_receivers = dict(celery_logging._worker_receivers_by_pid)
+    celery_logging._worker_receivers_by_pid.clear()
+
+    try:
+        with patch("django_structlog.celery.receivers.CeleryReceiver") as receiver_cls:
+            receiver = receiver_cls.return_value
+
+            celery_logging._connect_worker_receivers_once_per_pid()
+            celery_logging._connect_worker_receivers_once_per_pid()
+
+            receiver_cls.assert_called_once()
+            receiver.connect_worker_signals.assert_called_once()
+            assert (
+                celery_logging._worker_receivers_by_pid[celery_logging.os.getpid()]
+                is receiver
+            )
+    finally:
+        celery_logging._worker_receivers_by_pid.clear()
+        celery_logging._worker_receivers_by_pid.update(original_receivers)

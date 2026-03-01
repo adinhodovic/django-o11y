@@ -1,14 +1,14 @@
 """Fork-safety for pre-fork servers (Gunicorn, uWSGI, etc.)."""
 
-import logging
 import os
 from importlib import import_module
 
 from opentelemetry import trace
 
 from django_o11y.config.setup import get_o11y_config
+from django_o11y.logging.utils import get_logger
 
-logger = logging.getLogger("django_o11y.fork")
+logger = get_logger()
 
 _fork_handler_registered = False
 
