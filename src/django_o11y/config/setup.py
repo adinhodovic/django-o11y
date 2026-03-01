@@ -41,7 +41,6 @@ def _set_float(config: dict, key: str, env: str, default: float = 0.0) -> None:
 def get_config() -> dict[str, Any]:
     """Return merged django-o11y configuration."""
     default_sample_rate = 1.0 if settings.DEBUG else 0.01
-    runtime_base_dir = _default_runtime_base_dir()
 
     defaults: dict[str, Any] = {
         "SERVICE_NAME": "django-app",
@@ -70,7 +69,7 @@ def get_config() -> dict[str, Any]:
             "OTLP_ENABLED": False,
             "OTLP_ENDPOINT": "http://localhost:4317",
             "FILE_ENABLED": settings.DEBUG,
-            "FILE_PATH": str(runtime_base_dir / "django.log"),
+            "FILE_PATH": None,  # resolved below after SERVICE_NAME is known
             "DEV_FILTERED_EVENTS": ["request_started"],
         },
         "METRICS": {
@@ -94,6 +93,15 @@ def get_config() -> dict[str, Any]:
     user_config = getattr(settings, "DJANGO_O11Y", {})
     merged = _deep_merge(defaults, user_config)
     _apply_env_overrides(merged, default_sample_rate)
+
+    # Resolve FILE_PATH after SERVICE_NAME is fully resolved (settings + env overrides),
+    # so the directory reflects the actual service name rather than the
+    #  OTEL_SERVICE_NAME env var which may not be set yet at settings import time.
+    if merged["LOGGING"]["FILE_PATH"] is None:
+        service_id = _slugify(merged["SERVICE_NAME"])
+        runtime_base_dir = _runtime_base_dir_for(service_id)
+        merged["LOGGING"]["FILE_PATH"] = str(runtime_base_dir / "django.log")
+
     return merged
 
 
@@ -168,8 +176,8 @@ def get_o11y_config() -> dict[str, Any]:
     return get_config()
 
 
-def _default_runtime_base_dir() -> Path:
-    """Return per-project state dir used for host log files.
+def _runtime_base_dir_for(service_id: str) -> Path:
+    """Return per-project XDG state dir for the given service id.
 
     We intentionally prefer XDG *state* storage over XDG runtime storage.
     ``XDG_RUNTIME_DIR`` is ephemeral and commonly causes ownership issues when
@@ -182,19 +190,7 @@ def _default_runtime_base_dir() -> Path:
     else:
         base = Path.home() / ".local" / "state"
 
-    return base / "django-o11y" / _default_project_id()
-
-
-def _default_project_id() -> str:
-    """Return the runtime project id used in file paths.
-
-    Derived exclusively from env vars so that the value is consistent
-    between import time (where Django settings are not yet available)
-    and config-resolution time.
-    """
-    if otel_service_name := os.getenv("OTEL_SERVICE_NAME"):
-        return _slugify(otel_service_name)
-    return "django-app"
+    return base / "django-o11y" / service_id
 
 
 def _slugify(value: str) -> str:
