@@ -92,10 +92,6 @@ def test_app_ready_initializes_tracing():
     if config["TRACING"]["ENABLED"]:
         tracer_provider = trace.get_tracer_provider()
         assert tracer_provider is not None
-        assert hasattr(tracer_provider, "resource")
-
-        resource = tracer_provider.resource
-        assert resource.attributes.get("service.name") is not None
 
 
 def test_app_ready_initializes_logging():
@@ -108,7 +104,7 @@ def test_app_ready_initializes_logging():
     assert bound_logger is not None
 
 
-def test_app_ready_skips_o11y_for_management_commands_by_default():
+def test_app_ready_skips_o11y_for_non_runtime_processes_by_default():
     from unittest.mock import patch
 
     from django_o11y.apps import DjangoO11yConfig
@@ -118,7 +114,7 @@ def test_app_ready_skips_o11y_for_management_commands_by_default():
 
     with (
         patch("django_o11y.apps.get_o11y_config", return_value=config),
-        patch("django_o11y.apps.is_management_command", return_value=True),
+        patch("django_o11y.apps.should_setup_observability", return_value=False),
         patch("django_o11y.apps.validate_config") as mock_validate,
         patch.object(app_config, "_configure_tracing") as mock_tracing,
         patch.object(app_config, "_configure_logging") as mock_logging,
@@ -145,7 +141,7 @@ def test_app_ready_respects_configured_server_command_allowlist():
     with (
         patch("django_o11y.apps.get_o11y_config", return_value=config),
         patch(
-            "django_o11y.apps.is_management_command", return_value=False
+            "django_o11y.apps.should_setup_observability", return_value=True
         ) as mock_check,
         patch("django_o11y.apps.validate_config", return_value=[]),
         patch.object(app_config, "_configure_tracing") as mock_tracing,

@@ -9,7 +9,7 @@ from django.conf import settings
 from django_o11y.config.setup import get_o11y_config
 from django_o11y.config.utils import validate_config
 from django_o11y.logging.utils import get_logger
-from django_o11y.utils.process import is_management_command
+from django_o11y.utils.process import should_setup_observability
 
 logger = get_logger()
 
@@ -29,7 +29,7 @@ class DjangoO11yConfig(AppConfig):
         config = get_o11y_config()
 
         server_commands = config.get("STARTUP", {}).get("SERVER_COMMANDS")
-        if is_management_command(server_commands=server_commands):
+        if not should_setup_observability(server_commands=server_commands):
             return
 
         errors = validate_config(config)

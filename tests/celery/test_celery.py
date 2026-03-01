@@ -274,7 +274,11 @@ def test_celery_setup_configures_tracing_provider_when_enabled(celery_app):
 
 def test_celery_logging_handler_connected_to_setup_logging_signal():
     """setup_logging has django-o11y logging receiver connected."""
+    import importlib
+
     from celery.signals import setup_logging
+
+    importlib.import_module("django_o11y.logging.signals")
 
     # setup.py registers handler at import time via decorator.
     assert len(setup_logging.receivers or []) >= 1
