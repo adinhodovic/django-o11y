@@ -2,6 +2,8 @@
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 
 def test_setup_instrumentation_instruments_django():
     from django_o11y.tracing.instrumentation import setup_instrumentation
@@ -26,13 +28,6 @@ def test_setup_instrumentation_instruments_django():
     mock_inst.instrument.assert_called_once()
 
 
-def test_instrument_database_handles_import_error():
-    from django_o11y.tracing.instrumentation import _instrument_database
-
-    with patch("builtins.__import__", side_effect=ImportError("psycopg2 not found")):
-        _instrument_database()
-
-
 def test_instrument_cache_redis():
     from django_o11y.tracing.instrumentation import _instrument_cache
 
@@ -45,13 +40,6 @@ def test_instrument_cache_redis():
         _instrument_cache()
 
         mock_inst.instrument.assert_called_once()
-
-
-def test_instrument_cache_handles_import_error():
-    from django_o11y.tracing.instrumentation import _instrument_cache
-
-    with patch("builtins.__import__", side_effect=ImportError("redis not found")):
-        _instrument_cache()
 
 
 def test_instrument_http_clients_requests():
@@ -71,13 +59,6 @@ def test_instrument_http_clients_requests():
         _instrument_http_clients({})
 
     mock_inst.instrument.assert_called_once()
-
-
-def test_instrument_http_clients_handles_import_error():
-    from django_o11y.tracing.instrumentation import _instrument_http_clients
-
-    with patch("builtins.__import__", side_effect=ImportError("requests not found")):
-        _instrument_http_clients({})
 
 
 def test_instrument_http_clients_urllib3():
@@ -149,3 +130,26 @@ def test_instrument_celery_handles_import_error():
 
     with patch("builtins.__import__", side_effect=ImportError("celery not found")):
         _instrument_celery({"CELERY": {"ENABLED": True}})
+
+
+@pytest.mark.parametrize(
+    "fn_path,call_args",
+    [
+        ("django_o11y.tracing.instrumentation._instrument_database", []),
+        ("django_o11y.tracing.instrumentation._instrument_cache", []),
+        ("django_o11y.tracing.instrumentation._instrument_http_clients", [{}]),
+        (
+            "django_o11y.tracing.instrumentation._instrument_celery",
+            [{"CELERY": {"ENABLED": True}}],
+        ),
+    ],
+)
+def test_instrumentation_handles_import_error(fn_path, call_args):
+    """Each instrumentation helper silently ignores a missing optional package."""
+    import importlib
+
+    module_path, fn_name = fn_path.rsplit(".", 1)
+    fn = getattr(importlib.import_module(module_path), fn_name)
+
+    with patch("builtins.__import__", side_effect=ImportError("package not found")):
+        fn(*call_args)  # must not raise

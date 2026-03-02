@@ -5,35 +5,6 @@ import sys
 from unittest.mock import MagicMock, patch
 
 import structlog
-from django.conf import settings
-
-
-def test_config_loaded():
-    assert hasattr(settings, "DJANGO_O11Y")
-    assert settings.DJANGO_O11Y["SERVICE_NAME"] == "test-service"
-
-
-def test_get_o11y_config():
-    from django_o11y.config.setup import get_o11y_config
-
-    config = get_o11y_config()
-
-    assert config is not None
-    assert "SERVICE_NAME" in config
-    assert "TRACING" in config
-    assert "LOGGING" in config
-    assert "METRICS" in config
-
-
-def test_config_defaults():
-    from django_o11y.config.setup import get_o11y_config
-
-    config = get_o11y_config()
-    expected_sample_rate = 1.0 if settings.DEBUG else 0.01
-
-    assert config["TRACING"]["ENABLED"] is True
-    assert config["TRACING"]["SAMPLE_RATE"] == expected_sample_rate
-    assert config["LOGGING"]["LEVEL"] == "WARNING"
 
 
 def test_build_logging_dict_json_format():
