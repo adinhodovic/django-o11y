@@ -8,7 +8,12 @@ from typing import Any
 
 import structlog
 
-from django_o11y.logging.utils import OTLPHandler, add_open_telemetry_spans, get_logger
+from django_o11y.logging.utils import (
+    OTLPHandler,
+    add_open_telemetry_spans,
+    add_severity,
+    get_logger,
+)
 
 logger = get_logger()
 
@@ -227,6 +232,7 @@ def _configure_structlog(logging_config: dict[str, Any]) -> None:
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
         structlog.stdlib.filter_by_level,
+        add_severity,
         add_open_telemetry_spans,
         structlog.stdlib.PositionalArgumentsFormatter(),
         structlog.processors.TimeStamper(fmt="iso"),
@@ -262,6 +268,7 @@ def _build_foreign_pre_chain() -> list[Any]:
         structlog.contextvars.merge_contextvars,
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
+        add_severity,
         add_open_telemetry_spans,
         structlog.stdlib.PositionalArgumentsFormatter(),
         structlog.processors.TimeStamper(fmt="iso"),

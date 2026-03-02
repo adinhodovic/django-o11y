@@ -13,6 +13,24 @@ from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 
 
+# GCP Cloud Logging numeric severity values.
+# https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#logseverity
+_SEVERITY_LEVELS: dict[str, int] = {
+    "debug": 100,
+    "info": 200,
+    "warning": 400,
+    "error": 500,
+    "critical": 600,
+}
+
+
+def add_severity(_: Any, __: Any, event_dict: dict) -> dict:
+    """Inject a GCP-compatible numeric ``severity`` field into log events."""
+    level = event_dict.get("level", "")
+    event_dict["severity"] = _SEVERITY_LEVELS.get(level.lower(), 0)
+    return event_dict
+
+
 def get_logger() -> structlog.BoundLoggerBase:
     """Return a structlog logger bound to the caller module name."""
     frame = sys._getframe(1)
