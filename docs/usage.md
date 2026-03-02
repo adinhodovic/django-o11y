@@ -89,7 +89,7 @@ Starts a Docker Compose stack and imports the Grafana dashboards. Stack configs 
 | Loki | `grafana/loki` | Receives logs from Alloy |
 | Pyroscope | `grafana/pyroscope` | Receives continuous profiling data |
 | Alloy | `grafana/alloy` | OTLP receiver (ports 4317/4318), forwards to Tempo/Loki/Pyroscope; also tails the dev log file and Docker container logs |
-| celery-exporter | `danihodovic/celery-exporter` | Added automatically when `CELERY.ENABLED` is `True` and a broker URL is detected in Django or Celery settings |
+| [celery-exporter](https://github.com/danihodovic/celery-exporter) | `danihodovic/celery-exporter` | Added automatically when `CELERY.ENABLED` is `True` and a broker URL is detected in Django or Celery settings |
 
 ```bash
 # Start
@@ -128,7 +128,7 @@ python manage.py o11y check
 
 ## Metrics
 
-### Django metrics
+### Setup
 
 Django metrics come from [django-prometheus](https://github.com/korfuri/django-prometheus), which instruments request/response cycles, database queries, cache operations, and model saves. Grafana dashboards and alerts are from [django-mixin](https://github.com/adinhodovic/django-mixin).
 
@@ -171,13 +171,13 @@ urlpatterns = [
 
 `get_urls()` adds the Prometheus metrics endpoint at the path configured by `METRICS.PROMETHEUS_ENDPOINT` (default `/metrics`). Returns an empty list when `METRICS.PROMETHEUS_ENABLED` is `False`.
 
-### Celery metrics
+#### Celery
 
 Celery metrics come from [celery-exporter](https://github.com/danihodovic/celery-exporter), a standalone Prometheus exporter that connects to your broker and exposes task state, queue length, and worker status. Grafana dashboards and alerts are from the [celery-mixin](https://github.com/danihodovic/celery-exporter/tree/master/celery-mixin) bundled within celery-exporter.
 
-celery-exporter is added to the local dev stack automatically when `CELERY.ENABLED` is `True` and a broker URL is found in your Django or Celery settings (`CELERY_BROKER_URL` or `broker_url`). See the [celery-exporter docs](https://github.com/danihodovic/celery-exporter) for production deployment.
+[celery-exporter](https://github.com/danihodovic/celery-exporter) is added to the local dev stack automatically when `CELERY.ENABLED` is `True` and a broker URL is found in your Django or Celery settings (`CELERY_BROKER_URL` or `broker_url`). See the [celery-exporter docs](https://github.com/danihodovic/celery-exporter) for production deployment.
 
-django-prometheus also runs inside Celery workers and exposes model metrics (insert, update, delete counts per model) via the worker metrics endpoint. Request and database query metrics are not available there — those only exist in the Django web process. If your tasks do a lot of database writes, model metrics are worth monitoring: they show which models are being mutated by background work and at what rate.
+[django-prometheus](https://github.com/korfuri/django-prometheus) also runs inside Celery workers and exposes model metrics (insert, update, delete counts per model) via the worker metrics endpoint. Request and database query metrics are not available there — those only exist in the Django web process. If your tasks do a lot of database writes, model metrics are worth monitoring: they show which models are being mutated by background work and at what rate.
 
 ### Custom metrics
 
@@ -215,7 +215,7 @@ For full metric helper signatures and examples, see [Utility functions](utils.md
 
 ## Logs
 
-Structured logging via [Structlog](https://www.structlog.org/). Every log line includes `trace_id` and `span_id`, so you can jump from a log entry directly to the trace in Grafana.
+Structured logging via [structlog](https://www.structlog.org/) and [django-structlog](https://github.com/jrobichaud/django-structlog). Every log line includes `trace_id` and `span_id`, so you can jump from a log entry directly to the trace in Grafana.
 
 ### Setup
 
@@ -366,28 +366,21 @@ LOGGING = build_logging_dict(extra={
 
 Nested dicts are merged rather than replaced, so you only need to specify what you want to change.
 
-### Adding context
+#### Celery
 
-Attach extra fields to all logs within the current request or task:
+When `CELERY.ENABLED` is `True`, [django-o11y](https://github.com/adinhodovic/django-o11y) hooks Celery's `setup_logging` signal to apply `settings.LOGGING` via `dictConfig` in each worker process. Worker logs use the same JSON format (or console format in dev) as the Django web process — no separate logging configuration needed.
 
-```python
-from django_o11y.logging.utils import add_log_context
-from django_o11y.tracing.utils import set_custom_tags
+This requires `LOGGING = build_logging_dict()` in your settings. Without it, `settings.LOGGING` is empty and worker processes fall back to plain-text Celery logs.
 
-# Logs only
-add_log_context(tenant_id="acme", checkout_variant="B")
-
-# Logs + traces
-set_custom_tags({"tenant_id": "acme", "feature": "checkout_v2"})
-```
+[django-structlog](https://github.com/jrobichaud/django-structlog) emits structured `task_started`, `task_succeeded`, and `task_failed` events automatically, each carrying `task_id`, `task_name`, `duration_ms`, and `trace_id`/`span_id`.
 
 ---
 
 ## Profiling
 
-Continuous profiling via [Pyroscope](https://pyroscope.io/). Disabled by default. The Python SDK only supports push mode.
+Continuous profiling via [Pyroscope](https://pyroscope.io/) and [pyroscope-otel](https://github.com/grafana/otel-profiling-go). Disabled by default. The Python SDK only supports push mode.
 
-### Enable
+### Setup
 
 Install the extra:
 
@@ -408,32 +401,15 @@ DJANGO_O11Y = {
 
 Profiles are pushed to Pyroscope on startup. View them in Grafana under **Explore → Pyroscope**.
 
-For Celery prefork workers, profiling starts in each worker child process after fork, not in the parent.
+#### Celery
 
-### Custom tags
-
-`RESOURCE_ATTRIBUTES` are merged into Pyroscope tags automatically, so profiles carry the same metadata as traces. Set them in Python config:
-
-```python
-DJANGO_O11Y = {
-    "RESOURCE_ATTRIBUTES": {
-        "region": "us-east-1",
-        "tier": "premium",
-    }
-}
-```
-
-Or via the standard OTel env var:
-
-```bash
-OTEL_RESOURCE_ATTRIBUTES=region=us-east-1,tier=premium
-```
+For Celery prefork workers, profiling initialises in each worker child process after fork, not in the parent. No extra configuration is needed — [django-o11y](https://github.com/adinhodovic/django-o11y) handles the `worker_process_init` signal automatically.
 
 ---
 
 ## Traces
 
-Distributed tracing via [OpenTelemetry](https://opentelemetry.io/). Requests, database queries, cache operations, and outbound HTTP calls are instrumented automatically.
+Distributed tracing via [OpenTelemetry](https://opentelemetry.io/) ([opentelemetry-python](https://github.com/open-telemetry/opentelemetry-python)). Requests, database queries, cache operations, and outbound HTTP calls are instrumented automatically.
 
 ### What gets instrumented
 
@@ -444,7 +420,7 @@ Distributed tracing via [OpenTelemetry](https://opentelemetry.io/). Requests, da
 - Celery tasks: span per task, linked to the request that triggered it (requires `django-o11y[celery]`)
 - AWS SDK: spans for boto3/botocore calls — S3, SQS, SES, etc. (requires `django-o11y[aws]` and `TRACING.AWS_ENABLED: True`)
 
-### Configuration
+### Setup
 
 ```python
 DJANGO_O11Y = {
@@ -458,30 +434,7 @@ DJANGO_O11Y = {
 
 To disable tracing entirely, set `ENABLED: False` or `DJANGO_O11Y_TRACING_ENABLED=false`.
 
-### Adding custom context
-
-```python
-from django_o11y.tracing.utils import set_custom_tags, add_span_attribute
-
-def checkout_view(request):
-    # Attached to both the trace span and all logs in this request
-    set_custom_tags({"tenant_id": "acme", "experiment": "new_checkout"})
-
-    # Span only
-    add_span_attribute("cart_size", len(cart.items))
-
-
-```
-
-| Function | Trace span | Logs | Use case |
-| -------- | ---------- | ---- | -------- |
-| `set_custom_tags()` | Yes | Yes | Business context |
-| `add_span_attribute()` | Yes | No | Technical span data |
-| `add_log_context()` | No | Yes | Debug info |
-
-For complete tracing helper docs (including `get_current_trace_id()` and `get_current_span_id()`), see [Utility functions](utils.md#tracing-django_o11ytracingutils).
-
-### Celery
+#### Celery
 
 Install the extra:
 
@@ -499,9 +452,11 @@ DJANGO_O11Y = {
 }
 ```
 
-Each task gets a trace span linked to the originating request, and structured logs with `trace_id`/`span_id`.
+Each task gets a trace span linked to the originating request via [W3C TraceContext](https://www.w3.org/TR/trace-context/) propagation through the broker.
 
-To reduce span loss in prefork workers, django-o11y force-flushes tracing on `worker_process_shutdown`.
+[django-o11y](https://github.com/adinhodovic/django-o11y) automatically sets `worker_send_task_events = True` and `task_send_sent_event = True` on startup, so [celery-exporter](https://github.com/danihodovic/celery-exporter) can receive task events without any extra Celery configuration.
+
+To reduce span loss in prefork workers, [django-o11y](https://github.com/adinhodovic/django-o11y) force-flushes tracing on `worker_process_shutdown`.
 
 ```python
 from celery import shared_task
@@ -520,15 +475,35 @@ def process_order(order_id: int):
     return result
 ```
 
-### Verification
+---
 
-Run the built-in health check:
+## Adding context
 
-```bash
-python manage.py o11y check
+Logs, traces, and profiles share the same context API. Use these functions anywhere in a request or task to attach extra fields:
+
+```python
+from django_o11y.logging.utils import add_log_context
+from django_o11y.tracing.utils import set_custom_tags, add_span_attribute
+
+# Logs + traces (most common)
+set_custom_tags({"tenant_id": "acme", "feature": "checkout_v2"})
+
+# Logs only
+add_log_context(tenant_id="acme", checkout_variant="B")
+
+# Span only
+add_span_attribute("cart_size", len(cart.items))
 ```
 
-This checks the OTLP endpoint, installed packages, and sends a test trace you can find in Tempo.
+| Function | Trace span | Logs | Use case |
+| -------- | ---------- | ---- | -------- |
+| `set_custom_tags()` | Yes | Yes | Business context shared across signals |
+| `add_span_attribute()` | Yes | No | Technical span data |
+| `add_log_context()` | No | Yes | Log-only debug info |
+
+`RESOURCE_ATTRIBUTES` in your config are also merged into Pyroscope tags automatically, so profiles carry the same metadata as traces.
+
+For full API docs see [Utility functions](utils.md).
 
 ---
 
@@ -540,7 +515,7 @@ This checks the OTLP endpoint, installed packages, and sends a test trace you ca
 
 - `PROMETHEUS_MULTIPROC_DIR` must be a process-level environment variable set before the process starts.
 - The directory it points to must already exist at that moment.
-- django-o11y does **not** create this directory. Create it in your entrypoint or Dockerfile.
+- [django-o11y](https://github.com/adinhodovic/django-o11y) does **not** create this directory. Create it in your entrypoint or Dockerfile.
 - Each container or pod has its own filesystem, so the same path in your web and worker images is fine — they don't share files unless you explicitly mount a shared volume.
 
 Create the directory and set the env var in your Dockerfile:
@@ -553,7 +528,7 @@ ENV PROMETHEUS_MULTIPROC_DIR=/tmp/myapp-prom-multiproc
 
 ### Gunicorn
 
-Each Gunicorn worker writes per-PID `.db` files into that directory. The standard `/metrics` endpoint reads and aggregates them via `MultiProcessCollector`.
+Each [Gunicorn](https://gunicorn.org/) worker writes per-PID `.db` files into that directory. The standard `/metrics` endpoint reads and aggregates them via `MultiProcessCollector`.
 
 ### Celery prefork workers
 
@@ -567,7 +542,7 @@ DJANGO_O11Y = {
 }
 ```
 
-Individual tasks are short-lived, so they can't serve an HTTP endpoint themselves. django-o11y runs the metrics HTTP server in the long-lived parent worker process instead. Each child writes its metrics to a per-PID file in a shared directory; on each scrape, the parent reads all those files and returns the combined result via `MultiProcessCollector`. The parent stays up for the lifetime of the worker, so Prometheus can scrape it on a normal pull interval — no pushgateway required.
+Individual tasks are short-lived, so they can't serve an HTTP endpoint themselves. [django-o11y](https://github.com/adinhodovic/django-o11y) runs the metrics HTTP server in the long-lived parent worker process instead. Each child writes its metrics to a per-PID file in a shared directory; on each scrape, the parent reads all those files and returns the combined result via `MultiProcessCollector`. The parent stays up for the lifetime of the worker, so Prometheus can scrape it on a normal pull interval — no pushgateway required.
 
 #### Prometheus metrics
 

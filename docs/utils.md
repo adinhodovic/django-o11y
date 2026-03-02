@@ -1,8 +1,8 @@
 # Utility functions
 
-This page covers helper functions for logs, traces, and custom metrics.
+This page covers helper functions for logs, traces, and custom metrics provided by [django-o11y](https://github.com/adinhodovic/django-o11y).
 
-## Logging (`django_o11y.logging.utils`)
+## Logging (`django_o11y.logging.utils`) — powered by [structlog](https://www.structlog.org/)
 
 ### `get_logger()`
 
@@ -35,7 +35,7 @@ from django_o11y.logging.utils import clear_custom_context
 clear_custom_context()
 ```
 
-## Tracing (`django_o11y.tracing.utils`)
+## Tracing (`django_o11y.tracing.utils`) — powered by [OpenTelemetry](https://opentelemetry.io/)
 
 ### `get_tracer(name=None)`
 
@@ -81,9 +81,9 @@ Returns the current span ID as a 16-char hex string, or `None` if no recording s
 
 ### Internal Celery helpers
 
-`is_celery_prefork_pool()` and `is_celery_fork_pool_worker()` are internal runtime helpers used by django-o11y Celery setup.
+`is_celery_prefork_pool()` and `is_celery_fork_pool_worker()` are internal runtime helpers used by [django-o11y](https://github.com/adinhodovic/django-o11y) Celery setup.
 
-## Metrics (`django_o11y.metrics`)
+## Metrics (`django_o11y.metrics`) — powered by [django-prometheus](https://github.com/korfuri/django-prometheus)
 
 ### `counter(name, description="", unit="", labelnames=())`
 

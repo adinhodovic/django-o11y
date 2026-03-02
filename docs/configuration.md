@@ -13,7 +13,7 @@ DJANGO_O11Y = {
 ## Options
 
 Every setting can be overridden with an environment variable. Custom env vars follow the
-`DJANGO_O11Y_<SECTION>_<KEY>` pattern. Three standard OpenTelemetry env vars are also
+`DJANGO_O11Y_<SECTION>_<KEY>` pattern. Three standard [OpenTelemetry](https://opentelemetry.io/) env vars are also
 recognized: `OTEL_SERVICE_NAME`, `OTEL_EXPORTER_OTLP_ENDPOINT`, and `OTEL_TRACES_SAMPLER_ARG`.
 
 Precedence (lowest to highest):
@@ -53,7 +53,7 @@ Runtime file defaults (log files) are per-project. The `<project>` suffix is der
 | `LOGGING.DATABASE_LEVEL` | str | `"WARNING"` | `DJANGO_O11Y_LOGGING_DATABASE_LEVEL` |
 | `LOGGING.CELERY_LEVEL` | str | `"INFO"` | `DJANGO_O11Y_LOGGING_CELERY_LEVEL` |
 | `LOGGING.COLORIZED` | bool | `True` when `DEBUG=True`, `False` otherwise | `DJANGO_O11Y_LOGGING_COLORIZED` |
-| `LOGGING.RICH_EXCEPTIONS` | bool | `True` (requires `django-o11y[dev-logging]`) | `DJANGO_O11Y_LOGGING_RICH_EXCEPTIONS` |
+| `LOGGING.RICH_EXCEPTIONS` | bool | `True` (requires `django-o11y[dev-logging]`, uses [rich](https://github.com/Textualize/rich)) | `DJANGO_O11Y_LOGGING_RICH_EXCEPTIONS` |
 | `LOGGING.OTLP_ENABLED` | bool | `False` | `DJANGO_O11Y_LOGGING_OTLP_ENABLED` |
 | `LOGGING.OTLP_ENDPOINT` | str | `"http://localhost:4317"` | `OTEL_EXPORTER_OTLP_ENDPOINT` |
 | `LOGGING.FILE_ENABLED` | bool | Same as `DEBUG` | `DJANGO_O11Y_LOGGING_FILE_ENABLED` |
@@ -88,7 +88,7 @@ Multiprocess metrics are configured via the standard `PROMETHEUS_MULTIPROC_DIR` 
 
 ### Startup
 
-django-o11y skips full observability setup for non-server Django management
+[django-o11y](https://github.com/adinhodovic/django-o11y) skips full observability setup for non-server Django management
 commands (for example `migrate`, `shell`, `tailwind start`).
 
 Only commands in the server allowlist are treated as long-running processes and run

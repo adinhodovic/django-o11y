@@ -1,0 +1,59 @@
+[project]
+site_name = "Django Observability"
+site_description = "OpenTelemetry observability for Django with traces, logs, metrics, and profiling"
+site_url = "https://adinhodovic.github.io/django-o11y/"
+repo_url = "https://github.com/adinhodovic/django-o11y"
+repo_name = "adinhodovic/django-o11y"
+edit_uri = "edit/main/docs/"
+extra_css = ["stylesheets/glightbox.min.css"]
+extra_javascript = ["javascripts/glightbox.min.js", "javascripts/glightbox-init.js"]
+
+nav = [
+  {"Home" = "index.md"},
+  {"Usage Guide" = "usage.md"},
+  {"Configuration Reference" = "configuration.md"},
+  {"Utility Functions" = "utils.md"},
+  {"Demo stack" = "demo-images.md"},
+]
+
+[project.theme.icon]
+repo = "fontawesome/brands/github"
+
+[project.theme]
+features = [
+  "navigation.tabs",
+  "navigation.sections",
+  "navigation.top",
+  "navigation.expand",
+  "navigation.footer",
+  "navigation.indexes",
+  "search.highlight",
+  "search.suggest",
+  "search.share",
+  "content.code.copy",
+  "content.code.annotate",
+  "content.action.edit",
+  "content.action.view",
+]
+
+[[project.theme.palette]]
+scheme = "default"
+primary = "indigo"
+accent = "indigo"
+toggle.icon = "material/brightness-7"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+scheme = "slate"
+primary = "indigo"
+accent = "indigo"
+toggle.icon = "material/brightness-4"
+toggle.name = "Switch to light mode"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/github"
+link = "https://github.com/adinhodovic/django-o11y"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/python"
+link = "https://pypi.org/project/django-o11y/"
