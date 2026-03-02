@@ -1,6 +1,6 @@
-# Demo Images
+# Demo images
 
-Use this page as a gallery for docs screenshots. Replace each placeholder image with real screenshots from your local stack.
+Use this page as a screenshot gallery. Replace placeholders with real screenshots from your local stack.
 
 Local Grafana base URL used below: `http://localhost:3000`
 
@@ -31,7 +31,7 @@ Local Grafana base URL used below: `http://localhost:3000`
 
 ## Imported dashboards (6)
 
-These are imported by `o11y stack start` from Grafana.com.
+These are imported from Grafana.com when you run `o11y stack start`.
 
 - Celery / Tasks / Overview
   - Local: [Open](http://localhost:3000/d/celery-tasks-overview-32s3/celery-tasks-overview)

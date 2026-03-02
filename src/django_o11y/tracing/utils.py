@@ -12,7 +12,7 @@ from opentelemetry.trace import Tracer
 
 
 def get_tracer(name: str | None = None) -> Tracer:
-    """Return an OpenTelemetry tracer for the caller module by default."""
+    """Return an OpenTelemetry tracer, defaulting to the caller module."""
     tracer_name = name
     if tracer_name is None:
         frame = sys._getframe(1)
@@ -21,7 +21,7 @@ def get_tracer(name: str | None = None) -> Tracer:
 
 
 def set_custom_tags(tags: dict[str, Any]) -> None:
-    """Set custom tags on current span and structlog context."""
+    """Set custom tags on the current span and structlog context."""
     span = trace.get_current_span()
     if span.is_recording():
         for key, value in tags.items():
@@ -31,14 +31,14 @@ def set_custom_tags(tags: dict[str, Any]) -> None:
 
 
 def add_span_attribute(key: str, value: Any) -> None:
-    """Add one custom-prefixed attribute to current span."""
+    """Add one ``custom.*`` attribute to the current span."""
     span = trace.get_current_span()
     if span.is_recording():
         span.set_attribute(f"custom.{key}", str(value))
 
 
 def get_current_trace_id() -> str | None:
-    """Return current trace ID as hex string, or None if no active span."""
+    """Return the current trace id as hex, or ``None`` if not available."""
     span = trace.get_current_span()
     if span.is_recording():
         ctx = span.get_span_context()
@@ -48,7 +48,7 @@ def get_current_trace_id() -> str | None:
 
 
 def get_current_span_id() -> str | None:
-    """Return current span ID as hex string, or None if no active span."""
+    """Return the current span id as hex, or ``None`` if not available."""
     span = trace.get_current_span()
     if span.is_recording():
         ctx = span.get_span_context()
@@ -58,7 +58,7 @@ def get_current_span_id() -> str | None:
 
 
 def is_celery_prefork_pool(argv: list[str] | None = None) -> bool:
-    """Return True when Celery worker is running with prefork pool."""
+    """Return ``True`` when a Celery worker runs with the prefork pool."""
     args = argv if argv is not None else sys.argv
 
     if not args or "worker" not in args:
@@ -83,7 +83,7 @@ def is_celery_prefork_pool(argv: list[str] | None = None) -> bool:
 
 
 def is_celery_fork_pool_worker() -> bool:
-    """Return True when running inside a Celery prefork pool child."""
+    """Return ``True`` inside a Celery prefork child process."""
     process_name = multiprocessing.current_process().name
     if process_name.startswith("ForkPoolWorker"):
         return True

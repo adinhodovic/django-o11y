@@ -1,4 +1,4 @@
-"""Configuration setup for django-o11y."""
+"""Config loading for django-o11y."""
 
 import os
 import re
@@ -41,7 +41,7 @@ def _set_float(config: dict, key: str, env: str, default: float = 0.0) -> None:
 
 
 def _parse_resource_attributes(raw: str | None) -> dict[str, str]:
-    """Parse OTEL_RESOURCE_ATTRIBUTES (key=value,key2=value2) into a dict."""
+    """Parse ``OTEL_RESOURCE_ATTRIBUTES`` into a dict."""
     if not raw:
         return {}
 
@@ -56,7 +56,7 @@ def _parse_resource_attributes(raw: str | None) -> dict[str, str]:
 
 
 def get_config() -> dict[str, Any]:
-    """Return merged django-o11y configuration."""
+    """Return merged django-o11y config."""
     default_sample_rate = 1.0 if settings.DEBUG else 0.01
 
     defaults: dict[str, Any] = {
@@ -199,17 +199,15 @@ def _deep_merge(default: dict, override: dict) -> dict:
 
 @lru_cache(maxsize=1)
 def get_o11y_config() -> dict[str, Any]:
-    """Get global o11y configuration."""
+    """Return cached global django-o11y config."""
     return get_config()
 
 
 def _runtime_base_dir_for(service_id: str) -> Path:
-    """Return per-project XDG state dir for the given service id.
+    """Return the per-project XDG state directory for a service id.
 
-    We intentionally prefer XDG *state* storage over XDG runtime storage.
-    ``XDG_RUNTIME_DIR`` is ephemeral and commonly causes ownership issues when
-    bind-mounted into Docker containers (directories may be created by root).
-    Logs are better treated as local state.
+    We use XDG state storage instead of ``XDG_RUNTIME_DIR`` because runtime
+    dirs are ephemeral and often cause ownership issues with Docker bind mounts.
     """
     state_home = os.getenv("XDG_STATE_HOME")
     if state_home:
@@ -221,6 +219,6 @@ def _runtime_base_dir_for(service_id: str) -> Path:
 
 
 def _slugify(value: str) -> str:
-    """Normalize string for filesystem-safe directory names."""
+    """Normalize a string for filesystem-safe directory names."""
     slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
     return slug or "django-app"

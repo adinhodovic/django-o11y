@@ -1,4 +1,4 @@
-"""Tracing setup and Celery tracing signal integration."""
+"""Tracing setup and Celery tracing signal wiring."""
 
 import os
 import socket
@@ -36,7 +36,7 @@ _tracing_initialized_pid: int | None = None
 
 
 def setup_tracing(config: dict[str, Any]) -> Any:
-    """Set up OpenTelemetry tracing provider and span processors."""
+    """Set up the OpenTelemetry tracer provider and span processors."""
     global _tracing_initialized_pid
 
     service_name = config["SERVICE_NAME"]
@@ -131,7 +131,7 @@ def _setup_pyroscope_correlation(
 
 
 def setup_tracing_for_django(config: dict[str, Any]) -> None:
-    """Configure tracing for Django startup in non-prefork parent processes."""
+    """Configure tracing during Django startup in non-prefork processes."""
     if config.get("CELERY", {}).get("ENABLED", False):
         import importlib
 
@@ -190,16 +190,10 @@ def setup_celery_o11y(app: Any, config: dict[str, Any] | None = None) -> None:
 
 
 def setup_worker_metrics(celery_config: dict[str, Any]) -> None:
-    """Start the Prometheus metrics HTTP server in the Celery parent process.
+    """Start the Celery parent process metrics HTTP server.
 
-    Must be called in the prefork **parent** process (``worker_init``) so that:
-    - ``PROMETHEUS_MULTIPROC_DIR`` is already set in the environment (by the
-      operator's entrypoint) before this runs.
-    - The HTTP server is only bound once (in the parent).
-    - Child processes inherit ``PROMETHEUS_MULTIPROC_DIR`` via fork.
-
-    ``PROMETHEUS_MULTIPROC_DIR`` must be pre-created by the process entrypoint.
-    django-o11y does not create it.
+    Call this from the prefork parent (``worker_init``), not child workers.
+    ``PROMETHEUS_MULTIPROC_DIR`` must already exist before startup.
     """
     import pathlib
 
@@ -232,11 +226,10 @@ def setup_worker_metrics(celery_config: dict[str, Any]) -> None:
 
 
 def _configure_celery_metrics_events(config: dict[str, Any]) -> None:
-    """Set Celery event flags needed by celery-exporter on the app conf at startup.
+    """Enable Celery event flags needed by celery-exporter at startup.
 
-    Setting these on the app conf before the worker boots means the worker
-    reads the correct values during its own startup sequence, avoiding the
-    ``task events: OFF`` banner.
+    Setting these flags before worker boot avoids the ``task events: OFF``
+    banner and ensures exporters can read task events.
     """
     celery_config = config.get("CELERY", {})
     if not config.get("METRICS", {}).get("PROMETHEUS_ENABLED", True):
@@ -258,7 +251,7 @@ def _configure_celery_metrics_events(config: dict[str, Any]) -> None:
 
 
 def _setup_celery_tracing() -> None:
-    """Set up automatic tracing for Celery tasks."""
+    """Enable automatic tracing for Celery tasks."""
     try:
         from opentelemetry.instrumentation.celery import CeleryInstrumentor
 

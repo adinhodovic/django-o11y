@@ -1,4 +1,4 @@
-"""Logging setup and Celery logging signal integration."""
+"""Logging setup and Celery logging signal wiring."""
 
 import importlib
 import logging
@@ -14,7 +14,7 @@ logger = get_logger()
 
 
 class DevEventFilter(logging.Filter):
-    """Filter out selected structlog events in dev console output."""
+    """Hide selected structlog events in dev console output."""
 
     def __init__(self, filtered_events: list[str]) -> None:
         super().__init__()
@@ -31,7 +31,7 @@ def build_logging_dict(
     logging_config: dict[str, Any] | None = None,
     extra: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Build and return a Django-compatible LOGGING dict wired for structlog."""
+    """Build a Django ``LOGGING`` dict wired for structlog."""
     if logging_config is None:
         from django_o11y.config.setup import get_config
 
@@ -189,7 +189,7 @@ def build_logging_dict(
 
 
 def setup_logging_for_django(config: dict) -> None:
-    """Configure logging during Django startup."""
+    """Set up logging during Django startup."""
     celery_config = config.get("CELERY", {})
     if celery_config.get("ENABLED", False) and celery_config.get(
         "LOGGING_ENABLED", True
@@ -212,7 +212,7 @@ def setup_logging_for_django(config: dict) -> None:
 
 
 def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> None:
-    """Deep-merge override into base in place."""
+    """Deep-merge ``override`` into ``base`` in place."""
     for key, value in override.items():
         if key in base and isinstance(base[key], dict) and isinstance(value, dict):
             _deep_merge(base[key], value)
@@ -252,13 +252,11 @@ def _configure_structlog(logging_config: dict[str, Any]) -> None:
 
 
 def _build_foreign_pre_chain() -> list[Any]:
-    """Processors used for stdlib log records.
+    """Return processors used for stdlib log records.
 
-    These run for non-structlog loggers via ProcessorFormatter's
-    ``foreign_pre_chain`` and keep enrichment parity with structlog events.
-    Without this, Django/Celery/third-party stdlib logs would skip our
-    processor chain and miss fields like trace_id, span_id, timestamp, and
-    callsite metadata.
+    These run for non-structlog loggers through ``foreign_pre_chain`` so
+    Django, Celery, and third-party logs still include trace ids, timestamps,
+    and callsite fields.
     """
     return [
         structlog.contextvars.merge_contextvars,

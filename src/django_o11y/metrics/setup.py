@@ -1,4 +1,4 @@
-"""Metrics setup for Django startup."""
+"""Metrics setup during Django startup."""
 
 from django.conf import settings
 from django.urls import Resolver404, resolve
@@ -9,7 +9,7 @@ logger = get_logger()
 
 
 def setup_metrics_for_django(config: dict) -> None:
-    """Log metrics configuration and warn if endpoint is not routed."""
+    """Log metrics setup and warn when the endpoint is not routed."""
     metrics = config["METRICS"]
     settings.PROMETHEUS_EXPORT_MIGRATIONS = metrics["EXPORT_MIGRATIONS"]
 
@@ -31,10 +31,10 @@ def setup_metrics_for_django(config: dict) -> None:
 
 
 def is_prefork_web_server() -> bool:
-    """Return True when running under a pre-fork web server (Gunicorn, uWSGI).
+    """Return ``True`` when running under a pre-fork web server.
 
-    Gunicorn and uWSGI import themselves before Django's AppConfig.ready()
-    runs, so their top-level package will already be present in sys.modules.
+    Gunicorn and uWSGI import their top-level packages before
+    ``AppConfig.ready()`` runs, so they are present in ``sys.modules``.
     """
     import sys
 

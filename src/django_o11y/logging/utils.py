@@ -1,4 +1,4 @@
-"""Logging utilities and helpers."""
+"""Logging helpers."""
 
 import logging
 import sys
@@ -14,7 +14,7 @@ from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 
 
 def get_logger() -> structlog.BoundLoggerBase:
-    """Return a structlog logger bound to the caller's module name."""
+    """Return a structlog logger bound to the caller module name."""
     frame = sys._getframe(1)
     name: str = frame.f_globals.get("__name__", __name__)
     return structlog.get_logger(name)
@@ -31,7 +31,7 @@ def clear_custom_context() -> None:
 
 
 def add_open_telemetry_spans(_: Any, __: Any, event_dict: dict) -> dict:
-    """Add current OpenTelemetry span context to log events."""
+    """Attach current OpenTelemetry span ids to log events."""
     span = trace.get_current_span()
     if not span.is_recording():
         return event_dict

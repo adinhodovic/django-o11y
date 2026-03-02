@@ -1,4 +1,4 @@
-"""Django app configuration for django-o11y."""
+"""Django app config for django-o11y."""
 
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
@@ -15,7 +15,7 @@ logger = get_logger()
 
 
 class DjangoO11yConfig(AppConfig):
-    """Django app configuration that sets up observability on startup."""
+    """App config that wires observability at startup."""
 
     default_auto_field = "django.db.models.BigAutoField"
     name = "django_o11y"
@@ -81,7 +81,7 @@ class DjangoO11yConfig(AppConfig):
         setup_profiling(config)
 
     def _print_startup_banner(self, config: dict) -> None:
-        """Print startup banner showing enabled features."""
+        """Print a startup banner with enabled features."""
         try:
             try:
                 pkg_version = version("django-o11y")

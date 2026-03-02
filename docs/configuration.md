@@ -12,9 +12,9 @@ DJANGO_O11Y = {
 
 ## Options
 
-Every setting can be overridden by an environment variable. All custom env vars use the
+Every setting can be overridden with an environment variable. Custom env vars use the
 `DJANGO_O11Y_<SECTION>_<KEY>` pattern. The three standard OpenTelemetry env vars are also
-honoured where they naturally map.
+supported where they map naturally.
 
 Precedence (lowest to highest):
 
@@ -88,7 +88,7 @@ Multiprocess metrics are configured via the standard `PROMETHEUS_MULTIPROC_DIR` 
 
 ### Startup
 
-django-o11y always skips full observability setup for non-server Django management
+django-o11y skips full observability setup for non-server Django management
 commands (for example `migrate`, `shell`, `tailwind start`).
 
 Only commands in the server allowlist are treated as long-running processes and run

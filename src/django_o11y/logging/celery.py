@@ -1,4 +1,4 @@
-"""Celery worker logging bootstrap helpers."""
+"""Helpers for Celery worker logging bootstrap."""
 
 import os
 from typing import Any
@@ -10,7 +10,7 @@ _worker_receivers_by_pid: dict[int, Any] = {}
 
 
 def setup_celery_logging(app: Any) -> None:
-    """Configure Celery worker logging defaults and structlog worker step."""
+    """Configure Celery worker logging defaults and structlog bootstep."""
     # Keep Django/structlog logging ownership in workers.
     app.conf.worker_hijack_root_logger = False
     app.conf.worker_redirect_stdouts = False
