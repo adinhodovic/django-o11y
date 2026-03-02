@@ -7,7 +7,7 @@ packages = ["src/django_o11y"]
 
 [project]
 name = "django-o11y"
-version = "0.5.8"
+version = "0.6.0"
 description = "Comprehensive OpenTelemetry observability for Django with traces, logs, metrics, and profiling"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -73,7 +73,11 @@ postgres = [
 sqlite = ["opentelemetry-instrumentation-sqlite3>=0.60b1"]
 
 # Cache instrumentation
-redis = ["redis>=7.2.0", "django-redis>=5.4.0", "opentelemetry-instrumentation-redis>=0.60b1"]
+redis = [
+  "redis>=7.2.0",
+  "django-redis>=5.4.0",
+  "opentelemetry-instrumentation-redis>=0.60b1",
+]
 
 # HTTP client instrumentation
 http = [
@@ -95,7 +99,7 @@ all = [
 ]
 
 # Documentation
-docs = ["mkdocs>=1.6.1,<2.0", "mkdocs-material>=9.7.2", "mike>=2.1.3"]
+docs = ["zensical"]
 
 # Development dependencies
 dev = [

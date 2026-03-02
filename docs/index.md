@@ -31,22 +31,22 @@ Start with the [Usage guide](usage.md), then use the [Configuration reference](c
 
 Django O11y wires up four observability pillars on `AppConfig.ready()`:
 
-- **Tracing** — OpenTelemetry `TracerProvider` with OTLP gRPC export. `TracingMiddleware` creates a root span per request; database, cache, and outbound HTTP calls are auto-instrumented.
-- **Logging** — Structlog with automatic `trace_id`/`span_id` injection so every log line links back to its trace. Colorized console output in development, JSON in production.
-- **Metrics** — django-prometheus instruments requests, database operations, and cache operations. A thin `counter()`/`histogram()` API is available for custom business metrics.
-- **Profiling** — Optional Pyroscope integration for continuous CPU/memory profiling with tag propagation from the active trace.
+- **Tracing** — [OpenTelemetry](https://opentelemetry.io/) `TracerProvider` with OTLP gRPC export (optional — set `CONSOLE_EXPORTER: true` for stdout). `TracingMiddleware` creates a root span per request; database, cache, and outbound HTTP calls are auto-instrumented.
+- **Logging** — [Structlog](https://www.structlog.org/) with automatic `trace_id`/`span_id` injection so every log line links back to its trace. Colorized console output in development, JSON in production.
+- **Metrics** — [django-prometheus](https://github.com/korfuri/django-prometheus) instruments requests, database operations, and cache operations. A thin `counter()`/`histogram()` API is available for custom business metrics.
+- **Profiling** — Optional [Pyroscope](https://pyroscope.io/) integration for continuous CPU/memory profiling with tag propagation from the active trace.
 
 All signals share `trace_id`, so you can jump from a metric to its trace, then to logs from that same request.
 
 ## Features
 
-- OpenTelemetry distributed traces for requests, database queries, cache operations, and Celery tasks
-- Structlog structured logging with colorized dev output, JSON production format, and automatic trace correlation
-- django-prometheus metrics with a simple `counter()`/`histogram()` API for custom business metrics
-- Pyroscope continuous profiling (optional)
-- Full Celery observability — per-task traces linked to originating requests, structured task logs, and metrics via celery-exporter
-- Pre-built Grafana dashboards and alerts from django-mixin and celery-mixin
-- `manage.py o11y` CLI to start/stop the local Docker Compose observability stack and validate your setup
+- [OpenTelemetry](https://opentelemetry.io/) distributed traces for requests, database queries, cache operations, and Celery tasks
+- [Structlog](https://www.structlog.org/) structured logging with colorized dev output, JSON production format, and automatic trace correlation
+- [django-prometheus](https://github.com/korfuri/django-prometheus) metrics with a simple `counter()`/`histogram()` API for custom business metrics
+- [Pyroscope](https://pyroscope.io/) continuous profiling (optional)
+- Full Celery observability — per-task traces linked to originating requests, structured task logs, and metrics via [celery-exporter](https://github.com/danihodovic/celery-exporter)
+- Pre-built Grafana dashboards and alerts from [django-mixin](https://github.com/adinhodovic/django-mixin) and [celery-mixin](https://github.com/danihodovic/celery-exporter/tree/master/celery-mixin)
+- `manage.py o11y stack start/stop/logs` spins up a local Docker Compose stack (Grafana, Tempo, Loki, Prometheus, Pyroscope, Alloy) wired to your app. `manage.py o11y check` verifies your config, tests OTLP connectivity, and sends a test trace.
 - Sensible defaults, overridable via `DJANGO_O11Y` settings or environment variables
 
 ## Acknowledgments
@@ -57,4 +57,5 @@ All signals share `trace_id`, so you can jump from a metric to its trace, then t
 - [django-prometheus](https://github.com/korfuri/django-prometheus)
 - [django-mixin](https://github.com/adinhodovic/django-mixin)
 - [celery-exporter](https://github.com/danihodovic/celery-exporter)
+- [celery-mixin](https://github.com/danihodovic/celery-exporter/tree/master/celery-mixin)
 - [grafana](https://github.com/grafana/grafana)

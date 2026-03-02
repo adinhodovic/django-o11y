@@ -1,4 +1,4 @@
-.PHONY: setup dev dev-stop dev-logs o11y-stack o11y-stack-stop o11y-stack-logs
+.PHONY: setup dev dev-stop dev-logs o11y-stack o11y-stack-stop o11y-stack-logs docs
 
 setup:
 	uv sync --all-extras
@@ -20,3 +20,6 @@ o11y-stack-stop:
 
 o11y-stack-logs:
 	python manage.py o11y stack logs
+
+docs:
+	uv run zensical serve

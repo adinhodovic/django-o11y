@@ -1,4 +1,6 @@
-# Demo images
+# Demo stack
+
+Screenshots from `manage.py o11y stack start` running against the test project — a minimal Django app firing one Celery task every 5 seconds. Run it yourself and Grafana comes up at `http://localhost:3000` with all dashboards pre-loaded.
 
 Local Grafana base URL: `http://localhost:3000`
 
@@ -6,19 +8,19 @@ Local Grafana base URL: `http://localhost:3000`
 
 ### Metrics
 
-[![Metrics dashboard placeholder](images/demo/metrics-dashboard.png)](http://localhost:3000/d/django-overview-jkwq/django-overview)
+![Metrics dashboard placeholder](images/demo/metrics-dashboard.png)
 
 ### Traces
 
-[![Traces dashboard placeholder](images/demo/traces-dashboard.png)](http://localhost:3000/explore?orgId=1&left=%7B%22datasource%22%3A%20%22tempo%22%2C%20%22queries%22%3A%20%5B%7B%22refId%22%3A%20%22A%22%7D%5D%7D)
+![Traces dashboard placeholder](images/demo/traces-dashboard.png)
 
 ### Logs
 
-[![Logs dashboard placeholder](images/demo/logs-dashboard.png)](http://localhost:3000/explore?orgId=1&left=%7B%22datasource%22%3A%20%22loki%22%2C%20%22queries%22%3A%20%5B%7B%22refId%22%3A%20%22A%22%7D%5D%7D)
+![Logs dashboard placeholder](images/demo/logs-dashboard.png)
 
 ### Profiles
 
-[![Profiles dashboard placeholder](images/demo/profiles-dashboard.png)](http://localhost:3000/explore?orgId=1&left=%7B%22datasource%22%3A%20%22pyroscope%22%2C%20%22queries%22%3A%20%5B%7B%22refId%22%3A%20%22A%22%7D%5D%7D)
+![Profiles dashboard placeholder](images/demo/profiles-dashboard.png)
 
 ## Grafana drilldowns
 
@@ -36,24 +38,24 @@ These are imported from Grafana.com when you run `o11y stack start`.
 - Celery / Tasks / Overview
   - Local: [Open](http://localhost:3000/d/celery-tasks-overview-32s3/celery-tasks-overview)
   - Grafana.com: [17509](https://grafana.com/grafana/dashboards/17509-celery-tasks-overview/)
-  - [![Celery Tasks Overview](images/demo/celery-tasks-overview.png)](http://localhost:3000/d/celery-tasks-overview-32s3/celery-tasks-overview)
+  - ![Celery Tasks Overview](images/demo/celery-tasks-overview.png)
 - Celery / Tasks / By Task
   - Local: [Open](http://localhost:3000/d/celery-tasks-by-task-32s3/celery-tasks-by-task)
   - Grafana.com: [17508](https://grafana.com/grafana/dashboards/17508-celery-tasks-by-task/)
-  - [![Celery Tasks By Task](images/demo/celery-tasks-by-task.png)](http://localhost:3000/d/celery-tasks-by-task-32s3/celery-tasks-by-task)
+  - ![Celery Tasks By Task](images/demo/celery-tasks-by-task.png)
 - Django / Overview
   - Local: [Open](http://localhost:3000/d/django-overview-jkwq/django-overview)
   - Grafana.com: [17617](https://grafana.com/grafana/dashboards/17617-django-overview/)
-  - [![Django Overview](images/demo/django-overview.png)](http://localhost:3000/d/django-overview-jkwq/django-overview)
+  - ![Django Overview](images/demo/django-overview.png)
 - Django / Requests / Overview
   - Local: [Open](http://localhost:3000/d/django-requests-jkwq/django-requests-overview)
   - Grafana.com: [17616](https://grafana.com/grafana/dashboards/17616-django-requests-overview/)
-  - [![Django Requests Overview](images/demo/django-requests-overview.png)](http://localhost:3000/d/django-requests-jkwq/django-requests-overview)
+  - ![Django Requests Overview](images/demo/django-requests-overview.png)
 - Django / Requests / By View
   - Local: [Open](http://localhost:3000/d/django-requests-by-view-jkwq/django-requests-by-view)
   - Grafana.com: [17613](https://grafana.com/grafana/dashboards/17613-django-requests-by-view/)
-  - [![Django Requests By View](images/demo/django-requests-by-view.png)](http://localhost:3000/d/django-requests-by-view-jkwq/django-requests-by-view)
+  - ![Django Requests By View](images/demo/django-requests-by-view.png)
 - Django / Models / Overview
   - Local: [Open](http://localhost:3000/d/django-model-overview-jkwq/django-models-overview)
   - Grafana.com: [24933](https://grafana.com/grafana/dashboards/24933-django-models-overview/)
-  - [![Django Models Overview](images/demo/django-models-overview.png)](http://localhost:3000/d/django-model-overview-jkwq/django-models-overview)
+  - ![Django Models Overview](images/demo/django-models-overview.png)
