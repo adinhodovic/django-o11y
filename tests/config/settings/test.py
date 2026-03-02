@@ -35,7 +35,7 @@ MIDDLEWARE = [
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
+        "ENGINE": "django_prometheus.db.backends.sqlite3",
         "NAME": "test_db.sqlite3",  # File-based for e2e testing
     }
 }

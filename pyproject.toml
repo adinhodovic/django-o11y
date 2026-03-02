@@ -73,7 +73,7 @@ postgres = [
 sqlite = ["opentelemetry-instrumentation-sqlite3>=0.60b1"]
 
 # Cache instrumentation
-redis = ["redis>=7.2.0", "opentelemetry-instrumentation-redis>=0.60b1"]
+redis = ["redis>=7.2.0", "django-redis>=5.4.0", "opentelemetry-instrumentation-redis>=0.60b1"]
 
 # HTTP client instrumentation
 http = [
