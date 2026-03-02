@@ -122,85 +122,30 @@ def test_check_metrics_endpoint_wrong_view(monkeypatch):
     assert err == 1
 
 
-def test_cli_group_exists():
+@pytest.mark.parametrize(
+    "cli_args, expected_fragment, extra_fragments",
+    [
+        (["--help"], "o11y", []),
+        (["stack", "--help"], "stack", []),
+        (["stack", "start", "--help"], "start", ["app-url"]),
+        (["stack", "stop", "--help"], "stop", []),
+        (["stack", "status", "--help"], "status", []),
+        (["stack", "logs", "--help"], "logs", []),
+        (["stack", "restart", "--help"], "restart", []),
+        (["check", "--help"], "check", []),
+    ],
+)
+def test_cli_help(cli_args, expected_fragment, extra_fragments):
     from django_o11y.management.commands.o11y import cli
 
     runner = CliRunner()
-    result = runner.invoke(cli, ["--help"])
+    result = runner.invoke(cli, cli_args)
 
     assert result.exit_code == 0
-    assert "o11y" in result.output.lower()
-
-
-def test_stack_group_exists():
-    from django_o11y.management.commands.o11y import cli
-
-    runner = CliRunner()
-    result = runner.invoke(cli, ["stack", "--help"])
-
-    assert result.exit_code == 0
-    assert "stack" in result.output.lower()
-
-
-def test_stack_start_command_help():
-    from django_o11y.management.commands.o11y import cli
-
-    runner = CliRunner()
-    result = runner.invoke(cli, ["stack", "start", "--help"])
-
-    assert result.exit_code == 0
-    assert "start" in result.output.lower()
-    assert "app-url" in result.output.lower()
-
-
-def test_stack_stop_command_help():
-    from django_o11y.management.commands.o11y import cli
-
-    runner = CliRunner()
-    result = runner.invoke(cli, ["stack", "stop", "--help"])
-
-    assert result.exit_code == 0
-    assert "stop" in result.output.lower()
-
-
-def test_stack_status_command_help():
-    from django_o11y.management.commands.o11y import cli
-
-    runner = CliRunner()
-    result = runner.invoke(cli, ["stack", "status", "--help"])
-
-    assert result.exit_code == 0
-    assert "status" in result.output.lower()
-
-
-def test_stack_logs_command_help():
-    from django_o11y.management.commands.o11y import cli
-
-    runner = CliRunner()
-    result = runner.invoke(cli, ["stack", "logs", "--help"])
-
-    assert result.exit_code == 0
-    assert "logs" in result.output.lower()
-
-
-def test_stack_restart_command_help():
-    from django_o11y.management.commands.o11y import cli
-
-    runner = CliRunner()
-    result = runner.invoke(cli, ["stack", "restart", "--help"])
-
-    assert result.exit_code == 0
-    assert "restart" in result.output.lower()
-
-
-def test_check_command_help():
-    from django_o11y.management.commands.o11y import cli
-
-    runner = CliRunner()
-    result = runner.invoke(cli, ["check", "--help"])
-
-    assert result.exit_code == 0
-    assert "check" in result.output.lower()
+    output = result.output.lower()
+    assert expected_fragment in output
+    for fragment in extra_fragments:
+        assert fragment in output
 
 
 def test_stack_start_dry_run():

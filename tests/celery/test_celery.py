@@ -1,5 +1,6 @@
 """Tests for Celery integration."""
 
+import pytest
 from django.test import override_settings
 
 
@@ -132,31 +133,20 @@ def test_configure_celery_metrics_events_skips_when_metrics_disabled(celery_app)
     assert celery_app.conf.task_send_sent_event is False
 
 
-def test_celery_prefork_pool_detection_defaults_to_prefork():
+@pytest.mark.parametrize(
+    "argv, expected",
+    [
+        (["celery", "-A", "proj", "worker"], True),
+        (["celery", "-A", "proj", "worker", "--pool=solo"], False),
+        (["celery", "-A", "proj", "worker", "-P", "prefork"], True),
+        (["celery", "-A", "proj", "beat"], False),
+        (["gunicorn", "myapp.wsgi"], False),
+    ],
+)
+def test_celery_prefork_pool_detection(argv, expected):
     from django_o11y.tracing.utils import is_celery_prefork_pool
 
-    assert is_celery_prefork_pool(["celery", "-A", "proj", "worker"]) is True
-
-
-def test_celery_prefork_pool_detection_honours_explicit_pool():
-    from django_o11y.tracing.utils import is_celery_prefork_pool
-
-    assert (
-        is_celery_prefork_pool(["celery", "-A", "proj", "worker", "--pool=solo"])
-        is False
-    )
-    assert (
-        is_celery_prefork_pool(["celery", "-A", "proj", "worker", "-P", "prefork"])
-        is True
-    )
-
-
-def test_celery_prefork_pool_detection_false_for_non_worker():
-    """is_celery_prefork_pool must return False for non-worker commands."""
-    from django_o11y.tracing.utils import is_celery_prefork_pool
-
-    assert is_celery_prefork_pool(["celery", "-A", "proj", "beat"]) is False
-    assert is_celery_prefork_pool(["gunicorn", "myapp.wsgi"]) is False
+    assert is_celery_prefork_pool(argv) is expected
 
 
 def test_worker_init_skips_auto_setup_for_prefork(celery_app):

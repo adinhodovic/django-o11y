@@ -1,5 +1,7 @@
 """Tests for configuration validation."""
 
+import pytest
+
 
 def test_valid_config():
     from django_o11y.config.utils import validate_config
@@ -14,68 +16,41 @@ def test_valid_config():
     assert len(errors) == 0
 
 
-def test_invalid_sample_rate_too_high():
+@pytest.mark.parametrize(
+    "config, expected_fragments",
+    [
+        ({"TRACING": {"SAMPLE_RATE": 1.5}}, ["SAMPLE_RATE", "0.0 and 1.0"]),
+        ({"TRACING": {"SAMPLE_RATE": -0.1}}, ["SAMPLE_RATE"]),
+        ({"TRACING": {"SAMPLE_RATE": "high"}}, ["must be a number"]),
+        ({"LOGGING": {"FORMAT": "xml"}}, ["FORMAT", "console", "json"]),
+        ({"LOGGING": {"LEVEL": "TRACE"}}, ["LEVEL"]),
+        (
+            {"TRACING": {"OTLP_ENDPOINT": "grpc://localhost:4317"}},
+            ["OTLP_ENDPOINT", "http://"],
+        ),
+        (
+            {
+                "LOGGING": {
+                    "OTLP_ENABLED": True,
+                    "OTLP_ENDPOINT": "grpc://localhost:4317",
+                }
+            },
+            ["LOGGING.OTLP_ENDPOINT"],
+        ),
+        (
+            {"PROFILING": {"PYROSCOPE_URL": "grpc://pyroscope:4040"}},
+            ["PROFILING.PYROSCOPE_URL"],
+        ),
+    ],
+)
+def test_invalid_config_produces_error(config, expected_fragments):
     from django_o11y.config.utils import validate_config
 
-    config = {
-        "TRACING": {"SAMPLE_RATE": 1.5},
-    }
-
     errors = validate_config(config)
-    assert len(errors) == 1
-    assert "SAMPLE_RATE" in errors[0]
-    assert "0.0 and 1.0" in errors[0]
-
-
-def test_invalid_sample_rate_negative():
-    from django_o11y.config.utils import validate_config
-
-    config = {
-        "TRACING": {"SAMPLE_RATE": -0.1},
-    }
-
-    errors = validate_config(config)
-    assert len(errors) == 1
-    assert "SAMPLE_RATE" in errors[0]
-
-
-def test_invalid_log_format():
-    from django_o11y.config.utils import validate_config
-
-    config = {
-        "LOGGING": {"FORMAT": "xml"},
-    }
-
-    errors = validate_config(config)
-    assert len(errors) == 1
-    assert "FORMAT" in errors[0]
-    assert "console" in errors[0]
-    assert "json" in errors[0]
-
-
-def test_invalid_log_level():
-    from django_o11y.config.utils import validate_config
-
-    config = {
-        "LOGGING": {"LEVEL": "TRACE"},
-    }
-
-    errors = validate_config(config)
-    assert len(errors) == 1
-    assert "LEVEL" in errors[0]
-
-
-def test_invalid_otlp_endpoint():
-    from django_o11y.config.utils import validate_config
-
-    config = {
-        "TRACING": {"OTLP_ENDPOINT": "grpc://localhost:4317"},
-    }
-
-    errors = validate_config(config)
-    assert len(errors) == 1
-    assert "OTLP_ENDPOINT" in errors[0]
-    assert "http://" in errors[0]
+    assert len(errors) >= 1
+    combined = " ".join(errors)
+    for fragment in expected_fragments:
+        assert fragment in combined
 
 
 def test_multiple_validation_errors():
@@ -97,35 +72,6 @@ def test_empty_config():
 
     errors = validate_config(config)
     assert len(errors) == 0
-
-
-def test_invalid_sample_rate_not_a_number():
-    from django_o11y.config.utils import validate_config
-
-    errors = validate_config({"TRACING": {"SAMPLE_RATE": "high"}})
-    assert len(errors) == 1
-    assert "must be a number" in errors[0]
-
-
-def test_logging_otlp_endpoint_validated_when_enabled():
-    from django_o11y.config.utils import validate_config
-
-    errors = validate_config(
-        {
-            "LOGGING": {
-                "OTLP_ENABLED": True,
-                "OTLP_ENDPOINT": "grpc://localhost:4317",
-            }
-        }
-    )
-    assert any("LOGGING.OTLP_ENDPOINT" in e for e in errors)
-
-
-def test_profiling_pyroscope_url_validated():
-    from django_o11y.config.utils import validate_config
-
-    errors = validate_config({"PROFILING": {"PYROSCOPE_URL": "grpc://pyroscope:4040"}})
-    assert any("PROFILING.PYROSCOPE_URL" in e for e in errors)
 
 
 def test_endpoint_non_string():

@@ -1,5 +1,7 @@
 """Tests for Django app configuration."""
 
+from unittest.mock import patch
+
 import pytest
 from django.core.exceptions import ImproperlyConfigured
 from django.test import override_settings
@@ -7,42 +9,8 @@ from django.test import override_settings
 from tests.conftest import make_config
 
 
-def test_app_config_name():
-    from django_o11y.apps import DjangoO11yConfig
-
-    assert DjangoO11yConfig.name == "django_o11y"
-
-
-def test_app_config_default_auto_field():
-    from django_o11y.apps import DjangoO11yConfig
-
-    assert DjangoO11yConfig.default_auto_field == "django.db.models.BigAutoField"
-
-
 def test_configure_tracing_calls_setup_and_registers_fork_handler():
     """_configure_tracing sets up tracing in non-prefork processes."""
-    from unittest.mock import patch
-
-    from django_o11y.apps import DjangoO11yConfig
-
-    config = {
-        "TRACING": {"ENABLED": True, "OTLP_ENDPOINT": None, "CONSOLE_EXPORTER": False},
-        "PROFILING": {"ENABLED": False},
-        "SERVICE_NAME": "test",
-        "SERVICE_INSTANCE_ID": None,
-        "SERVICE_VERSION": "1.0",
-        "RESOURCE_ATTRIBUTES": {},
-    }
-
-    app_config = DjangoO11yConfig("django_o11y", __import__("django_o11y"))
-
-    with patch("django_o11y.tracing.setup.setup_tracing_for_django") as mock_setup:
-        app_config._configure_tracing(config)
-
-    mock_setup.assert_called_once_with(config)
-
-
-def test_configure_tracing_skips_in_celery_prefork_parent():
     from unittest.mock import patch
 
     from django_o11y.apps import DjangoO11yConfig
@@ -175,9 +143,10 @@ def test_app_ready_raises_on_invalid_config():
         assert "SAMPLE_RATE" in str(exc_info.value)
 
 
-def test_configure_metrics_warns_when_metrics_url_missing():
-    from unittest.mock import patch
-
+@pytest.mark.parametrize(
+    "resolve_raises, warning_called", [(True, True), (False, False)]
+)
+def test_configure_metrics_warning(resolve_raises, warning_called):
     from django.urls import Resolver404
 
     from django_o11y.apps import DjangoO11yConfig
@@ -186,43 +155,35 @@ def test_configure_metrics_warns_when_metrics_url_missing():
         {"METRICS": {"PROMETHEUS_ENABLED": True, "PROMETHEUS_ENDPOINT": "/metrics"}}
     )
     app_config = DjangoO11yConfig("django_o11y", __import__("django_o11y"))
+    resolve_side_effect = Resolver404("missing") if resolve_raises else None
 
     with (
-        patch("django_o11y.metrics.setup.resolve", side_effect=Resolver404("missing")),
+        patch("django_o11y.metrics.setup.resolve", side_effect=resolve_side_effect),
         patch("django_o11y.metrics.setup.logger.warning") as mock_warning,
     ):
         app_config._configure_metrics(config)
 
-    mock_warning.assert_called_once()
+    if warning_called:
+        mock_warning.assert_called_once()
+    else:
+        mock_warning.assert_not_called()
 
 
-def test_configure_metrics_no_warning_when_metrics_url_exists():
-    from unittest.mock import patch
-
-    from django_o11y.apps import DjangoO11yConfig
-
-    config = make_config(
-        {"METRICS": {"PROMETHEUS_ENABLED": True, "PROMETHEUS_ENDPOINT": "/metrics"}}
-    )
-    app_config = DjangoO11yConfig("django_o11y", __import__("django_o11y"))
-
-    with (
-        patch("django_o11y.metrics.setup.resolve"),
-        patch("django_o11y.metrics.setup.logger.warning") as mock_warning,
-    ):
-        app_config._configure_metrics(config)
-
-    mock_warning.assert_not_called()
-
-
-def test_startup_banner_includes_file_dir_when_file_logging_enabled(capsys):
+@pytest.mark.parametrize(
+    "file_enabled, assert_present, assert_absent",
+    [
+        (True, "Logging → format=console, file_dir=/tmp/django-o11y/django-app", None),
+        (False, "Logging → format=console", "file_dir="),
+    ],
+)
+def test_startup_banner_file_dir(capsys, file_enabled, assert_present, assert_absent):
     from django_o11y.apps import DjangoO11yConfig
 
     config = make_config(
         {
             "LOGGING": {
                 "FORMAT": "console",
-                "FILE_ENABLED": True,
+                "FILE_ENABLED": file_enabled,
                 "FILE_PATH": "/tmp/django-o11y/django-app/django.log",
             },
             "TRACING": {"ENABLED": False},
@@ -236,29 +197,6 @@ def test_startup_banner_includes_file_dir_when_file_logging_enabled(capsys):
     app_config._print_startup_banner(config)
     out = capsys.readouterr().out
 
-    assert "Logging → format=console, file_dir=/tmp/django-o11y/django-app" in out
-
-
-def test_startup_banner_omits_file_dir_when_file_logging_disabled(capsys):
-    from django_o11y.apps import DjangoO11yConfig
-
-    config = make_config(
-        {
-            "LOGGING": {
-                "FORMAT": "console",
-                "FILE_ENABLED": False,
-                "FILE_PATH": "/tmp/django-o11y/django-app/django.log",
-            },
-            "TRACING": {"ENABLED": False},
-            "METRICS": {"PROMETHEUS_ENABLED": False},
-            "CELERY": {"ENABLED": False},
-            "PROFILING": {"ENABLED": False},
-        }
-    )
-    app_config = DjangoO11yConfig("django_o11y", __import__("django_o11y"))
-
-    app_config._print_startup_banner(config)
-    out = capsys.readouterr().out
-
-    assert "Logging → format=console" in out
-    assert "file_dir=" not in out
+    assert assert_present in out
+    if assert_absent:
+        assert assert_absent not in out

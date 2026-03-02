@@ -1,5 +1,6 @@
 """Tests for configuration module."""
 
+import pytest
 from django.test import override_settings
 
 
@@ -33,82 +34,39 @@ def test_config_has_default_service_name():
     assert isinstance(config["SERVICE_NAME"], str)
 
 
-def test_config_tracing_defaults():
+@pytest.mark.parametrize(
+    "section, required_keys",
+    [
+        ("TRACING", ["ENABLED", "SAMPLE_RATE", "OTLP_ENDPOINT"]),
+        ("LOGGING", ["FORMAT", "LEVEL"]),
+        ("METRICS", ["PROMETHEUS_ENABLED"]),
+        ("CELERY", ["ENABLED"]),
+        ("PROFILING", ["ENABLED"]),
+        ("STARTUP", ["SERVER_COMMANDS"]),
+    ],
+)
+def test_config_section_defaults(section, required_keys):
     from django_o11y.config.setup import get_o11y_config
 
     config = get_o11y_config()
-
-    assert "TRACING" in config
-    assert "ENABLED" in config["TRACING"]
-    assert "SAMPLE_RATE" in config["TRACING"]
-    assert "OTLP_ENDPOINT" in config["TRACING"]
+    assert section in config
+    for key in required_keys:
+        assert key in config[section]
 
 
-@override_settings(DEBUG=False, DJANGO_O11Y={})
-def test_config_tracing_sample_rate_default_non_debug(monkeypatch):
-    from django_o11y.config.setup import get_config
-
-    monkeypatch.delenv("OTEL_TRACES_SAMPLER_ARG", raising=False)
-    config = get_config()
-
-    assert config["TRACING"]["SAMPLE_RATE"] == 0.01
-
-
-@override_settings(DEBUG=True, DJANGO_O11Y={})
-def test_config_tracing_sample_rate_default_debug(monkeypatch):
-    from django_o11y.config.setup import get_config
-
-    monkeypatch.delenv("OTEL_TRACES_SAMPLER_ARG", raising=False)
-    config = get_config()
-
-    assert config["TRACING"]["SAMPLE_RATE"] == 1.0
-
-
-def test_config_logging_defaults():
+def test_config_metrics_otlp_not_present():
+    """OTLP_ENABLED must not be a top-level METRICS key (it lives under LOGGING)."""
     from django_o11y.config.setup import get_o11y_config
 
     config = get_o11y_config()
-
-    assert "LOGGING" in config
-    assert "FORMAT" in config["LOGGING"]
-    assert "LEVEL" in config["LOGGING"]
-
-
-def test_config_metrics_defaults():
-    from django_o11y.config.setup import get_o11y_config
-
-    config = get_o11y_config()
-
-    assert "METRICS" in config
-    assert "PROMETHEUS_ENABLED" in config["METRICS"]
     assert "OTLP_ENABLED" not in config["METRICS"]
 
 
-def test_config_celery_defaults():
-    from django_o11y.config.setup import get_o11y_config
-
-    config = get_o11y_config()
-
-    assert "CELERY" in config
-    assert "ENABLED" in config["CELERY"]
-
-
-def test_config_profiling_defaults():
-    from django_o11y.config.setup import get_o11y_config
-
-    config = get_o11y_config()
-
-    assert "PROFILING" in config
-    assert "ENABLED" in config["PROFILING"]
-
-
-def test_config_startup_defaults():
+def test_config_startup_server_commands_match_defaults():
     from django_o11y.config.setup import get_o11y_config
     from django_o11y.utils.process import get_default_server_commands
 
     config = get_o11y_config()
-
-    assert "STARTUP" in config
     assert config["STARTUP"]["SERVER_COMMANDS"] == get_default_server_commands()
 
 
@@ -119,6 +77,17 @@ def test_config_banner_defaults():
 
     if "BANNER" in config:
         assert "ENABLED" in config["BANNER"]
+
+
+@pytest.mark.parametrize("debug, expected_rate", [(False, 0.01), (True, 1.0)])
+@override_settings(DJANGO_O11Y={})
+def test_config_tracing_sample_rate_default(monkeypatch, debug, expected_rate):
+    from django_o11y.config.setup import get_config
+
+    monkeypatch.delenv("OTEL_TRACES_SAMPLER_ARG", raising=False)
+    with override_settings(DEBUG=debug):
+        config = get_config()
+    assert config["TRACING"]["SAMPLE_RATE"] == expected_rate
 
 
 def test_env_vars_take_precedence_over_django_settings(monkeypatch):
@@ -152,48 +121,36 @@ def test_env_vars_take_precedence_over_django_settings(monkeypatch):
     assert config["STARTUP"]["SERVER_COMMANDS"] == ["runserver", "tailwind"]
 
 
+@pytest.mark.parametrize(
+    "env_set, env_delete, expected_file_path",
+    [
+        (
+            {"XDG_STATE_HOME": "/state/home", "XDG_RUNTIME_DIR": "/run/user/1000"},
+            ["OTEL_SERVICE_NAME"],
+            "/state/home/django-o11y/django-app/django.log",
+        ),
+        (
+            {"XDG_STATE_HOME": "/state/home", "OTEL_SERVICE_NAME": "FindWork API"},
+            [],
+            "/state/home/django-o11y/findwork-api/django.log",
+        ),
+        (
+            {"HOME": "/home/example"},
+            ["XDG_STATE_HOME", "OTEL_SERVICE_NAME"],
+            "/home/example/.local/state/django-o11y/django-app/django.log",
+        ),
+    ],
+)
 @override_settings(BASE_DIR="/srv/example-project", DJANGO_O11Y={})
-def test_runtime_defaults_use_xdg_state_home(monkeypatch):
+def test_runtime_defaults_file_path(
+    monkeypatch, env_set, env_delete, expected_file_path
+):
     from django_o11y.config.setup import get_config
 
-    monkeypatch.setenv("XDG_STATE_HOME", "/state/home")
-    monkeypatch.setenv("XDG_RUNTIME_DIR", "/run/user/1000")
-    monkeypatch.delenv("OTEL_SERVICE_NAME", raising=False)
+    for key, val in env_set.items():
+        monkeypatch.setenv(key, val)
+    for key in env_delete:
+        monkeypatch.delenv(key, raising=False)
 
     config = get_config()
-
-    assert (
-        config["LOGGING"]["FILE_PATH"]
-        == "/state/home/django-o11y/django-app/django.log"
-    )
-
-
-@override_settings(BASE_DIR="/srv/example-project", DJANGO_O11Y={})
-def test_runtime_defaults_use_otel_service_name(monkeypatch):
-    from django_o11y.config.setup import get_config
-
-    monkeypatch.setenv("XDG_STATE_HOME", "/state/home")
-    monkeypatch.setenv("OTEL_SERVICE_NAME", "FindWork API")
-
-    config = get_config()
-
-    assert (
-        config["LOGGING"]["FILE_PATH"]
-        == "/state/home/django-o11y/findwork-api/django.log"
-    )
-
-
-@override_settings(BASE_DIR="/srv/example-project", DJANGO_O11Y={})
-def test_runtime_defaults_fallback_to_local_state_home(monkeypatch):
-    from django_o11y.config.setup import get_config
-
-    monkeypatch.delenv("XDG_STATE_HOME", raising=False)
-    monkeypatch.setenv("HOME", "/home/example")
-    monkeypatch.delenv("OTEL_SERVICE_NAME", raising=False)
-
-    config = get_config()
-
-    assert (
-        config["LOGGING"]["FILE_PATH"]
-        == "/home/example/.local/state/django-o11y/django-app/django.log"
-    )
+    assert config["LOGGING"]["FILE_PATH"] == expected_file_path
