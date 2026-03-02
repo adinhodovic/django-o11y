@@ -77,6 +77,8 @@ The `o11y` management command has two groups: `stack` to run the local observabi
 
 ### stack
 
+> This stack is for local development only. It has no authentication and no persistent storage. For production, deploy your own stack or point `TRACING.OTLP_ENDPOINT` and `LOGGING.OTLP_ENDPOINT` at a managed service (Grafana Cloud, Honeycomb, Datadog, etc.). Locally, one command starts Grafana, Prometheus, Tempo, Loki, Pyroscope, and Alloy with the dashboards already imported.
+
 Starts a Docker Compose stack and imports the Grafana dashboards. Stack configs are written to `${XDG_STATE_HOME:-~/.local/state}/django-o11y/` on first run. Override with `DJANGO_O11Y_STACK_DIR` when you want a project-local path.
 
 | Service | Image | Purpose |
@@ -431,7 +433,7 @@ OTEL_RESOURCE_ATTRIBUTES=region=us-east-1,tier=premium
 
 ## Traces
 
-Distributed tracing via [OpenTelemetry](https://opentelemetry.io/). Requests, database queries, cache operations, and outbound HTTP calls are instrumented with no code changes.
+Distributed tracing via [OpenTelemetry](https://opentelemetry.io/). Requests, database queries, cache operations, and outbound HTTP calls are instrumented automatically.
 
 ### What gets instrumented
 
@@ -497,7 +499,7 @@ DJANGO_O11Y = {
 }
 ```
 
-Celery signals wire everything up when the worker starts. Each task gets a trace span linked to the originating request, and structured logs with `trace_id`/`span_id`.
+Each task gets a trace span linked to the originating request, and structured logs with `trace_id`/`span_id`.
 
 To reduce span loss in prefork workers, django-o11y force-flushes tracing on `worker_process_shutdown`.
 
