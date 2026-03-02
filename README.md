@@ -5,7 +5,7 @@
 [![PyPI Version](https://img.shields.io/pypi/v/django-o11y.svg?style=flat)](https://pypi.org/project/django-o11y/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-Opinionated, off-the-shelf observability for Django. Drop it in and get traces, structured logs, metrics, and profiling wired up with sensible defaults.
+Drop-in observability for Django. Install it, add a small config, and get traces, structured logs, metrics, and profiling.
 
 ## Features
 
@@ -26,9 +26,9 @@ This package bundles the patterns from these blog posts into an installable libr
 - [Django Development and Production Logging](https://hodovi.cc/blog/django-development-and-production-logging/)
 - [Celery Monitoring with Prometheus and Grafana](https://hodovi.cc/blog/celery-monitoring-with-prometheus-and-grafana/)
 
-## Documentation
+## Docs
 
-To learn more about django-o11y, go to the [complete documentation](https://adinhodovic.github.io/django-o11y/).
+Read the full docs at [adinhodovic.github.io/django-o11y](https://adinhodovic.github.io/django-o11y/).
 
 - [Usage Guide](https://adinhodovic.github.io/django-o11y/usage/)
 - [Configuration Reference](https://adinhodovic.github.io/django-o11y/configuration/)

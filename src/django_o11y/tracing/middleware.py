@@ -9,11 +9,10 @@ from django_o11y.tracing.utils import get_tracer
 
 
 class TracingMiddleware:
-    """
-    Middleware that enriches the current request span with extra attributes.
+    """Add request metadata to the active request span.
 
-    Span creation and HTTP status/error mapping are handled by automatic Django
-    instrumentation. This middleware adds route and authenticated user metadata.
+    Django auto-instrumentation creates spans and handles status/error mapping.
+    This middleware adds route and authenticated user fields.
     """
 
     def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]):

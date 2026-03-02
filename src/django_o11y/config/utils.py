@@ -1,10 +1,10 @@
-"""Configuration validation helpers."""
+"""Config validation helpers."""
 
 from typing import Any
 
 
 def validate_config(config: dict[str, Any]) -> list[str]:
-    """Validate django-o11y configuration and return list of errors."""
+    """Validate django-o11y config and return error messages."""
     errors = []
 
     tracing = config.get("TRACING", {})

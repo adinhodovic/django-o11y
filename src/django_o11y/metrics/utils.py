@@ -1,4 +1,4 @@
-"""Custom Prometheus metrics helpers."""
+"""Helpers for custom Prometheus metrics."""
 
 from contextlib import contextmanager
 from time import perf_counter
@@ -9,7 +9,7 @@ from prometheus_client import Counter, Histogram
 
 
 class MetricWrapper:
-    """Base wrapper for Prometheus metrics."""
+    """Base wrapper around a Prometheus metric."""
 
     def __init__(self, metric: Any, name: str, description: str):
         self.metric = metric
@@ -18,7 +18,7 @@ class MetricWrapper:
 
 
 class CounterWrapper(MetricWrapper):
-    """Wrapper for Counter metrics."""
+    """Wrapper for counter metrics."""
 
     def __init__(
         self,
@@ -40,7 +40,7 @@ class CounterWrapper(MetricWrapper):
 
 
 class HistogramWrapper(MetricWrapper):
-    """Wrapper for Histogram metrics with timing support."""
+    """Wrapper for histogram metrics with timing support."""
 
     def __init__(
         self,
@@ -60,7 +60,7 @@ class HistogramWrapper(MetricWrapper):
 
     @contextmanager
     def time(self, attributes: dict[str, Any] | None = None):
-        """Context manager that records elapsed seconds."""
+        """Record elapsed seconds for a code block."""
         start = perf_counter()
         try:
             yield
@@ -75,7 +75,7 @@ def counter(
     unit: str = "",
     labelnames: tuple[str, ...] | list[str] = (),
 ) -> CounterWrapper:
-    """Create and return a Prometheus Counter wrapped in CounterWrapper."""
+    """Create a Prometheus counter wrapped in ``CounterWrapper``."""
     label_tuple = tuple(labelnames)
     prom_counter = Counter(
         name,
@@ -93,7 +93,7 @@ def histogram(
     labelnames: tuple[str, ...] | list[str] = (),
     buckets: tuple[float, ...] = Histogram.DEFAULT_BUCKETS,
 ) -> HistogramWrapper:
-    """Create and return a Prometheus Histogram wrapped in HistogramWrapper."""
+    """Create a Prometheus histogram wrapped in ``HistogramWrapper``."""
     label_tuple = tuple(labelnames)
     prom_histogram = Histogram(
         name,

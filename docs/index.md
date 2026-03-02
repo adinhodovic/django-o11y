@@ -5,13 +5,13 @@
 [![PyPI Version](https://img.shields.io/pypi/v/django-o11y.svg?style=flat)](https://pypi.org/project/django-o11y/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-## What Is Django O11y?
+## What is django-o11y?
 
-Django O11y is an opinionated, drop-in observability library for Django. It covers traces, logs, metrics, and continuous profiling — all wired together with sensible defaults and a single `DJANGO_O11Y` settings dict.
+Django O11y is a drop-in observability library for Django. It gives you traces, logs, metrics, and optional profiling with one `DJANGO_O11Y` settings dict.
 
-## Why Django O11y?
+## Why django-o11y?
 
-Production Django applications need more than just error tracking. Request latency, slow queries, background task failures, and correlated logs are all critical for diagnosing real incidents. Assembling these tools from scratch is repetitive and error-prone.
+In production, error tracking alone is not enough. You also need request latency, slow query visibility, background task health, and logs tied to traces. Wiring this stack by hand is repetitive and easy to get wrong.
 
 Django O11y bundles the patterns from these blog posts into a single installable package:
 
@@ -19,15 +19,15 @@ Django O11y bundles the patterns from these blog posts into a single installable
 - [Django Development and Production Logging](https://hodovi.cc/blog/django-development-and-production-logging/)
 - [Celery Monitoring with Prometheus and Grafana](https://hodovi.cc/blog/celery-monitoring-with-prometheus-and-grafana/)
 
-## Getting Started
+## Getting started
 
 ```bash
 pip install django-o11y
 ```
 
-Follow the [Usage Guide](usage.md) for full setup instructions. See the [Configuration Reference](configuration.md) for all available options.
+Start with the [Usage guide](usage.md), then use the [Configuration reference](configuration.md) when you need to tune behavior.
 
-## How It Works
+## How it works
 
 Django O11y wires up four observability pillars on `AppConfig.ready()`:
 
@@ -36,7 +36,7 @@ Django O11y wires up four observability pillars on `AppConfig.ready()`:
 - **Metrics** — django-prometheus instruments requests, database operations, and cache operations. A thin `counter()`/`histogram()` API is available for custom business metrics.
 - **Profiling** — Optional Pyroscope integration for continuous CPU/memory profiling with tag propagation from the active trace.
 
-All signals are correlated by `trace_id`, so you can jump from a slow request metric to its trace and then to the structured logs emitted during that trace in a single click.
+All signals share `trace_id`, so you can jump from a slow metric to a trace, then to logs from that same request.
 
 ## Features
 

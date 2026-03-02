@@ -1,4 +1,4 @@
-"""Fork-safety for pre-fork servers (Gunicorn, uWSGI, etc.)."""
+"""Fork-safety helpers for pre-fork servers (Gunicorn, uWSGI, etc.)."""
 
 import os
 from importlib import import_module
@@ -14,7 +14,7 @@ _fork_handler_registered = False
 
 
 def register_post_fork_handler() -> None:
-    """Register tracing re-init hook to run in every forked child process."""
+    """Register a tracing re-init hook for each forked child process."""
     global _fork_handler_registered
     if _fork_handler_registered:
         return
@@ -27,11 +27,10 @@ def register_post_fork_handler() -> None:
 
 
 def _reinit_after_fork() -> None:
-    """Re-initialise tracing in a freshly forked worker.
+    """Re-initialize tracing in a freshly forked worker.
 
-    PROMETHEUS_MULTIPROC_DIR is inherited via fork() and does not need
-    re-setting here — prometheus_client reads it at import time, which
-    happens after the child has already inherited the correct value.
+    ``PROMETHEUS_MULTIPROC_DIR`` is inherited on fork and does not need to be
+    set again here.
     """
     try:
         config = get_o11y_config()

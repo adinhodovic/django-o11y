@@ -13,7 +13,7 @@ logger = get_logger()
 
 
 def _maybe_force_flush(config: dict[str, Any], reason: str) -> None:
-    """Flush pending spans from current process provider."""
+    """Flush pending spans from the current process tracer provider."""
     if not config.get("TRACING", {}).get("ENABLED", False):
         return
 
@@ -30,7 +30,7 @@ def _maybe_force_flush(config: dict[str, Any], reason: str) -> None:
 
 
 def _resolve_worker_app(sender):
-    """Resolve Celery app from signal sender or current_app fallback."""
+    """Resolve a Celery app from signal sender or ``current_app`` fallback."""
     if sender is not None:
         return sender
 
@@ -40,7 +40,7 @@ def _resolve_worker_app(sender):
 
 
 def _auto_setup_worker(sender) -> None:
-    """Shared worker setup path for both worker_init and process_init."""
+    """Shared worker setup path for both worker init signals."""
     try:
         config = get_o11y_config()
         if not config.get("CELERY", {}).get("ENABLED", False):
@@ -60,11 +60,10 @@ def _auto_setup_worker(sender) -> None:
 
 @connect_signal(worker_init, dispatch_uid="django_o11y.tracing.worker_init")
 def _auto_setup_on_worker_init(sender, **kwargs) -> None:
-    """worker_init signal handler - runs in the worker parent process.
+    """Handle ``worker_init`` in the worker parent process.
 
-    For non-prefork pools: full setup (tracing + metrics server).
-    For prefork parent: only start the metrics HTTP server — tracing is
-    deferred to child processes post-fork via worker_process_init.
+    Non-prefork pools run full setup here. Prefork parents start only the
+    metrics server and defer tracing to child processes.
     """
     _maybe_start_metrics_server()
     if is_celery_prefork_pool():
@@ -77,7 +76,7 @@ def _auto_setup_on_worker_init(sender, **kwargs) -> None:
     worker_process_init, dispatch_uid="django_o11y.tracing.worker_process_init"
 )
 def _auto_setup_on_worker_process_init(sender=None, **kwargs) -> None:
-    """worker_process_init handler - runs in each prefork child worker."""
+    """Handle ``worker_process_init`` in each prefork child worker."""
     if not is_celery_prefork_pool():
         return
 
@@ -85,7 +84,7 @@ def _auto_setup_on_worker_process_init(sender=None, **kwargs) -> None:
 
 
 def _maybe_start_metrics_server() -> None:
-    """Start the Prometheus metrics HTTP server if metrics are enabled."""
+    """Start the Prometheus metrics HTTP server when enabled."""
     try:
         config = get_o11y_config()
         celery_config = config.get("CELERY", {})
@@ -111,7 +110,7 @@ def _maybe_start_metrics_server() -> None:
     dispatch_uid="django_o11y.tracing.worker_process_shutdown",
 )
 def _auto_flush_on_worker_process_shutdown(sender=None, **kwargs) -> None:
-    """worker_process_shutdown handler - flush spans before worker child exits."""
+    """Flush spans on ``worker_process_shutdown`` before child exit."""
     try:
         config = get_o11y_config()
         if not config.get("CELERY", {}).get("ENABLED", False):

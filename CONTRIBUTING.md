@@ -68,8 +68,8 @@ tox -e pylint   # pylint
 
 ## Local dev with Docker Compose
 
-`make dev` starts a full local environment with Django, a Celery worker, Redis,
-and a task-generator that hits `/trigger/` every five seconds:
+`make dev` starts a local environment with Django, a Celery worker, Redis,
+and a task-generator that calls `/trigger/` every five seconds:
 
 ```bash
 make dev          # build and start (docker compose up --build)
@@ -77,12 +77,11 @@ make dev-stop     # tear down
 make dev-logs     # follow logs
 ```
 
-The Django process listens on `http://localhost:8000`. The Celery worker metrics
-server listens on `http://localhost:8009/metrics`. Both use
-`tests/config/settings/local.py`, which wires up JSON structured logging, a real
-Redis broker, and tracing pointed at `host.docker.internal:4317`.
+The Django app runs on `http://localhost:8000`. Celery worker metrics run on
+`http://localhost:8009/metrics`. Both use `tests/config/settings/local.py`, which
+enables JSON logging, a real Redis broker, and tracing to `host.docker.internal:4317`.
 
-To see traces and logs you need the observability stack running as well (see below).
+To see traces and logs, start the observability stack too (see below).
 
 ## Observability stack
 
@@ -100,7 +99,7 @@ After it's up, verify everything is reachable:
 python manage.py o11y check
 ```
 
-Then open Grafana at `http://localhost:3000` to explore traces, logs, and metrics.
+Then open Grafana at `http://localhost:3000`.
 
 Run both stacks together for a full local observability loop:
 

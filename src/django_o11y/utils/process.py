@@ -41,7 +41,7 @@ _PYTHON_MODULE_RUNTIMES = frozenset({"celery", "daphne", "gunicorn", "uvicorn"})
 
 
 def get_default_server_commands() -> list[str]:
-    """Return the default long-running management command allowlist."""
+    """Return the default allowlist of long-running server commands."""
     return sorted(_SERVER_COMMANDS)
 
 
@@ -70,22 +70,11 @@ def get_process_identity() -> str:
 
 
 def is_management_command(server_commands: Iterable[str] | None = None) -> bool:
-    """Return True when the process was started via ``manage.py <command>``.
+    """Return ``True`` for non-server ``manage.py <command>`` calls.
 
-    Returns False for:
-    - Long-running server commands (``runserver``, ``daphne``, ``uvicorn``, …)
-      — these need full observability initialisation.
-    - Gunicorn / uWSGI / Celery worker processes — their argv looks nothing
-      like a management command.
-    - WSGI/ASGI apps loaded by a server (argv[0] is the server binary, not
-      ``manage.py``).
-
-    Returns True for:
-    - Any ``manage.py <command>`` call where ``<command>`` is NOT a server
-      command (``migrate``, ``shell``, ``check``, ``collectstatic``, etc.).
-
-    The detection is intentionally conservative: if we cannot tell, we return
-    False so that observability is not accidentally suppressed.
+    This returns ``False`` for server and worker runtimes (runserver, daphne,
+    uvicorn, gunicorn, celery, and similar) so they still get full
+    observability setup.
     """
     argv = sys.argv
 
@@ -103,10 +92,10 @@ def is_management_command(server_commands: Iterable[str] | None = None) -> bool:
 
 
 def should_setup_observability(server_commands: Iterable[str] | None = None) -> bool:
-    """Return True only for known long-running runtime processes.
+    """Return ``True`` only for known long-running runtime processes.
 
-    This is an explicit allowlist so one-off tooling (linters, tests, migrations,
-    shell commands) does not initialize the full observability stack by accident.
+    This explicit allowlist prevents one-off tooling (tests, migrations,
+    shell commands, linters) from initializing full observability by accident.
     """
     argv = sys.argv
     if not argv:

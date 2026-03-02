@@ -15,7 +15,7 @@ logger = get_logger()
     dispatch_uid="django_o11y.profiling.worker_process_init",
 )
 def _auto_setup_profiling_on_worker_process_init(sender=None, **kwargs) -> None:
-    """Initialize profiling in prefork child workers post-fork."""
+    """Initialize profiling in prefork child workers after fork."""
     if not is_celery_prefork_pool() or not is_celery_fork_pool_worker():
         return
 

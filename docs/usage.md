@@ -8,13 +8,13 @@
 pip install django-o11y
 ```
 
-For everything:
+Install everything:
 
 ```bash
 pip install django-o11y[all]
 ```
 
-Or pick what you need:
+Or install only what you need:
 
 | Extra | Adds |
 | ----- | ---- |
@@ -65,7 +65,7 @@ MIDDLEWARE = [
 
 ### Utility function reference
 
-Utility docs for logs, traces, and metrics live in one page:
+Docs for log, trace, and metric helpers are in one page:
 
 - [Utility functions](utils.md)
 
@@ -73,7 +73,7 @@ Utility docs for logs, traces, and metrics live in one page:
 
 ## Management command
 
-The `o11y` management command has two subcommand groups: `stack` for running the local observability stack, and `check` for verifying your setup.
+The `o11y` management command has two groups: `stack` to run the local observability stack, and `check` to verify your setup.
 
 ### stack
 
@@ -116,7 +116,7 @@ python manage.py o11y stack logs --follow
 
 ### check
 
-Checks your configuration, tests the OTLP endpoint, verifies installed packages, and sends a test trace.
+Checks your config, tests the OTLP endpoint, verifies installed packages, and sends a test trace.
 
 ```bash
 python manage.py o11y check
@@ -179,7 +179,7 @@ django-prometheus also runs inside Celery workers and exposes model metrics (ins
 
 ### Custom metrics
 
-Track business events with counters and histograms. Label names must be declared upfront (Prometheus convention):
+Track business events with counters and histograms. Label names must be declared up front (Prometheus convention):
 
 ```python
 from django_o11y.metrics import counter, histogram
@@ -431,7 +431,7 @@ OTEL_RESOURCE_ATTRIBUTES=region=us-east-1,tier=premium
 
 ## Traces
 
-Distributed tracing via [OpenTelemetry](https://opentelemetry.io/). Requests, database queries, cache operations, and outbound HTTP calls are all instrumented without any code changes.
+Distributed tracing via [OpenTelemetry](https://opentelemetry.io/). Requests, database queries, cache operations, and outbound HTTP calls are instrumented with no code changes.
 
 ### What gets instrumented
 

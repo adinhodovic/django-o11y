@@ -1,4 +1,4 @@
-"""Logging middleware that extends django-structlog with OpenTelemetry integration."""
+"""Logging middleware that adds OpenTelemetry integration to django-structlog."""
 
 import uuid
 from typing import Any
@@ -11,12 +11,10 @@ from opentelemetry import trace
 
 
 class LoggingMiddleware(DjangoStructlogRequestMiddleware):
-    """
-    Extends django-structlog's RequestMiddleware with OTel span integration.
+    """Extend django-structlog request middleware with OTel span context.
 
-    All django-structlog behaviour (request_id, correlation_id, user_id, etc.) is
-    inherited unchanged. The only addition is setting the ``request.id`` span
-    attribute so traces and logs share the same identifier.
+    This keeps all existing django-structlog behavior and adds ``request.id``
+    to the active span so traces and logs share the same request identifier.
     """
 
     def __call__(self, request: HttpRequest) -> Any:

@@ -1,12 +1,12 @@
-# Utility Functions
+# Utility functions
 
-This page documents the helper utilities for logs, traces, and custom metrics.
+This page covers helper functions for logs, traces, and custom metrics.
 
 ## Logging (`django_o11y.logging.utils`)
 
 ### `get_logger()`
 
-Returns a structlog logger bound to the caller module name.
+Returns a structlog logger bound to the caller module.
 
 ```python
 from django_o11y.logging.utils import get_logger
@@ -17,7 +17,7 @@ logger.info("checkout_started", order_id=order_id)
 
 ### `add_log_context(**kwargs)`
 
-Binds key-value pairs to structlog context for the current request/task context.
+Adds key-value pairs to structlog context for the current request or task.
 
 ```python
 from django_o11y.logging.utils import add_log_context
@@ -39,7 +39,7 @@ clear_custom_context()
 
 ### `get_tracer(name=None)`
 
-Returns an OpenTelemetry tracer. If `name` is omitted, it infers the caller module name (same convention as `get_logger()`).
+Returns an OpenTelemetry tracer. If `name` is missing, it uses the caller module (same rule as `get_logger()`).
 
 ```python
 from django_o11y.tracing.utils import get_tracer
@@ -105,7 +105,7 @@ Use `add(amount=1, attributes=None)` to increment the metric.
 
 ### `histogram(name, description="", unit="", labelnames=(), buckets=...)`
 
-Creates a Prometheus histogram wrapper with direct observations and timing context support.
+Creates a Prometheus histogram wrapper with direct observations and timing support.
 
 ```python
 from django_o11y.metrics import histogram

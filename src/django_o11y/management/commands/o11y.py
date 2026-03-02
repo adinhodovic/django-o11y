@@ -1,4 +1,4 @@
-"""Unified o11y management command using Click."""
+"""Unified ``o11y`` management command powered by Click."""
 
 import os
 import shutil
@@ -16,17 +16,17 @@ CELERY_EXPORTER_PORT = 9808
 
 
 class Command(BaseCommand):
-    """Manage o11y stack and verify setup."""
+    """Manage the o11y stack and verify setup."""
 
     help = "Manage o11y stack (start/stop/check)"
 
     def add_arguments(self, parser):
-        """Add arguments - Click handles the real parsing."""
+        """Add passthrough arguments; Click handles actual parsing."""
         parser.add_argument("command", nargs="?", help="Subcommand (stack, check)")
         parser.add_argument("subargs", nargs="*", help="Subcommand arguments")
 
     def handle(self, *args, **options):
-        """Delegate to Click command group."""
+        """Delegate to the Click command group."""
         # Build args list for Click
         cli_args = []
         if options.get("command"):
@@ -47,13 +47,13 @@ class Command(BaseCommand):
 @click.group()
 @click.pass_context
 def cli(ctx):
-    """Manage Django o11y stack and configuration."""
+    """Manage django-o11y stack and configuration."""
     ctx.ensure_object(dict)
 
 
 @cli.group()
 def stack():
-    """Manage the local observability stack (Grafana, Tempo, etc.)."""
+    """Manage the local observability stack (Grafana, Tempo, and more)."""
 
 
 @stack.command()
@@ -64,7 +64,7 @@ def stack():
     show_default=True,
 )
 def start(app_url):
-    """Start the o11y stack using Docker Compose.
+    """Start the o11y stack with Docker Compose.
 
     Examples:
 
@@ -147,7 +147,7 @@ def restart():
 
 @stack.command()
 def status():
-    """Show status of running services."""
+    """Show status for running services."""
     if not _check_docker_compose():  # pragma: no cover
         raise SystemExit(1)
 
@@ -204,13 +204,13 @@ def logs(follow, tail):
 
 @cli.command()
 def check():
-    """Verify Django O11y setup and connectivity.
+    """Verify django-o11y setup and connectivity.
 
     Checks:
-      - Configuration is loaded correctly
+      - configuration loads correctly
       - OTLP endpoint is reachable
-      - Required packages are installed
-      - Creates a test trace to verify tracing works
+      - required packages are installed
+      - a test trace can be created
     """
     ok_count = 0
     warning_count = 0
@@ -295,7 +295,7 @@ def _get_broker_url() -> str | None:
 
 
 def _is_celery_enabled() -> bool:
-    """Check if Celery is enabled in django-o11y settings."""
+    """Return whether Celery is enabled in django-o11y settings."""
     try:
         from django_o11y.config.setup import get_o11y_config
 
@@ -306,7 +306,7 @@ def _is_celery_enabled() -> bool:
 
 
 def _write_celery_exporter_override(work_dir: Path, broker_url: str) -> None:
-    """Write a docker-compose override that adds celery-exporter."""
+    """Write a docker compose override that adds celery-exporter."""
     compose_content = f"""\
 services:
   celery-exporter:
@@ -351,7 +351,7 @@ prometheus.scrape "celery_exporter" {{
 
 
 def _validate_exporter_broker_url(broker_url: str) -> tuple[bool, str | None]:
-    """Validate broker URL compatibility for celery-exporter container."""
+    """Validate broker URL compatibility for the celery-exporter container."""
     if not broker_url:
         return False, "broker URL is empty"
 
@@ -368,11 +368,10 @@ def _validate_exporter_broker_url(broker_url: str) -> tuple[bool, str | None]:
 
 
 def _rewrite_broker_url_for_container(broker_url: str) -> str:
-    """Rewrite loopback broker URLs to host.docker.internal for container use.
+    """Rewrite loopback broker URLs for use inside Docker containers.
 
-    celery-exporter runs inside Docker, so localhost/127.0.0.1 would resolve
-    to the container itself. The exporter compose override already adds
-    host.docker.internal via extra_hosts, so we rewrite the host there.
+    celery-exporter runs in Docker, so localhost points to the container
+    itself. Rewrite localhost hosts to ``host.docker.internal``.
     """
     parsed = urlparse(broker_url)
     host = (parsed.hostname or "").lower()
@@ -384,7 +383,7 @@ def _rewrite_broker_url_for_container(broker_url: str) -> str:
 
 
 def _get_compose_files(work_dir: Path) -> list[str]:
-    """Return the list of -f flags for docker compose commands."""
+    """Return ``-f`` file flags for docker compose commands."""
     files = ["-f", "docker-compose.yml"]
     if (work_dir / CELERY_EXPORTER_COMPOSE_FILE).exists():
         files += ["-f", CELERY_EXPORTER_COMPOSE_FILE]
@@ -392,7 +391,7 @@ def _get_compose_files(work_dir: Path) -> list[str]:
 
 
 def _check_docker_compose():
-    """Check if docker-compose is available."""
+    """Return whether docker compose is available."""
     try:
         result = subprocess.run(
             ["docker", "compose", "version"],
@@ -432,7 +431,7 @@ def _check_docker_compose():
 
 
 def _get_compose_cmd():
-    """Get the appropriate docker compose command."""
+    """Return the available docker compose command."""
     result = subprocess.run(
         ["docker", "compose", "version"],
         capture_output=True,
@@ -446,7 +445,7 @@ def _get_compose_cmd():
 def _copy_stack_file(
     config_file, dest, app_url=None, stack_log_dir: Path | None = None
 ):
-    """Copy a single stack config file, substituting placeholders if needed."""
+    """Copy one stack config file and substitute placeholders when needed."""
     # For alloy-config.alloy, substitute the metrics scrape URL
     if config_file.name == "alloy-config.alloy" and app_url:  # pragma: no cover
         content = config_file.read_text()
@@ -461,14 +460,14 @@ def _copy_stack_file(
 
 
 def _get_stack_dir() -> Path:
-    """Return the stack working directory without modifying any files."""
+    """Return the stack working directory without copying config files."""
     work_dir = _resolve_stack_dir()
     work_dir.mkdir(parents=True, exist_ok=True)
     return work_dir
 
 
 def _get_work_dir(app_url=None):
-    """Get or create working directory and copy stack configs."""
+    """Get or create the working directory and copy stack configs."""
     work_dir = _resolve_stack_dir()
     work_dir.mkdir(parents=True, exist_ok=True)
     stack_log_dir: Path | None = None
@@ -533,7 +532,7 @@ def _is_file_logging_enabled() -> bool:
 
 
 def _render_stack_compose(content: str, stack_log_dir: Path | None) -> str:
-    """Render docker-compose.yml, conditionally injecting file-log bind mount."""
+    """Render ``docker-compose.yml`` and optionally inject file-log bind mount."""
     start_marker = "__DJANGO_O11Y_STACK_LOG_MOUNT_START__"
     end_marker = "__DJANGO_O11Y_STACK_LOG_MOUNT_END__"
 
@@ -558,13 +557,10 @@ def _render_stack_compose(content: str, stack_log_dir: Path | None) -> str:
 
 
 def _prepare_stack_log_dir(stack_log_dir: Path) -> Path:
-    """Ensure stack log dir exists and is writable by the current user.
+    """Ensure stack log directory exists and is writable.
 
-    Docker bind mounts may create missing host directories as root. To avoid
-    ownership drift, we pre-create the directory before docker compose runs.
-
-    If the target exists but is not writable, fall back to ``/tmp/django-o11y``
-    with a warning so stack startup can still proceed.
+    If the target is not writable, fall back to ``/tmp/django-o11y`` so stack
+    startup can still continue.
     """
     # Fast path: if the directory already exists and is writable, avoid
     # touching the filesystem hierarchy further.
@@ -583,7 +579,7 @@ def _prepare_stack_log_dir(stack_log_dir: Path) -> Path:
 
 
 def _fallback_stack_log_dir(original: Path) -> Path:
-    """Return a writable fallback stack log dir and emit a warning."""
+    """Return a writable fallback stack log directory and emit a warning."""
     fallback = Path("/tmp/django-o11y")
     fallback.mkdir(parents=True, exist_ok=True)
     click.secho(
@@ -599,7 +595,7 @@ def _fallback_stack_log_dir(original: Path) -> Path:
 
 
 def _resolve_stack_dir() -> Path:
-    """Resolve stack directory using explicit env var, then XDG state dir."""
+    """Resolve stack directory from env var, then XDG state dir."""
     if configured := os.environ.get("DJANGO_O11Y_STACK_DIR"):
         return Path(configured).expanduser()
 
@@ -611,11 +607,9 @@ def _resolve_stack_dir() -> Path:
 
 
 def _resolve_stack_log_dir() -> Path:
-    """Resolve host log dir to mount into the Alloy container.
+    """Resolve host log directory to mount into the Alloy container.
 
-    Explicit override via DJANGO_O11Y_STACK_LOG_DIR takes precedence,
-    which is useful when log files land in a Docker volume mount that
-    differs from the path Django would derive from its config.
+    ``DJANGO_O11Y_STACK_LOG_DIR`` takes precedence when set.
     """
     if override := os.environ.get("DJANGO_O11Y_STACK_LOG_DIR"):
         return Path(override).expanduser()
@@ -634,7 +628,7 @@ def _resolve_stack_log_dir() -> Path:
 
 
 def _print_service_urls(work_dir: Path | None = None):
-    """Print URLs for accessing services."""
+    """Print service URLs."""
     click.echo("  Grafana:          http://localhost:3000")
     click.echo("  Prometheus:       http://localhost:9090")
     click.echo("  Tempo:            http://localhost:3200")
@@ -646,7 +640,7 @@ def _print_service_urls(work_dir: Path | None = None):
 
 
 def _check_configuration():
-    """Check configuration is loaded correctly."""
+    """Check that configuration loads correctly."""
     ok, warn, err = 0, 0, 0
 
     try:

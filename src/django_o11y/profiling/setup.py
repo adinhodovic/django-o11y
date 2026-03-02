@@ -1,4 +1,4 @@
-"""Pyroscope profiling setup and Celery profiling signal integration."""
+"""Pyroscope profiling setup and Celery profiling signal wiring."""
 
 import os
 import socket
@@ -15,7 +15,7 @@ logger = get_logger()
 
 
 def setup_profiling(config: dict[str, Any]) -> None:
-    """Configure Pyroscope with standard tags (service, version, env, host, pid)."""
+    """Configure Pyroscope with standard service and process tags."""
     if config.get("CELERY", {}).get("ENABLED", False):
         import importlib
 
