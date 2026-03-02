@@ -36,7 +36,7 @@ Django O11y wires up four observability pillars on `AppConfig.ready()`:
 - **Metrics** — django-prometheus instruments requests, database operations, and cache operations. A thin `counter()`/`histogram()` API is available for custom business metrics.
 - **Profiling** — Optional Pyroscope integration for continuous CPU/memory profiling with tag propagation from the active trace.
 
-All signals share `trace_id`, so you can jump from a slow metric to a trace, then to logs from that same request.
+All signals share `trace_id`, so you can jump from a metric to its trace, then to logs from that same request.
 
 ## Features
 

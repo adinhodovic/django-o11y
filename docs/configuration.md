@@ -12,9 +12,9 @@ DJANGO_O11Y = {
 
 ## Options
 
-Every setting can be overridden with an environment variable. Custom env vars use the
-`DJANGO_O11Y_<SECTION>_<KEY>` pattern. The three standard OpenTelemetry env vars are also
-supported where they map naturally.
+Every setting can be overridden with an environment variable. Custom env vars follow the
+`DJANGO_O11Y_<SECTION>_<KEY>` pattern. Three standard OpenTelemetry env vars are also
+recognized: `OTEL_SERVICE_NAME`, `OTEL_EXPORTER_OTLP_ENDPOINT`, and `OTEL_TRACES_SAMPLER_ARG`.
 
 Precedence (lowest to highest):
 
