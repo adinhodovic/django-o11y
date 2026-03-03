@@ -28,7 +28,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django_prometheus.middleware.PrometheusBeforeMiddleware",
     "django_o11y.tracing.middleware.TracingMiddleware",
-    "django_structlog.middlewares.RequestMiddleware",
+    "django_o11y.logging.middleware.LoggingMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django_prometheus.middleware.PrometheusAfterMiddleware",
 ]

@@ -205,21 +205,32 @@ def test_tracing_middleware_sync_not_marked_coroutine():
 
 
 def test_tracing_middleware_async_adds_span_attributes():
-    """__acall__ must annotate the span just like the sync path."""
+    """__acall__ must create a span with http.route and http.method attributes."""
+    from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
+        InMemorySpanExporter,
+    )
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import SimpleSpanProcessor
     from django_o11y.tracing.middleware import TracingMiddleware
 
-    middleware = TracingMiddleware(_async_view)
-
-    tracer = _make_tracer()
+    exporter = InMemorySpanExporter()
+    provider = TracerProvider()
+    provider.add_span_processor(SimpleSpanProcessor(exporter))
 
     async def run():
-        with tracer.start_as_current_span("test-span") as span:
-            with patch("opentelemetry.trace.get_current_span", return_value=span):
-                response = await middleware(_make_async_request(path="/hello/"))
-                assert response.status_code == 200
-                assert span.attributes.get("http.route") == "/hello/"
+        with patch(
+            "django_o11y.tracing.middleware.get_tracer",
+            return_value=provider.get_tracer(__name__),
+        ):
+            middleware = TracingMiddleware(_async_view)
+        response = await middleware(_make_async_request(path="/hello/"))
+        assert response.status_code == 200
 
     asyncio.run(run())
+
+    spans = exporter.get_finished_spans()
+    assert len(spans) == 1
+    assert spans[0].attributes.get("http.route") == "/hello/"
 
 
 def test_tracing_middleware_async_propagates_exception():
@@ -240,24 +251,34 @@ def test_tracing_middleware_async_propagates_exception():
 
 def test_tracing_middleware_async_authenticated_user(django_user_request):
     """__acall__ must set user span attributes for authenticated users."""
+    from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
+        InMemorySpanExporter,
+    )
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import SimpleSpanProcessor
     from django_o11y.tracing.middleware import TracingMiddleware
 
-    # Build an async request from the sync fixture's data
+    exporter = InMemorySpanExporter()
+    provider = TracerProvider()
+    provider.add_span_processor(SimpleSpanProcessor(exporter))
+
     async_request = _make_async_request()
     async_request.user = django_user_request.user
 
-    middleware = TracingMiddleware(_async_view)
-
-    tracer = _make_tracer()
-
     async def run():
-        with tracer.start_as_current_span("test-span") as span:
-            with patch("opentelemetry.trace.get_current_span", return_value=span):
-                await middleware(async_request)
-                assert span.attributes.get("user.id") == "1"
-                assert span.attributes.get("user.username") == "testuser"
+        with patch(
+            "django_o11y.tracing.middleware.get_tracer",
+            return_value=provider.get_tracer(__name__),
+        ):
+            middleware = TracingMiddleware(_async_view)
+        await middleware(async_request)
 
     asyncio.run(run())
+
+    spans = exporter.get_finished_spans()
+    assert len(spans) == 1
+    assert spans[0].attributes.get("user.id") == "1"
+    assert spans[0].attributes.get("user.username") == "testuser"
 
 
 @pytest.mark.django_db
