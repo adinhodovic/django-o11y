@@ -21,6 +21,8 @@ Or install only what you need:
 | `django-o11y[celery]` | Celery tracing and structured task logs |
 | `django-o11y[profiling]` | Pyroscope continuous profiling |
 | `django-o11y[postgres]` | OpenTelemetry traces for psycopg2 / psycopg (v3) queries |
+| `django-o11y[sqlite]` | OpenTelemetry traces for SQLite queries |
+| `django-o11y[mysql]` | OpenTelemetry traces for MySQL queries via PyMySQL |
 | `django-o11y[redis]` | OpenTelemetry traces for Redis/cache operations |
 | `django-o11y[http]` | OpenTelemetry traces for outbound `requests`, `urllib3`, `urllib`, and `httpx` calls |
 | `django-o11y[aws]` | OpenTelemetry traces for AWS SDK calls via boto3/botocore (enable via `TRACING.AWS_ENABLED`) |
@@ -463,8 +465,8 @@ Instrumentation activates automatically when the relevant package is installed. 
 | Django HTTP requests | One span per view — method, route, status code, user ID | Always active |
 | PostgreSQL (psycopg2) | One span per query with SQL commenter | `django-o11y[postgres]` |
 | PostgreSQL (psycopg v3) | One span per query with SQL commenter | `django-o11y[postgres]` |
-| MySQL (PyMySQL) | One span per query | Install [PyMySQL](https://pypi.org/project/PyMySQL/) directly |
-| SQLite | One span per query | Install [sqlite3](https://docs.python.org/3/library/sqlite3.html) (stdlib) |
+| MySQL (PyMySQL) | One span per query | `django-o11y[mysql]` |
+| SQLite | One span per query | `django-o11y[sqlite]` |
 | Redis / cache | One span per cache operation | `django-o11y[redis]` |
 | Celery tasks | One span per task, linked to the originating request via [W3C TraceContext](https://www.w3.org/TR/trace-context/) propagation | `django-o11y[celery]` |
 | Outbound HTTP ([requests](https://requests.readthedocs.io/)) | One span per call | `django-o11y[http]` |

@@ -319,7 +319,6 @@ services:
       - CE_BUCKETS=1,2.5,5,10,30,60,300,600,900,1800
     ports:
       - "{CELERY_EXPORTER_PORT}:{CELERY_EXPORTER_PORT}"
-    restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
 """
