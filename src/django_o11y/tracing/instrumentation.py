@@ -7,7 +7,9 @@ def setup_instrumentation(config: dict[str, Any]) -> None:
     """Set up automatic tracing instrumentation for Django and dependencies."""
     from opentelemetry.instrumentation.django import DjangoInstrumentor
 
-    DjangoInstrumentor().instrument()
+    DjangoInstrumentor().instrument(
+        is_sql_commentor_enabled=config.get("TRACING", {}).get("SQL_COMMENTER", True)
+    )
     _instrument_database()
     _instrument_cache()
     _instrument_celery(config)

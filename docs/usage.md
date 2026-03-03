@@ -377,7 +377,7 @@ This requires `LOGGING = build_logging_dict()` in your settings. Without it, `se
 
 ### WebSockets (Django Channels)
 
-Add `ChannelsLoggingMiddleware` to your ASGI application. Place it outside `AuthMiddlewareStack` so `scope["user"]` is already resolved when the connection is logged:
+Add `ChannelsLoggingMiddleware` to your ASGI application. Place it inside `AuthMiddlewareStack` so `scope["user"]` is already resolved when the connection is logged:
 
 ```python
 # asgi.py
@@ -385,8 +385,8 @@ from django_o11y.logging.middleware import ChannelsLoggingMiddleware
 
 application = ProtocolTypeRouter({
     "http": django_http_handler,
-    "websocket": ChannelsLoggingMiddleware(
-        AuthMiddlewareStack(
+    "websocket": AuthMiddlewareStack(
+        ChannelsLoggingMiddleware(
             URLRouter(websocket_urlpatterns)
         )
     ),

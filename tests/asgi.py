@@ -19,10 +19,13 @@ from django_o11y.logging.middleware import ChannelsLoggingMiddleware  # noqa: E4
 application = ProtocolTypeRouter(
     {
         "http": django_http_handler,
-        # ChannelsLoggingMiddleware sits outside AuthMiddlewareStack so that
-        # scope["user"] is already resolved when connection events are logged.
-        "websocket": ChannelsLoggingMiddleware(
-            AuthMiddlewareStack(URLRouter(tests.ws_urls.websocket_urlpatterns))
+        # Middleware order (outermost → innermost):
+        #   1. AllowedHostsOriginValidator — rejects bad origins before any work
+        #   2. AuthMiddlewareStack        — resolves scope["user"]
+        #   3. ChannelsLoggingMiddleware  — logs with user context already set
+        #   4. URLRouter                  — routes to the consumer
+        "websocket": AuthMiddlewareStack(
+            ChannelsLoggingMiddleware(URLRouter(tests.ws_urls.websocket_urlpatterns))
         ),
     }
 )
