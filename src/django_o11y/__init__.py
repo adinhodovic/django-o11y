@@ -7,8 +7,6 @@ try:
 except PackageNotFoundError:
     __version__ = "unknown"
 
-default_app_config = "django_o11y.apps.DjangoO11yConfig"
-
 
 def get_urls() -> list:
     """Return django-o11y URL patterns.

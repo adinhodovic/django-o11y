@@ -84,11 +84,12 @@ def make_config(overrides: dict | None = None) -> dict:
     building minimal dicts, so that direct key access in the library code
     does not raise KeyError when a key is not explicitly set.
     """
-    from django_o11y.config.setup import _deep_merge, get_config
+    from django_o11y.config.setup import get_config
+    from django_o11y.utils.merge import deep_merge
 
     base = get_config()
     if overrides:
-        return _deep_merge(base, overrides)
+        deep_merge(base, overrides)
     return base
 
 

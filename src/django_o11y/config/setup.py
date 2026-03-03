@@ -8,6 +8,7 @@ from typing import Any
 
 from django.conf import settings
 
+from django_o11y.utils.merge import deep_merge
 from django_o11y.utils.process import get_default_server_commands
 
 
@@ -109,7 +110,8 @@ def get_config() -> dict[str, Any]:
     }
 
     user_config = getattr(settings, "DJANGO_O11Y", {})
-    merged = _deep_merge(defaults, user_config)
+    merged = defaults
+    deep_merge(merged, user_config)
     _apply_env_overrides(merged, default_sample_rate)
 
     # Resolve FILE_PATH after SERVICE_NAME is fully resolved (settings + env overrides),
@@ -185,16 +187,6 @@ def _apply_env_overrides(config: dict[str, Any], default_sample_rate: float) -> 
 
     if (v := os.getenv("DJANGO_O11Y_STARTUP_SERVER_COMMANDS")) is not None:
         st["SERVER_COMMANDS"] = [item.strip() for item in v.split(",") if item.strip()]
-
-
-def _deep_merge(default: dict, override: dict) -> dict:
-    result = default.copy()
-    for key, value in override.items():
-        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
-            result[key] = _deep_merge(result[key], value)
-        else:
-            result[key] = value
-    return result
 
 
 @lru_cache(maxsize=1)

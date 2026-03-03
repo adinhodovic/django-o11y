@@ -74,7 +74,6 @@ structlog.configure(
 
 Fields are omitted when no recording span is active.
 
-
 ## Tracing (`django_o11y.tracing.utils`)
 
 ### get_tracer
@@ -132,7 +131,6 @@ from django_o11y.tracing.utils import get_current_span_id
 
 span_id = get_current_span_id()
 ```
-
 
 ## Metrics (`django_o11y.metrics`)
 

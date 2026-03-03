@@ -1,26 +1,43 @@
-"""Tests for configuration."""
+"""Tests for logging configuration."""
 
 import logging
 import sys
 from unittest.mock import MagicMock, patch
 
+import pytest
 import structlog
 
+from django_o11y.logging.setup import DevEventFilter, build_logging_dict
 
-def test_build_logging_dict_json_format():
-    from django_o11y.logging.setup import build_logging_dict
 
-    logging_config = {
-        "FORMAT": "json",
+def _base_config(**overrides):
+    """Return a minimal logging config dict with sane defaults."""
+    return {
+        "FORMAT": "console",
         "LEVEL": "INFO",
         "REQUEST_LEVEL": "INFO",
         "DATABASE_LEVEL": "WARNING",
         "CELERY_LEVEL": "INFO",
         "COLORIZED": False,
         "OTLP_ENABLED": False,
+        "FILE_ENABLED": False,
+        **overrides,
     }
 
-    result = build_logging_dict(logging_config)
+
+def test_build_logging_dict_json_format():
+    result = build_logging_dict(
+        {
+            "FORMAT": "json",
+            "LEVEL": "INFO",
+            "REQUEST_LEVEL": "INFO",
+            "DATABASE_LEVEL": "WARNING",
+            "CELERY_LEVEL": "INFO",
+            "COLORIZED": False,
+            "OTLP_ENABLED": False,
+        }
+    )
+
     assert result["version"] == 1
     assert "json" in result["formatters"]
     assert "foreign_pre_chain" in result["formatters"]["default"]
@@ -28,25 +45,17 @@ def test_build_logging_dict_json_format():
 
 
 def test_build_logging_dict_with_otlp_enabled():
-    from django_o11y.logging.setup import build_logging_dict
-
-    logging_config = {
-        "FORMAT": "console",
-        "LEVEL": "INFO",
-        "REQUEST_LEVEL": "INFO",
-        "DATABASE_LEVEL": "WARNING",
-        "CELERY_LEVEL": "INFO",
-        "COLORIZED": False,
-        "OTLP_ENABLED": True,
-        "OTLP_ENDPOINT": "http://localhost:4317",
-    }
+    config = _base_config(
+        FORMAT="console", OTLP_ENABLED=True, OTLP_ENDPOINT="http://localhost:4317"
+    )
 
     with (
         patch("django_o11y.logging.utils.OTLPLogExporter"),
         patch("django_o11y.logging.utils.set_logger_provider"),
     ):
-        result = build_logging_dict(logging_config)
-        assert "otlp" in result["handlers"]
+        result = build_logging_dict(config)
+
+    assert "otlp" in result["handlers"]
 
 
 def test_add_open_telemetry_spans_with_parent():
@@ -64,89 +73,41 @@ def test_add_open_telemetry_spans_with_parent():
 
     with tracer.start_as_current_span("parent-span"):
         with tracer.start_as_current_span("child-span"):
-            event_dict = {}
-            result = add_open_telemetry_spans(None, None, event_dict)
-            # Child span has a parent — parent_span_id should be present (line 36)
+            result = add_open_telemetry_spans(None, None, {})
             assert "parent_span_id" in result
             assert "trace_id" in result
             assert "span_id" in result
 
 
-def test_build_logging_dict_rich_exceptions_disabled():
-    """RICH_EXCEPTIONS=False produces a valid ConsoleRenderer without error.
+@pytest.mark.parametrize(
+    "rich_exceptions, sys_modules_patch, expected_renderer_type",
+    [
+        (False, {}, structlog.dev.ConsoleRenderer),
+        (True, {"rich": None}, structlog.dev.ConsoleRenderer),
+    ],
+    ids=["disabled", "enabled_without_rich"],
+)
+def test_build_logging_dict_rich_exceptions(
+    rich_exceptions, sys_modules_patch, expected_renderer_type
+):
+    config = _base_config(RICH_EXCEPTIONS=rich_exceptions)
 
-    When rich is installed structlog defaults to RichTracebackFormatter on its
-    own — that's structlog's behaviour, not ours.  Our flag only controls
-    whether we *explicitly* inject it; with False we leave the choice to
-    structlog.  We just assert the call succeeds and returns a renderer.
-    """
-    from django_o11y.logging.setup import build_logging_dict
+    with patch.dict(sys.modules, sys_modules_patch):
+        result = build_logging_dict(config)
 
-    logging_config = {
-        "FORMAT": "console",
-        "LEVEL": "INFO",
-        "REQUEST_LEVEL": "INFO",
-        "DATABASE_LEVEL": "WARNING",
-        "CELERY_LEVEL": "INFO",
-        "COLORIZED": False,
-        "RICH_EXCEPTIONS": False,
-        "OTLP_ENABLED": False,
-        "FILE_ENABLED": False,
-    }
-
-    result = build_logging_dict(logging_config)
-    formatter = result["formatters"]["default"]
-    renderer = formatter["processor"]
-    assert isinstance(renderer, structlog.dev.ConsoleRenderer)
-
-
-def test_build_logging_dict_rich_exceptions_enabled_without_rich():
-    """RICH_EXCEPTIONS=True with Rich absent falls back silently to plain renderer."""
-    from django_o11y.logging.setup import build_logging_dict
-
-    logging_config = {
-        "FORMAT": "console",
-        "LEVEL": "INFO",
-        "REQUEST_LEVEL": "INFO",
-        "DATABASE_LEVEL": "WARNING",
-        "CELERY_LEVEL": "INFO",
-        "COLORIZED": False,
-        "RICH_EXCEPTIONS": True,
-        "OTLP_ENABLED": False,
-        "FILE_ENABLED": False,
-    }
-
-    # Pretend Rich is not installed
-    with patch.dict(sys.modules, {"rich": None}):
-        result = build_logging_dict(logging_config)
-
-    # Should still produce a valid logging dict without raising
-    assert result["version"] == 1
-    assert "default" in result["formatters"]
+    assert isinstance(
+        result["formatters"]["default"]["processor"], expected_renderer_type
+    )
 
 
 def test_build_logging_dict_rich_exceptions_enabled_with_rich():
     """RICH_EXCEPTIONS=True with Rich present injects RichTracebackFormatter."""
-    from django_o11y.logging.setup import build_logging_dict
+    config = _base_config(RICH_EXCEPTIONS=True)
 
-    logging_config = {
-        "FORMAT": "console",
-        "LEVEL": "INFO",
-        "REQUEST_LEVEL": "INFO",
-        "DATABASE_LEVEL": "WARNING",
-        "CELERY_LEVEL": "INFO",
-        "COLORIZED": False,
-        "RICH_EXCEPTIONS": True,
-        "OTLP_ENABLED": False,
-        "FILE_ENABLED": False,
-    }
-
-    mock_rich = MagicMock()
-    with patch.dict("sys.modules", {"rich": mock_rich}):
-        result = build_logging_dict(logging_config)
+    with patch.dict("sys.modules", {"rich": MagicMock()}):
+        result = build_logging_dict(config)
 
     renderer = result["formatters"]["default"]["processor"]
-    # RichTracebackFormatter is injected as exception_formatter
     assert isinstance(renderer, structlog.dev.ConsoleRenderer)
     assert renderer._exception_formatter is not None
     assert isinstance(
@@ -155,8 +116,6 @@ def test_build_logging_dict_rich_exceptions_enabled_with_rich():
 
 
 def test_dev_event_filter_filters_configured_event():
-    from django_o11y.logging.setup import DevEventFilter
-
     event_filter = DevEventFilter(["request_started"])
 
     filtered = logging.LogRecord(
@@ -183,23 +142,64 @@ def test_dev_event_filter_filters_configured_event():
 
 
 def test_build_logging_dict_applies_dev_event_filter_in_console_mode():
-    from django_o11y.logging.setup import DevEventFilter, build_logging_dict
+    config = _base_config(
+        RICH_EXCEPTIONS=False, DEV_FILTERED_EVENTS=["request_started"]
+    )
 
-    logging_config = {
-        "FORMAT": "console",
-        "LEVEL": "INFO",
-        "REQUEST_LEVEL": "INFO",
-        "DATABASE_LEVEL": "WARNING",
-        "CELERY_LEVEL": "INFO",
-        "COLORIZED": False,
-        "RICH_EXCEPTIONS": False,
-        "OTLP_ENABLED": False,
-        "FILE_ENABLED": False,
-        "DEV_FILTERED_EVENTS": ["request_started"],
-    }
-
-    result = build_logging_dict(logging_config)
+    result = build_logging_dict(config)
     filters = result["handlers"]["console"].get("filters", [])
 
     assert len(filters) == 1
     assert isinstance(filters[0], DevEventFilter)
+
+
+# ---------------------------------------------------------------------------
+# build_logging_dict extra= deep-merge
+# ---------------------------------------------------------------------------
+
+
+def test_build_logging_dict_extra_adds_logger():
+    config = _base_config()
+    extra = {"loggers": {"myapp": {"level": "DEBUG"}}}
+
+    result = build_logging_dict(config, extra=extra)
+
+    assert "myapp" in result["loggers"]
+    assert result["loggers"]["myapp"]["level"] == "DEBUG"
+    # Pre-existing loggers must still be present
+    assert "django_o11y" in result["loggers"]
+
+
+def test_build_logging_dict_extra_overrides_root_level():
+    config = _base_config()
+    extra = {"root": {"level": "DEBUG"}}
+
+    result = build_logging_dict(config, extra=extra)
+
+    assert result["root"]["level"] == "DEBUG"
+
+
+# ---------------------------------------------------------------------------
+# FILE_ENABLED=True
+# ---------------------------------------------------------------------------
+
+
+def test_build_logging_dict_file_enabled_adds_file_handler(tmp_path):
+    log_file = tmp_path / "django.log"
+    config = _base_config(
+        FILE_ENABLED=True,
+        FILE_PATH=str(log_file),
+    )
+
+    result = build_logging_dict(config)
+
+    assert "file" in result["handlers"]
+    assert result["handlers"]["file"]["class"] == "logging.FileHandler"
+    assert result["handlers"]["file"]["formatter"] == "json"
+    assert "file" in result["root"]["handlers"]
+
+
+def test_build_logging_dict_file_disabled_no_file_handler():
+    config = _base_config(FILE_ENABLED=False)
+    result = build_logging_dict(config)
+    assert "file" not in result["handlers"]

@@ -12,7 +12,6 @@ from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 
-
 # GCP Cloud Logging numeric severity values.
 # https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#logseverity
 _SEVERITY_LEVELS: dict[str, int] = {

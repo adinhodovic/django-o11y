@@ -2,18 +2,16 @@
 
 import pytest
 
+from django_o11y.config.utils import _validate_endpoint, validate_config
+
 
 def test_valid_config():
-    from django_o11y.config.utils import validate_config
-
     config = {
         "TRACING": {"SAMPLE_RATE": 0.5},
         "LOGGING": {"FORMAT": "json", "LEVEL": "INFO"},
         "METRICS": {"PROMETHEUS_ENABLED": True},
     }
-
-    errors = validate_config(config)
-    assert len(errors) == 0
+    assert len(validate_config(config)) == 0
 
 
 @pytest.mark.parametrize(
@@ -44,8 +42,6 @@ def test_valid_config():
     ],
 )
 def test_invalid_config_produces_error(config, expected_fragments):
-    from django_o11y.config.utils import validate_config
-
     errors = validate_config(config)
     assert len(errors) >= 1
     combined = " ".join(errors)
@@ -54,29 +50,18 @@ def test_invalid_config_produces_error(config, expected_fragments):
 
 
 def test_multiple_validation_errors():
-    from django_o11y.config.utils import validate_config
-
     config = {
         "TRACING": {"SAMPLE_RATE": 2.0},
         "LOGGING": {"FORMAT": "yaml", "LEVEL": "INVALID"},
     }
-
-    errors = validate_config(config)
-    assert len(errors) == 3
+    assert len(validate_config(config)) == 3
 
 
 def test_empty_config():
-    from django_o11y.config.utils import validate_config
-
-    config = {}
-
-    errors = validate_config(config)
-    assert len(errors) == 0
+    assert len(validate_config({})) == 0
 
 
 def test_endpoint_non_string():
-    from django_o11y.config.utils import _validate_endpoint
-
     errors = _validate_endpoint(12345, "TRACING.OTLP_ENDPOINT")
     assert len(errors) == 1
     assert "must be a string" in errors[0]

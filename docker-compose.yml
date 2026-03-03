@@ -37,7 +37,7 @@ services:
       OTEL_SERVICE_NAME: django-app
       DJANGO_O11Y_LOGGING_FILE_PATH: /tmp/django-o11y/django.log
     volumes:
-      - ${DJANGO_O11Y_STACK_LOG_MOUNT}:/tmp/django-o11y
+      - ${DJANGO_O11Y_STACK_LOG_MOUNT:-/tmp/django-o11y}:/tmp/django-o11y
       - sqlite-data:/data
     ports:
       - "8000:8000"
@@ -69,7 +69,7 @@ services:
       OTEL_SERVICE_NAME: celery-worker
       DJANGO_O11Y_LOGGING_FILE_PATH: /tmp/django-o11y/celery.log
     volumes:
-      - ${DJANGO_O11Y_STACK_LOG_MOUNT}:/tmp/django-o11y
+      - ${DJANGO_O11Y_STACK_LOG_MOUNT:-/tmp/django-o11y}:/tmp/django-o11y
       - sqlite-data:/data
     ports:
       - "8009:8009"
@@ -103,5 +103,42 @@ services:
           sleep 5;
         done
       "
+    depends_on:
+      - django
+
+  ws-generator:
+    image: python:3.12-slim
+    entrypoint:
+      - sh
+      - -c
+      - |
+        pip install -q websockets
+        python - <<'EOF'
+        import asyncio, json, websockets
+
+        WS_URL = "ws://django:8000/ws/echo/"
+        CONNECTION_TTL = 15
+
+        async def run():
+            print("ws-generator: waiting for django WebSocket...")
+            while True:
+                try:
+                    async with websockets.connect(WS_URL) as ws:
+                        print("ws-generator: connected")
+                        n = 0
+                        deadline = asyncio.get_event_loop().time() + CONNECTION_TTL
+                        while asyncio.get_event_loop().time() < deadline:
+                            await ws.send(json.dumps({"msg": "hello", "n": n}))
+                            reply = await ws.recv()
+                            print("ws-generator: echo", reply)
+                            n += 1
+                            await asyncio.sleep(5)
+                        print("ws-generator: reconnecting")
+                except Exception as exc:
+                    print("ws-generator: error", exc)
+                    await asyncio.sleep(3)
+
+        asyncio.run(run())
+        EOF
     depends_on:
       - django

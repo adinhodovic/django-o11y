@@ -1,7 +1,7 @@
 """Tracing middleware for Django requests."""
 
-import sys
 from collections.abc import Callable
+from inspect import iscoroutinefunction, markcoroutinefunction
 
 from django.http import HttpRequest, HttpResponse
 from opentelemetry import trace
@@ -10,26 +10,21 @@ from opentelemetry.trace import SpanKind
 
 from django_o11y.tracing.utils import get_tracer
 
-if sys.version_info >= (3, 12):
-    from inspect import iscoroutinefunction, markcoroutinefunction
-else:
-    from asgiref.sync import iscoroutinefunction, markcoroutinefunction
-
 
 class TracingMiddleware:
-    """Add request metadata to the active span, and own the server span in ASGI mode.
+    """Annotates the active span with request metadata.
 
-    In WSGI mode, DjangoInstrumentor creates and owns the server span.
-    TracingMiddleware annotates it with route and user attributes.
+    In WSGI mode, DjangoInstrumentor owns the server span. This middleware
+    annotates it with route and user attributes.
 
-    In ASGI mode, DjangoInstrumentor's span is activated inside a sync_to_async
-    thread and its ContextVar attachment does not survive back to the async event
-    loop context. TracingMiddleware creates its own server span in the async context
-    so it remains active for the full request lifecycle — including when
-    django-structlog's handle_response fires — ensuring trace_id/span_id are
-    injected into all request log lines.
+    In ASGI mode, DjangoInstrumentor activates its span inside a
+    sync_to_async thread. ContextVar changes in that thread don't propagate
+    back to the async event loop, so the span is invisible when
+    django-structlog's handle_response fires. This middleware creates its own
+    server span in the async context so trace_id/span_id appear on all
+    request log lines.
 
-    Supports both WSGI (sync) and ASGI (async) deployments.
+    Works in WSGI and ASGI.
     """
 
     sync_capable = True
@@ -63,26 +58,36 @@ class TracingMiddleware:
             span_name,
             context=parent_context,
             kind=SpanKind.SERVER,
-            attributes={"http.route": request.path, "http.method": method},
+            attributes={"url.path": request.path, "http.request.method": method},
         ) as span:
             self._annotate_user(request, span)
             response = await self.get_response(request)  # type: ignore[misc]
             if span.is_recording():
-                span.set_attribute("http.status_code", response.status_code)
+                span.set_attribute("http.response.status_code", response.status_code)
             return response
 
     def _annotate_request(self, request: HttpRequest) -> None:
         span = trace.get_current_span()
 
         if span.is_recording():
-            span.set_attribute("http.route", request.path)
+            span.set_attribute("url.path", request.path)
             self._annotate_user(request, span)
 
     def _annotate_user(self, request: HttpRequest, span: trace.Span) -> None:
         if not span.is_recording():
             return
-        if (
-            hasattr(request, "user") and request.user and request.user.is_authenticated  # type: ignore[union-attr]
-        ):
-            span.set_attribute("user.id", str(request.user.id))  # type: ignore[union-attr]
-            span.set_attribute("user.username", request.user.username)  # type: ignore[union-attr]
+        if not hasattr(request, "user") or not request.user:  # type: ignore[union-attr]
+            return
+        user = request.user  # type: ignore[union-attr]
+        is_auth = getattr(user, "is_authenticated", False)
+        if callable(is_auth):
+            try:
+                is_auth = is_auth()
+            except Exception:
+                return
+        if not is_auth:
+            return
+        span.set_attribute(
+            "user.id", str(getattr(user, "pk", None) or getattr(user, "id", None))
+        )
+        span.set_attribute("user.username", user.username)  # type: ignore[union-attr]

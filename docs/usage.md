@@ -24,6 +24,7 @@ Or install only what you need:
 | `django-o11y[redis]` | OpenTelemetry traces for Redis/cache operations |
 | `django-o11y[http]` | OpenTelemetry traces for outbound `requests`, `urllib3`, `urllib`, and `httpx` calls |
 | `django-o11y[aws]` | OpenTelemetry traces for AWS SDK calls via boto3/botocore (enable via `TRACING.AWS_ENABLED`) |
+| `django-o11y[channels]` | `ChannelsLoggingMiddleware` for Django Channels WebSocket observability |
 | `django-o11y[dev-logging]` | Rich exception formatting in dev logs |
 | `django-o11y[all]` | Everything |
 
@@ -215,9 +216,9 @@ For full metric helper signatures and examples, see [Utility functions](utils.md
 
 ## Logs
 
-Structured logging via [structlog](https://www.structlog.org/) and [django-structlog](https://github.com/jrobichaud/django-structlog). Every log line includes `trace_id` and `span_id`, so you can jump from a log entry directly to the trace in Grafana.
+Structured logging via [structlog](https://www.structlog.org/) and [django-structlog](https://github.com/jrobichaud/django-structlog). Every log line includes `trace_id` and `span_id` so logs and traces are correlated in Grafana.
 
-### Setup
+### Logging Setup
 
 Call `build_logging_dict()` in each environment settings module. A common split is `base.py`, `local.py`, `production.py` (or `prod.py`), and `test.py`.
 
@@ -366,7 +367,7 @@ Disable it:
 DJANGO_O11Y_LOGGING_FILE_ENABLED=false
 ```
 
-### Celery
+### Celery Log Forwarding
 
 When `CELERY.ENABLED` is `True`, [django-o11y](https://github.com/adinhodovic/django-o11y) hooks Celery's `setup_logging` signal to apply `settings.LOGGING` via `dictConfig` in each worker process. Worker logs use the same JSON format (or console format in dev) as the Django web process — no separate logging configuration needed.
 
@@ -374,13 +375,41 @@ This requires `LOGGING = build_logging_dict()` in your settings. Without it, `se
 
 [django-structlog](https://github.com/jrobichaud/django-structlog) emits structured `task_started`, `task_succeeded`, and `task_failed` events automatically, each carrying `task_id`, `task_name`, `duration_ms`, and `trace_id`/`span_id`.
 
+### WebSockets (Django Channels)
+
+Add `ChannelsLoggingMiddleware` to your ASGI application. Place it outside `AuthMiddlewareStack` so `scope["user"]` is already resolved when the connection is logged:
+
+```python
+# asgi.py
+from django_o11y.logging.middleware import ChannelsLoggingMiddleware
+
+application = ProtocolTypeRouter({
+    "http": django_http_handler,
+    "websocket": ChannelsLoggingMiddleware(
+        AuthMiddlewareStack(
+            URLRouter(websocket_urlpatterns)
+        )
+    ),
+})
+```
+
+For every WebSocket connection this produces:
+
+| Event | Fields |
+| ----- | ------ |
+| `websocket_connected` | `path`, `request_id`, `user_id` (if authenticated) |
+| `websocket_disconnected` | same plus `duration_ms` |
+| `websocket_error` | same plus `error` and `exc_info`; replaces `websocket_disconnected` when the consumer raises |
+
+`http` and `lifespan` scopes pass through untouched.
+
 ---
 
 ## Profiling
 
 Continuous profiling via [Pyroscope](https://pyroscope.io/) and [pyroscope-otel](https://github.com/grafana/otel-profiling-go). Disabled by default. The Python SDK only supports push mode.
 
-### Setup
+### Profiling Setup
 
 Install the extra:
 
@@ -401,9 +430,9 @@ DJANGO_O11Y = {
 
 Profiles are pushed to Pyroscope on startup. View them in Grafana under Explore → Pyroscope.
 
-### Celery
+### Celery Worker Profiling
 
-For Celery prefork workers, profiling initialises in each worker child process after fork, not in the parent. No extra configuration is needed — [django-o11y](https://github.com/adinhodovic/django-o11y) handles the `worker_process_init` signal automatically.
+For Celery prefork workers, profiling initialises in each worker child process after fork, not in the parent. [django-o11y](https://github.com/adinhodovic/django-o11y) handles the `worker_process_init` signal automatically.
 
 ---
 
@@ -411,7 +440,7 @@ For Celery prefork workers, profiling initialises in each worker child process a
 
 Distributed tracing via [OpenTelemetry](https://opentelemetry.io/) ([opentelemetry-python](https://github.com/open-telemetry/opentelemetry-python)). Requests, database queries, cache operations, and outbound HTTP calls are instrumented automatically.
 
-### Setup
+### Traces Setup
 
 ```python
 DJANGO_O11Y = {
@@ -444,7 +473,7 @@ Instrumentation activates automatically when the relevant package is installed. 
 | Outbound HTTP ([httpx](https://www.python-httpx.org/)) | One span per call | `django-o11y[http]` |
 | AWS SDK ([botocore](https://botocore.amazonaws.com/v1/documentation/api/latest/index.html)) | One span per API call — S3, SQS, SES, etc. | `django-o11y[aws]` + `TRACING.AWS_ENABLED: True` |
 
-### Celery
+### Celery Tracing
 
 Install the extra:
 
@@ -464,9 +493,9 @@ DJANGO_O11Y = {
 
 Each task gets a trace span linked to the originating request via [W3C TraceContext](https://www.w3.org/TR/trace-context/) propagation through the broker.
 
-[django-o11y](https://github.com/adinhodovic/django-o11y) automatically sets `worker_send_task_events = True` and `task_send_sent_event = True` on startup, so [celery-exporter](https://github.com/danihodovic/celery-exporter) can receive task events without any extra Celery configuration.
+[django-o11y](https://github.com/adinhodovic/django-o11y) sets `worker_send_task_events = True` and `task_send_sent_event = True` on startup so [celery-exporter](https://github.com/danihodovic/celery-exporter) receives task events without extra Celery configuration.
 
-To reduce span loss in prefork workers, [django-o11y](https://github.com/adinhodovic/django-o11y) force-flushes tracing on `worker_process_shutdown`.
+[django-o11y](https://github.com/adinhodovic/django-o11y) force-flushes tracing on `worker_process_shutdown` to reduce span loss in prefork workers.
 
 ```python
 from celery import shared_task
@@ -542,7 +571,7 @@ Each [Gunicorn](https://gunicorn.org/) worker writes per-PID `.db` files into th
 
 ### Celery prefork workers
 
-Tracing and profiling work out of the box. No extra configuration is needed beyond enabling Celery:
+Tracing and profiling work without extra configuration beyond enabling Celery:
 
 ```python
 DJANGO_O11Y = {
@@ -552,7 +581,7 @@ DJANGO_O11Y = {
 }
 ```
 
-Individual tasks are short-lived, so they can't serve an HTTP endpoint themselves. [django-o11y](https://github.com/adinhodovic/django-o11y) runs the metrics HTTP server in the long-lived parent worker process instead. Each child writes its metrics to a per-PID file in a shared directory; on each scrape, the parent reads all those files and returns the combined result via `MultiProcessCollector`. The parent stays up for the lifetime of the worker, so Prometheus can scrape it on a normal pull interval — no pushgateway required.
+Individual tasks are short-lived and can't serve an HTTP endpoint. [django-o11y](https://github.com/adinhodovic/django-o11y) runs the metrics HTTP server in the long-lived parent process instead. Each child writes metrics to a per-PID file; the parent reads all of them on each scrape and returns the combined result via `MultiProcessCollector`. No pushgateway required.
 
 #### Prometheus metrics
 
