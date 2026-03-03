@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+      <url>
+        <loc>https://adinhodovic.github.io/django-o11y/</loc>
+      </url>
+      <url>
+        <loc>https://adinhodovic.github.io/django-o11y/usage/</loc>
+      </url>
+      <url>
+        <loc>https://adinhodovic.github.io/django-o11y/configuration/</loc>
+      </url>
+      <url>
+        <loc>https://adinhodovic.github.io/django-o11y/utils/</loc>
+      </url>
+      <url>
+        <loc>https://adinhodovic.github.io/django-o11y/demo-images/</loc>
+      </url>
+</urlset>
