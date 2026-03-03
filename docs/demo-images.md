@@ -1,61 +1,87 @@
 # Demo stack
 
-Screenshots from `manage.py o11y stack start` running against the test project — a minimal Django app firing one Celery task every 5 seconds. Run it yourself and Grafana comes up at `http://localhost:3000` with all dashboards pre-loaded.
+Screenshots from `manage.py o11y stack start` running against the test project, a minimal Django app that fires one Celery task every 5 seconds via a `/trigger/` endpoint. Traffic is low so most panels are sparse, but everything is wired up.
 
-Local Grafana base URL: `http://localhost:3000`
+Run it yourself with:
 
-## Screenshot placeholders
+```bash
+python manage.py o11y stack start
+```
 
-### Metrics
+Grafana starts at `http://localhost:3000` with all dashboards pre-loaded and no login required.
 
-![Metrics dashboard placeholder](images/demo/metrics-dashboard.png)
+## Metrics
 
-### Traces
+Django request rates, latency percentiles, database query counts, cache hit rates, and migration status from [django-prometheus](https://github.com/korfuri/django-prometheus). Dashboards imported from [django-mixin](https://github.com/adinhodovic/django-mixin).
 
-![Traces dashboard placeholder](images/demo/traces-dashboard.png)
+![Metrics dashboard](images/demo/metrics-dashboard.png)
 
-### Logs
+## Traces
 
-![Logs dashboard placeholder](images/demo/logs-dashboard.png)
+Distributed traces from [OpenTelemetry](https://opentelemetry.io/) via [Tempo](https://grafana.com/oss/tempo/). Each HTTP request and Celery task gets a span, with database queries and outbound HTTP calls as child spans.
 
-### Profiles
+![Traces dashboard](images/demo/traces-dashboard.png)
 
-![Profiles dashboard placeholder](images/demo/profiles-dashboard.png)
+## Logs
 
-## Grafana drilldowns
+Structured JSON logs from [structlog](https://www.structlog.org/) ingested via [Alloy](https://grafana.com/oss/alloy/) into [Loki](https://grafana.com/oss/loki/). Every log line carries `trace_id` and `span_id`, so you can jump from a log entry directly to its trace.
 
-- Metrics Explore (Prometheus): [Open](http://localhost:3000/explore?orgId=1&left=%7B%22datasource%22%3A%20%22prometheus%22%2C%20%22queries%22%3A%20%5B%7B%22refId%22%3A%20%22A%22%7D%5D%7D)
-- Traces Explore (Tempo): [Open](http://localhost:3000/explore?orgId=1&left=%7B%22datasource%22%3A%20%22tempo%22%2C%20%22queries%22%3A%20%5B%7B%22refId%22%3A%20%22A%22%7D%5D%7D)
-- Logs Explore (Loki): [Open](http://localhost:3000/explore?orgId=1&left=%7B%22datasource%22%3A%20%22loki%22%2C%20%22queries%22%3A%20%5B%7B%22refId%22%3A%20%22A%22%7D%5D%7D)
-- Profiles Explore (Pyroscope): [Open](http://localhost:3000/explore?orgId=1&left=%7B%22datasource%22%3A%20%22pyroscope%22%2C%20%22queries%22%3A%20%5B%7B%22refId%22%3A%20%22A%22%7D%5D%7D)
+![Logs dashboard](images/demo/logs-dashboard.png)
+
+## Profiles
+
+Continuous CPU profiling from [Pyroscope](https://pyroscope.io/). Flame graphs show where your app spends time. Profiles carry the same `service.name` and `deployment.environment` tags as your traces.
+
+![Profiles dashboard](images/demo/profiles-dashboard.png)
 
 ## Imported dashboards
 
-These are imported from Grafana.com when you run `o11y stack start`.
+These dashboards are pulled from Grafana.com when you run `o11y stack start`. They come from [django-mixin](https://github.com/adinhodovic/django-mixin) and [celery-mixin](https://github.com/danihodovic/celery-exporter/tree/master/celery-mixin). If a panel is wrong or a dashboard is missing something, open an issue in the relevant mixin repo rather than here.
 
-> These screenshots are from the library's own local test project (`tests/`): a minimal Django app that runs one Celery task every 5 seconds. Traffic is low and most panels will be sparse or empty.
+### Celery / Tasks / Overview
 
-- Celery / Tasks / Overview
-  - Local: [Open](http://localhost:3000/d/celery-tasks-overview-32s3/celery-tasks-overview)
-  - Grafana.com: [17509](https://grafana.com/grafana/dashboards/17509-celery-tasks-overview/)
-  - ![Celery Tasks Overview](images/demo/celery-tasks-overview.png)
-- Celery / Tasks / By Task
-  - Local: [Open](http://localhost:3000/d/celery-tasks-by-task-32s3/celery-tasks-by-task)
-  - Grafana.com: [17508](https://grafana.com/grafana/dashboards/17508-celery-tasks-by-task/)
-  - ![Celery Tasks By Task](images/demo/celery-tasks-by-task.png)
-- Django / Overview
-  - Local: [Open](http://localhost:3000/d/django-overview-jkwq/django-overview)
-  - Grafana.com: [17617](https://grafana.com/grafana/dashboards/17617-django-overview/)
-  - ![Django Overview](images/demo/django-overview.png)
-- Django / Requests / Overview
-  - Local: [Open](http://localhost:3000/d/django-requests-jkwq/django-requests-overview)
-  - Grafana.com: [17616](https://grafana.com/grafana/dashboards/17616-django-requests-overview/)
-  - ![Django Requests Overview](images/demo/django-requests-overview.png)
-- Django / Requests / By View
-  - Local: [Open](http://localhost:3000/d/django-requests-by-view-jkwq/django-requests-by-view)
-  - Grafana.com: [17613](https://grafana.com/grafana/dashboards/17613-django-requests-by-view/)
-  - ![Django Requests By View](images/demo/django-requests-by-view.png)
-- Django / Models / Overview
-  - Local: [Open](http://localhost:3000/d/django-model-overview-jkwq/django-models-overview)
-  - Grafana.com: [24933](https://grafana.com/grafana/dashboards/24933-django-models-overview/)
-  - ![Django Models Overview](images/demo/django-models-overview.png)
+Task throughput, failure rates, and queue depth across all workers.
+
+- Grafana.com: [17509](https://grafana.com/grafana/dashboards/17509-celery-tasks-overview/)
+
+![Celery Tasks Overview](images/demo/celery-tasks-overview.png)
+
+### Celery / Tasks / By Task
+
+Per-task execution time, success/failure counts, and retry rates.
+
+- Grafana.com: [17508](https://grafana.com/grafana/dashboards/17508-celery-tasks-by-task/)
+
+![Celery Tasks By Task](images/demo/celery-tasks-by-task.png)
+
+### Django / Overview
+
+Request rate, error rate, p50/p95/p99 latency, and database query volume.
+
+- Grafana.com: [17617](https://grafana.com/grafana/dashboards/17617-django-overview/)
+
+![Django Overview](images/demo/django-overview.png)
+
+### Django / Requests / Overview
+
+Request metrics broken down by status code and method.
+
+- Grafana.com: [17616](https://grafana.com/grafana/dashboards/17616-django-requests-overview/)
+
+![Django Requests Overview](images/demo/django-requests-overview.png)
+
+### Django / Requests / By View
+
+Per-view latency and error rates. Good for finding which endpoints are slow or failing.
+
+- Grafana.com: [17613](https://grafana.com/grafana/dashboards/17613-django-requests-by-view/)
+
+![Django Requests By View](images/demo/django-requests-by-view.png)
+
+### Django / Models / Overview
+
+Insert, update, and delete counts per model. Shows which models background tasks are writing to most.
+
+- Grafana.com: [24933](https://grafana.com/grafana/dashboards/24933-django-models-overview/)
+
+![Django Models Overview](images/demo/django-models-overview.png)
