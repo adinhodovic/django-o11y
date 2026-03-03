@@ -22,7 +22,7 @@ Precedence (lowest to highest):
 2. `DJANGO_O11Y` Django settings dict
 3. Environment variables
 
-Runtime file defaults (log files) are per-project. The `<project>` suffix is derived from `OTEL_SERVICE_NAME`. If that env var is not set, django-o11y uses `django-app`.
+Log file paths include a `<project>` suffix derived from `SERVICE_NAME`. If `OTEL_SERVICE_NAME` is not set, it falls back to `django-app`.
 
 ### Core
 
@@ -52,12 +52,23 @@ Runtime file defaults (log files) are per-project. The `<project>` suffix is der
 | `LOGGING.REQUEST_LEVEL` | str | `"INFO"` | `DJANGO_O11Y_LOGGING_REQUEST_LEVEL` |
 | `LOGGING.DATABASE_LEVEL` | str | `"WARNING"` | `DJANGO_O11Y_LOGGING_DATABASE_LEVEL` |
 | `LOGGING.CELERY_LEVEL` | str | `"INFO"` | `DJANGO_O11Y_LOGGING_CELERY_LEVEL` |
+| `LOGGING.PARSO_LEVEL` | str | `"WARNING"` | `DJANGO_O11Y_LOGGING_PARSO_LEVEL` |
+| `LOGGING.AWS_LEVEL` | str | `"WARNING"` | `DJANGO_O11Y_LOGGING_AWS_LEVEL` |
+| `LOGGING.DEV_FILTERED_EVENTS` | list[str] | `["request_started"]` | `DJANGO_O11Y_LOGGING_DEV_FILTERED_EVENTS` (comma-separated) |
 | `LOGGING.COLORIZED` | bool | `True` when `DEBUG=True`, `False` otherwise | `DJANGO_O11Y_LOGGING_COLORIZED` |
 | `LOGGING.RICH_EXCEPTIONS` | bool | `True` (requires `django-o11y[dev-logging]`, uses [rich](https://github.com/Textualize/rich)) | `DJANGO_O11Y_LOGGING_RICH_EXCEPTIONS` |
 | `LOGGING.OTLP_ENABLED` | bool | `False` | `DJANGO_O11Y_LOGGING_OTLP_ENABLED` |
 | `LOGGING.OTLP_ENDPOINT` | str | `"http://localhost:4317"` | `OTEL_EXPORTER_OTLP_ENDPOINT` |
 | `LOGGING.FILE_ENABLED` | bool | Same as `DEBUG` | `DJANGO_O11Y_LOGGING_FILE_ENABLED` |
 | `LOGGING.FILE_PATH` | str | ``"${XDG_STATE_HOME:-~/.local/state}/django-o11y/<project>/django.log"`` | `DJANGO_O11Y_LOGGING_FILE_PATH` |
+
+These settings control the log level for specific loggers:
+
+- `REQUEST_LEVEL` — [django-structlog](https://github.com/jrobichaud/django-structlog) request lifecycle events (`request_started`, `request_finished`). `INFO` by default; set to `WARNING` to suppress per-request lines in high-traffic services.
+- `DATABASE_LEVEL` — Django's database backend logger. `WARNING` by default; query-level logs are high volume and the same data is already available as OTel spans.
+- `CELERY_LEVEL` — Celery's internal logger. `INFO` by default; set to `WARNING` to suppress worker chatter.
+- `PARSO_LEVEL` — [parso](https://parso.readthedocs.io/), the Python parser used by django-extensions and IPython. `WARNING` by default; parso emits debug output during shell startup that is not useful elsewhere.
+- `AWS_LEVEL` — `botocore` and `boto3`. `WARNING` by default; AWS SDK logs at `INFO` include full request/response details that are better captured as OTel spans.
 
 ### Metrics
 
@@ -88,11 +99,7 @@ Multiprocess metrics are configured via the standard `PROMETHEUS_MULTIPROC_DIR` 
 
 ### Startup
 
-[django-o11y](https://github.com/adinhodovic/django-o11y) skips full observability setup for non-server Django management
-commands (for example `migrate`, `shell`, `tailwind start`).
-
-Only commands in the server allowlist are treated as long-running processes and run
-full startup instrumentation.
+[django-o11y](https://github.com/adinhodovic/django-o11y) skips full observability setup for non-server management commands like `migrate`, `shell`, and `tailwind start`. Only commands in the server allowlist get full startup instrumentation.
 
 | Setting | Type | Default | Env var |
 | ------- | ---- | ------- | ------- |

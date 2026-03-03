@@ -171,7 +171,7 @@ urlpatterns = [
 
 `get_urls()` adds the Prometheus metrics endpoint at the path configured by `METRICS.PROMETHEUS_ENDPOINT` (default `/metrics`). Returns an empty list when `METRICS.PROMETHEUS_ENABLED` is `False`.
 
-#### Celery
+### Celery
 
 Celery metrics come from [celery-exporter](https://github.com/danihodovic/celery-exporter), a standalone Prometheus exporter that connects to your broker and exposes task state, queue length, and worker status. Grafana dashboards and alerts are from the [celery-mixin](https://github.com/danihodovic/celery-exporter/tree/master/celery-mixin) bundled within celery-exporter.
 
@@ -221,7 +221,7 @@ Structured logging via [structlog](https://www.structlog.org/) and [django-struc
 
 Call `build_logging_dict()` in each environment settings module. A common split is `base.py`, `local.py`, `production.py` (or `prod.py`), and `test.py`.
 
-**`settings/base.py`**
+`settings/base.py`
 
 ```python
 DJANGO_O11Y = {
@@ -238,7 +238,7 @@ DJANGO_O11Y = {
 EXTRA_LOGGING: dict[str, object] = {}
 ```
 
-**`settings/local.py`**
+`settings/local.py`
 
 ```python
 from django_o11y.logging.setup import build_logging_dict
@@ -249,7 +249,7 @@ DEBUG = True
 LOGGING = build_logging_dict(extra=EXTRA_LOGGING)  # console logs + dev file sink
 ```
 
-**`settings/production.py`**
+`settings/production.py`
 
 ```python
 from django_o11y.logging.setup import build_logging_dict
@@ -267,7 +267,7 @@ DJANGO_O11Y = {
 LOGGING = build_logging_dict(extra=EXTRA_LOGGING)  # JSON logs
 ```
 
-**`settings/test.py`**
+`settings/test.py`
 
 ```python
 from django_o11y.logging.setup import build_logging_dict
@@ -285,7 +285,7 @@ DJANGO_O11Y = {
 LOGGING = build_logging_dict(extra=EXTRA_LOGGING)
 ```
 
-### Usage
+#### Usage
 
 ```python
 from django_o11y.logging.utils import get_logger
@@ -300,7 +300,7 @@ logger.error("payment_failed", error=str(e), order_id=order_id)
 
 For all logging helper APIs (`get_logger`, `add_log_context`, `clear_custom_context`), see [Utility functions](utils.md#logging-django_o11yloggingutils).
 
-### Output formats
+##### Output formats
 
 Development (`DEBUG=True`) — colorized console:
 
@@ -333,23 +333,7 @@ LOGGING = build_logging_dict({"FORMAT": "json", "LEVEL": "INFO", ...})
 
 Or via env var: `DJANGO_O11Y_LOGGING_FORMAT=json`.
 
-### Log file (dev only)
-
-When `DEBUG=True`, logs are also written as JSON to `${XDG_STATE_HOME:-~/.local/state}/django-o11y/<project>/django.log`. The local dev stack (`o11y stack start`) tails this file with Alloy and ships it to Loki, so logs show up in Grafana without needing OTLP push enabled. Useful when running `runserver` or `runserver_plus` directly on the host.
-
-Override the path:
-
-```bash
-DJANGO_O11Y_LOGGING_FILE_PATH=/var/log/myapp/django.log
-```
-
-Disable it:
-
-```bash
-DJANGO_O11Y_LOGGING_FILE_ENABLED=false
-```
-
-### Extending the config
+##### Extending the config
 
 Pass `extra` to deep-merge additional loggers or handlers into the base dict:
 
@@ -366,7 +350,23 @@ LOGGING = build_logging_dict(extra={
 
 Nested dicts are merged rather than replaced, so you only need to specify what you want to change.
 
-#### Celery
+#### File sink
+
+When `DEBUG=True`, logs are also written as JSON to `${XDG_STATE_HOME:-~/.local/state}/django-o11y/<project>/django.log`. The local dev stack (`o11y stack start`) tails this file with Alloy and ships it to Loki, so logs show up in Grafana without needing OTLP push enabled. Useful when running `runserver` or `runserver_plus` directly on the host.
+
+Override the path:
+
+```bash
+DJANGO_O11Y_LOGGING_FILE_PATH=/var/log/myapp/django.log
+```
+
+Disable it:
+
+```bash
+DJANGO_O11Y_LOGGING_FILE_ENABLED=false
+```
+
+### Celery
 
 When `CELERY.ENABLED` is `True`, [django-o11y](https://github.com/adinhodovic/django-o11y) hooks Celery's `setup_logging` signal to apply `settings.LOGGING` via `dictConfig` in each worker process. Worker logs use the same JSON format (or console format in dev) as the Django web process — no separate logging configuration needed.
 
@@ -399,9 +399,9 @@ DJANGO_O11Y = {
 }
 ```
 
-Profiles are pushed to Pyroscope on startup. View them in Grafana under **Explore → Pyroscope**.
+Profiles are pushed to Pyroscope on startup. View them in Grafana under Explore → Pyroscope.
 
-#### Celery
+### Celery
 
 For Celery prefork workers, profiling initialises in each worker child process after fork, not in the parent. No extra configuration is needed — [django-o11y](https://github.com/adinhodovic/django-o11y) handles the `worker_process_init` signal automatically.
 
@@ -410,15 +410,6 @@ For Celery prefork workers, profiling initialises in each worker child process a
 ## Traces
 
 Distributed tracing via [OpenTelemetry](https://opentelemetry.io/) ([opentelemetry-python](https://github.com/open-telemetry/opentelemetry-python)). Requests, database queries, cache operations, and outbound HTTP calls are instrumented automatically.
-
-### What gets instrumented
-
-- Every HTTP request: span per view with status code, route, and user ID
-- Database queries: span per query (requires django-prometheus DB backend)
-- Outbound HTTP: spans for `requests`, `urllib3`, `urllib`, and `httpx` calls (requires `django-o11y[http]`)
-- Redis: spans for cache operations (requires `django-o11y[redis]`)
-- Celery tasks: span per task, linked to the request that triggered it (requires `django-o11y[celery]`)
-- AWS SDK: spans for boto3/botocore calls — S3, SQS, SES, etc. (requires `django-o11y[aws]` and `TRACING.AWS_ENABLED: True`)
 
 ### Setup
 
@@ -434,7 +425,26 @@ DJANGO_O11Y = {
 
 To disable tracing entirely, set `ENABLED: False` or `DJANGO_O11Y_TRACING_ENABLED=false`.
 
-#### Celery
+#### Automatic instrumentation
+
+Instrumentation activates automatically when the relevant package is installed. Nothing extra to configure unless noted.
+
+| What | Spans | Dependency |
+| ---- | ----- | ---------- |
+| Django HTTP requests | One span per view — method, route, status code, user ID | Always active |
+| PostgreSQL (psycopg2) | One span per query with SQL commenter | `django-o11y[postgres]` |
+| PostgreSQL (psycopg v3) | One span per query with SQL commenter | `django-o11y[postgres]` |
+| MySQL (PyMySQL) | One span per query | Install [PyMySQL](https://pypi.org/project/PyMySQL/) directly |
+| SQLite | One span per query | Install [sqlite3](https://docs.python.org/3/library/sqlite3.html) (stdlib) |
+| Redis / cache | One span per cache operation | `django-o11y[redis]` |
+| Celery tasks | One span per task, linked to the originating request via [W3C TraceContext](https://www.w3.org/TR/trace-context/) propagation | `django-o11y[celery]` |
+| Outbound HTTP ([requests](https://requests.readthedocs.io/)) | One span per call | `django-o11y[http]` |
+| Outbound HTTP ([urllib3](https://urllib3.readthedocs.io/)) | One span per call | `django-o11y[http]` |
+| Outbound HTTP ([urllib](https://docs.python.org/3/library/urllib.html)) | One span per call | `django-o11y[http]` |
+| Outbound HTTP ([httpx](https://www.python-httpx.org/)) | One span per call | `django-o11y[http]` |
+| AWS SDK ([botocore](https://botocore.amazonaws.com/v1/documentation/api/latest/index.html)) | One span per API call — S3, SQS, SES, etc. | `django-o11y[aws]` + `TRACING.AWS_ENABLED: True` |
+
+### Celery
 
 Install the extra:
 
@@ -511,12 +521,12 @@ For full API docs see [Utility functions](utils.md).
 
 ### How prometheus_client multiprocess mode works
 
-`prometheus_client` decides whether to use multiprocess (mmap file) storage based on whether `PROMETHEUS_MULTIPROC_DIR` is set in the environment **at the moment it is first imported**. This means:
+`prometheus_client` decides whether to use multiprocess (mmap file) storage based on whether `PROMETHEUS_MULTIPROC_DIR` is set in the environment at the moment it is first imported. This means:
 
 - `PROMETHEUS_MULTIPROC_DIR` must be a process-level environment variable set before the process starts.
 - The directory it points to must already exist at that moment.
-- [django-o11y](https://github.com/adinhodovic/django-o11y) does **not** create this directory. Create it in your entrypoint or Dockerfile.
-- Each container or pod has its own filesystem, so the same path in your web and worker images is fine — they don't share files unless you explicitly mount a shared volume.
+- [django-o11y](https://github.com/adinhodovic/django-o11y) does not create this directory. Create it in your entrypoint or Dockerfile.
+- Each container or pod has its own filesystem, so the same path in your web and worker images is fine. They don't share files unless you explicitly mount a shared volume.
 
 Create the directory and set the env var in your Dockerfile:
 

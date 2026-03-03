@@ -1,10 +1,12 @@
 # Utility functions
 
-This page covers helper functions for logs, traces, and custom metrics provided by [django-o11y](https://github.com/adinhodovic/django-o11y).
+Helper functions for logs, traces, and custom metrics provided by [django-o11y](https://github.com/adinhodovic/django-o11y).
 
-## Logging (`django_o11y.logging.utils`) — powered by [structlog](https://www.structlog.org/)
+Some of these are thin wrappers around [structlog](https://www.structlog.org/) or [OpenTelemetry](https://opentelemetry.io/) primitives. The point is to give your codebase a single import path for observability calls, so you're not scattering direct structlog or OTel imports across every module. If you ever need to swap an implementation detail, there's one place to change it.
 
-### `get_logger()`
+## Logging (`django_o11y.logging.utils`)
+
+### get_logger
 
 Returns a structlog logger bound to the caller module.
 
@@ -15,7 +17,7 @@ logger = get_logger()
 logger.info("checkout_started", order_id=order_id)
 ```
 
-### `add_log_context(**kwargs)`
+### add_log_context
 
 Adds key-value pairs to structlog context for the current request or task.
 
@@ -25,7 +27,7 @@ from django_o11y.logging.utils import add_log_context
 add_log_context(tenant_id="acme", request_source="web")
 ```
 
-### `clear_custom_context()`
+### clear_custom_context
 
 Clears all bound structlog contextvars.
 
@@ -35,11 +37,49 @@ from django_o11y.logging.utils import clear_custom_context
 clear_custom_context()
 ```
 
-## Tracing (`django_o11y.tracing.utils`) — powered by [OpenTelemetry](https://opentelemetry.io/)
+### add_severity
 
-### `get_tracer(name=None)`
+Structlog processor that injects a GCP-compatible numeric `severity` field into log events. Only needed if you build a custom processor chain outside of `build_logging_dict()`, or if you ship logs to Google Cloud Logging.
 
-Returns an OpenTelemetry tracer. If `name` is missing, it uses the caller module (same rule as `get_logger()`).
+```python
+from django_o11y.logging.utils import add_severity
+import structlog
+
+structlog.configure(
+    processors=[
+        structlog.stdlib.add_log_level,
+        add_severity,
+        # ...
+    ]
+)
+```
+
+Maps standard levels to [Cloud Logging severity values](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#logseverity): `debug` → 100, `info` → 200, `warning` → 400, `error` → 500, `critical` → 600. Unknown or missing levels fall back to `0` (`DEFAULT`).
+
+### add_open_telemetry_spans
+
+Structlog processor that injects `trace_id`, `span_id`, and `parent_span_id` from the active OpenTelemetry span. [django-o11y](https://github.com/adinhodovic/django-o11y) includes this automatically. Only needed if you build a custom processor chain outside of `build_logging_dict()`.
+
+```python
+from django_o11y.logging.utils import add_open_telemetry_spans
+import structlog
+
+structlog.configure(
+    processors=[
+        add_open_telemetry_spans,
+        # ...
+    ]
+)
+```
+
+Fields are omitted when no recording span is active.
+
+
+## Tracing (`django_o11y.tracing.utils`)
+
+### get_tracer
+
+Returns an OpenTelemetry tracer. If `name` is omitted, uses the caller module (same rule as `get_logger`).
 
 ```python
 from django_o11y.tracing.utils import get_tracer
@@ -49,7 +89,7 @@ with tracer.start_as_current_span("checkout"):
     ...
 ```
 
-### `set_custom_tags(tags)`
+### set_custom_tags
 
 Adds tags to the active span and binds the same values to structlog context.
 
@@ -61,7 +101,7 @@ set_custom_tags({"tenant_id": "acme", "plan": "pro"})
 
 Tags are written as `custom.<key>` on spans.
 
-### `add_span_attribute(key, value)`
+### add_span_attribute
 
 Adds one `custom.<key>` attribute to the active span only.
 
@@ -71,21 +111,32 @@ from django_o11y.tracing.utils import add_span_attribute
 add_span_attribute("cart_size", len(cart.items))
 ```
 
-### `get_current_trace_id()`
+### get_current_trace_id
 
 Returns the current trace ID as a 32-char hex string, or `None` if no recording span is active.
 
-### `get_current_span_id()`
+```python
+from django_o11y.tracing.utils import get_current_trace_id
+
+trace_id = get_current_trace_id()
+if trace_id:
+    send_to_external_system(trace_id=trace_id)
+```
+
+### get_current_span_id
 
 Returns the current span ID as a 16-char hex string, or `None` if no recording span is active.
 
-### Internal Celery helpers
+```python
+from django_o11y.tracing.utils import get_current_span_id
 
-`is_celery_prefork_pool()` and `is_celery_fork_pool_worker()` are internal runtime helpers used by [django-o11y](https://github.com/adinhodovic/django-o11y) Celery setup.
+span_id = get_current_span_id()
+```
 
-## Metrics (`django_o11y.metrics`) — powered by [django-prometheus](https://github.com/korfuri/django-prometheus)
 
-### `counter(name, description="", unit="", labelnames=())`
+## Metrics (`django_o11y.metrics`)
+
+### counter
 
 Creates a Prometheus counter wrapper.
 
@@ -103,7 +154,7 @@ payments_total.add(1, {"status": "success", "provider": "stripe"})
 
 Use `add(amount=1, attributes=None)` to increment the metric.
 
-### `histogram(name, description="", unit="", labelnames=(), buckets=...)`
+### histogram
 
 Creates a Prometheus histogram wrapper with direct observations and timing support.
 
