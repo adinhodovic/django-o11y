@@ -1,7 +1,6 @@
 """Logging middleware that adds OpenTelemetry integration to django-structlog."""
 
 import time
-import uuid
 from typing import Any
 
 import structlog
@@ -19,24 +18,28 @@ class LoggingMiddleware(DjangoStructlogRequestMiddleware):
     to the active span so traces and logs share the same request identifier.
     It also binds ``duration_ms`` to the structlog context so it appears on
     both ``request_finished`` and ``request_failed`` log lines.
+
+    Works correctly in both WSGI (sync) and ASGI (async) deployments.
+    The parent class handles async dispatch; ``prepare`` and ``handle_response``
+    are called via ``sync_to_async`` in ASGI mode by the parent's ``__acall__``,
+    so neither method ever runs on the event loop directly.
     """
 
-    def __call__(self, request: HttpRequest) -> Any:
+    def prepare(self, request: HttpRequest) -> None:
         request.META["_o11y_start"] = time.perf_counter()
-
-        request_id = (
-            request.headers.get("X-Request-ID")
-            or request.META.get("HTTP_X_REQUEST_ID")
-            or str(uuid.uuid4())
+        super().prepare(request)
+        # Read back the request_id django-structlog just bound so the span and
+        # structlog context always share the same value.
+        ctx = structlog.contextvars.get_merged_contextvars(
+            structlog.get_logger(__name__)
         )
+        request_id = ctx.get("request_id")
+        if request_id:
+            span = trace.get_current_span()
+            if span.is_recording():
+                span.set_attribute("request.id", request_id)
 
-        span = trace.get_current_span()
-        if span.is_recording():
-            span.set_attribute("request.id", request_id)
-
-        return super().__call__(request)
-
-    def handle_response(self, request: HttpRequest, response: HttpResponse) -> None:
+    def handle_response(self, request: HttpRequest, response: Any) -> None:
         start = request.META.get("_o11y_start")
         if start is not None:
             structlog.contextvars.bind_contextvars(
