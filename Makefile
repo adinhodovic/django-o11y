@@ -21,5 +21,7 @@ o11y-stack-stop:
 o11y-stack-logs:
 	python manage.py o11y stack logs
 
+DOCS_PORT ?= 8001
+
 docs:
-	uv run zensical serve
+	uv run zensical serve -a localhost:$(DOCS_PORT)

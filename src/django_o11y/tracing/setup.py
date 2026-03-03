@@ -13,7 +13,11 @@ from opentelemetry.sdk.resources import (
     Resource,
 )
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+from opentelemetry.sdk.trace.export import (
+    BatchSpanProcessor,
+    ConsoleSpanExporter,
+    SimpleSpanProcessor,
+)
 from opentelemetry.sdk.trace.sampling import ParentBased, TraceIdRatioBased
 from opentelemetry.trace import ProxyTracerProvider
 
@@ -82,7 +86,7 @@ def setup_tracing(config: dict[str, Any]) -> Any:
 
     if tracing_config["CONSOLE_EXPORTER"]:
         console_exporter = ConsoleSpanExporter()
-        provider.add_span_processor(BatchSpanProcessor(console_exporter))
+        provider.add_span_processor(SimpleSpanProcessor(console_exporter))
 
     trace.set_tracer_provider(provider)
     _tracing_initialized_pid = os.getpid()

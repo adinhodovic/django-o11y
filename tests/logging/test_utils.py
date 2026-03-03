@@ -2,6 +2,8 @@
 
 import pytest
 
+from django_o11y.logging.utils import add_severity
+
 
 @pytest.mark.parametrize(
     "level, expected",
@@ -14,35 +16,23 @@ import pytest
     ],
 )
 def test_add_severity_maps_known_levels(level, expected):
-    from django_o11y.logging.utils import add_severity
-
-    event_dict = {"level": level, "event": "something happened"}
-    result = add_severity(None, None, event_dict)
-
+    result = add_severity(None, None, {"level": level, "event": "something happened"})
     assert result["severity"] == expected
 
 
-def test_add_severity_unknown_level_defaults_to_zero():
-    from django_o11y.logging.utils import add_severity
-
-    event_dict = {"level": "notset", "event": "something happened"}
-    result = add_severity(None, None, event_dict)
-
-    assert result["severity"] == 0
-
-
-def test_add_severity_missing_level_defaults_to_zero():
-    from django_o11y.logging.utils import add_severity
-
-    event_dict = {"event": "something happened"}
-    result = add_severity(None, None, event_dict)
-
-    assert result["severity"] == 0
+@pytest.mark.parametrize(
+    "event_dict",
+    [
+        {"level": "notset", "event": "something happened"},
+        {"event": "something happened"},
+    ],
+    ids=["unknown_level", "missing_level"],
+)
+def test_add_severity_defaults_to_zero(event_dict):
+    assert add_severity(None, None, event_dict)["severity"] == 0
 
 
 def test_add_severity_preserves_existing_fields():
-    from django_o11y.logging.utils import add_severity
-
     event_dict = {"level": "info", "event": "something happened", "trace_id": "abc123"}
     result = add_severity(None, None, event_dict)
 
@@ -52,9 +42,5 @@ def test_add_severity_preserves_existing_fields():
 
 
 def test_add_severity_returns_event_dict():
-    from django_o11y.logging.utils import add_severity
-
     event_dict = {"level": "info", "event": "x"}
-    result = add_severity(None, None, event_dict)
-
-    assert result is event_dict
+    assert add_severity(None, None, event_dict) is event_dict

@@ -90,12 +90,15 @@ http = [
 # AWS SDK (boto3/botocore) instrumentation — opt-in via TRACING.AWS_ENABLED
 aws = ["opentelemetry-instrumentation-botocore>=0.60b1"]
 
+# Django Channels WebSocket observability
+channels = ["channels[daphne]>=4.0.0"]
+
 # Beautiful dev logs
 dev-logging = ["rich>=14.3.3"]
 
 # All features
 all = [
-  "django-o11y[celery,profiling,postgres,sqlite,redis,http,aws,dev-logging]",
+  "django-o11y[celery,profiling,postgres,sqlite,redis,http,aws,channels,dev-logging]",
 ]
 
 # Documentation

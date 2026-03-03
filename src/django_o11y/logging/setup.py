@@ -14,6 +14,7 @@ from django_o11y.logging.utils import (
     add_severity,
     get_logger,
 )
+from django_o11y.utils.merge import deep_merge
 
 logger = get_logger()
 
@@ -98,9 +99,13 @@ def build_logging_dict(
     }
 
     if cfg.get("OTLP_ENABLED", False):
+        from django_o11y.config.setup import get_config
+
+        service_name = get_config()["SERVICE_NAME"]
         handlers["otlp"] = {
             "()": OTLPHandler,
             "endpoint": cfg["OTLP_ENDPOINT"],
+            "service_name": service_name,
         }
 
     if cfg.get("FILE_ENABLED", False):
@@ -188,7 +193,7 @@ def build_logging_dict(
     }
 
     if extra:
-        _deep_merge(result, extra)
+        deep_merge(result, extra)
 
     return result
 
@@ -214,15 +219,6 @@ def setup_logging_for_django(config: dict) -> None:
 
     fmt = config.get("LOGGING", {}).get("FORMAT", "console")
     logger.info("Logging configured, format=%s", fmt)
-
-
-def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> None:
-    """Deep-merge ``override`` into ``base`` in place."""
-    for key, value in override.items():
-        if key in base and isinstance(base[key], dict) and isinstance(value, dict):
-            _deep_merge(base[key], value)
-        else:
-            base[key] = value
 
 
 def _configure_structlog(logging_config: dict[str, Any]) -> None:
@@ -258,11 +254,10 @@ def _configure_structlog(logging_config: dict[str, Any]) -> None:
 
 
 def _build_foreign_pre_chain() -> list[Any]:
-    """Return processors used for stdlib log records.
+    """Return processors for stdlib log records (``foreign_pre_chain``).
 
-    These run for non-structlog loggers through ``foreign_pre_chain`` so
-    Django, Celery, and third-party logs still include trace ids, timestamps,
-    and callsite fields.
+    Gives non-structlog loggers (Django, Celery, third-party) the same
+    trace ids, timestamps, and callsite fields as native structlog records.
     """
     return [
         structlog.contextvars.merge_contextvars,

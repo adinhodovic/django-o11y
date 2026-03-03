@@ -20,6 +20,20 @@ from tests.config.settings.test import *  # noqa: F401,F403  # pylint: disable=w
 
 DEBUG = False
 
+INSTALLED_APPS = [  # noqa: F405
+    "daphne",  # must be first so it overrides runserver with ASGI support
+    *INSTALLED_APPS,  # noqa: F405
+    "channels",
+]
+
+ASGI_APPLICATION = "tests.asgi.application"
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    }
+}
+
 DATABASES = {
     "default": {
         "ENGINE": "django_prometheus.db.backends.sqlite3",

@@ -54,7 +54,7 @@ class DjangoO11yConfig(AppConfig):
             if settings.DEBUG:
                 self._print_startup_banner(config)
         except Exception:
-            pass
+            logger.debug("Failed to print startup banner", exc_info=True)
 
     def _configure_tracing(self, config: dict) -> None:
         from django_o11y.tracing.setup import setup_tracing_for_django
@@ -137,4 +137,4 @@ class DjangoO11yConfig(AppConfig):
 
             print("\n".join(banner))
         except Exception:
-            pass
+            logger.debug("Failed to render startup banner", exc_info=True)
