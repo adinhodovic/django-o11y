@@ -72,6 +72,9 @@ postgres = [
 # SQLite instrumentation
 sqlite = ["opentelemetry-instrumentation-sqlite3>=0.60b1"]
 
+# MySQL instrumentation
+mysql = ["pymysql>=1.1.0", "opentelemetry-instrumentation-pymysql>=0.60b1"]
+
 # Cache instrumentation
 redis = [
   "redis>=7.2.0",
@@ -98,7 +101,7 @@ dev-logging = ["rich>=14.3.3"]
 
 # All features
 all = [
-  "django-o11y[celery,profiling,postgres,sqlite,redis,http,aws,channels,dev-logging]",
+  "django-o11y[celery,profiling,postgres,sqlite,mysql,redis,http,aws,channels,dev-logging]",
 ]
 
 # Documentation
