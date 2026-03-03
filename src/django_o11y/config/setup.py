@@ -71,6 +71,7 @@ def get_config() -> dict[str, Any]:
             "SAMPLE_RATE": default_sample_rate,
             "CONSOLE_EXPORTER": False,
             "AWS_ENABLED": False,
+            "SQL_COMMENTER": True,
         },
         "LOGGING": {
             "FORMAT": "json" if not settings.DEBUG else "console",
@@ -155,6 +156,7 @@ def _apply_env_overrides(config: dict[str, Any], default_sample_rate: float) -> 
     _set_float(t, "SAMPLE_RATE", "OTEL_TRACES_SAMPLER_ARG", default_sample_rate)
     _set_bool(t, "CONSOLE_EXPORTER", "DJANGO_O11Y_TRACING_CONSOLE_EXPORTER")
     _set_bool(t, "AWS_ENABLED", "DJANGO_O11Y_TRACING_AWS_ENABLED")
+    _set_bool(t, "SQL_COMMENTER", "DJANGO_O11Y_TRACING_SQL_COMMENTER", True)
 
     _set_str(lg, "FORMAT", "DJANGO_O11Y_LOGGING_FORMAT")
     _set_str(lg, "LEVEL", "DJANGO_O11Y_LOGGING_LEVEL")

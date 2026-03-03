@@ -53,20 +53,25 @@ def setup_profiling(config: dict[str, Any]) -> None:
     # RESOURCE_ATTRIBUTES (including OTEL_RESOURCE_ATTRIBUTES) are the base;
     # automatic attributes override them so runtime values are always accurate.
     resource_attrs = dict(config.get("RESOURCE_ATTRIBUTES", {}))
-    tags = resource_attrs
 
-    tags.update(
-        {
-            "service_version": config["SERVICE_VERSION"],
-            "host": socket.gethostname(),
-            "process_id": str(os.getpid()),
-        }
-    )
-
-    if deployment_environment := resource_attrs.get("deployment.environment"):
-        tags["environment"] = deployment_environment
-    if service_namespace := resource_attrs.get("service.namespace"):
-        tags["service_namespace"] = service_namespace
+    # Pyroscope tag keys cannot contain dots (must match [a-zA-Z_][a-zA-Z0-9_]*).
+    # Well-known OTel attributes are mapped to their canonical Pyroscope equivalents;
+    # all other dotted keys fall back to dot→underscore replacement.
+    _OTEL_TAG_MAP = {
+        "deployment.environment": "environment",
+        "service.namespace": "service_namespace",
+        "service.version": "service_version",
+        "service.instance.id": "service_instance_id",
+    }
+    tags: dict[str, str] = {
+        "service_version": config["SERVICE_VERSION"],
+        "host": socket.gethostname(),
+        "process_id": str(os.getpid()),
+    }
+    for key, value in resource_attrs.items():
+        if value:
+            tag_key = _OTEL_TAG_MAP.get(key) or key.replace(".", "_")
+            tags[tag_key] = value
 
     try:
         pyroscope.configure(

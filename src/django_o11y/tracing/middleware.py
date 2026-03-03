@@ -46,16 +46,11 @@ class TracingMiddleware:
         # In ASGI mode we own the server span so it stays active in the async
         # context for the entire request — including sync_to_async calls made by
         # downstream middleware (e.g. django-structlog's handle_response).
-        carrier = {
-            k.decode("latin-1"): v.decode("latin-1")
-            for k, v in request.scope.get("headers", [])  # type: ignore[union-attr]
-        }
-        parent_context = extract(carrier)
+        parent_context = extract(request.headers)  # type: ignore[arg-type]
 
         method = request.method or "GET"
-        span_name = f"{method} {request.path}"
         with self.tracer.start_as_current_span(
-            span_name,
+            method,
             context=parent_context,
             kind=SpanKind.SERVER,
             attributes={"url.path": request.path, "http.request.method": method},
@@ -63,6 +58,8 @@ class TracingMiddleware:
             self._annotate_user(request, span)
             response = await self.get_response(request)  # type: ignore[misc]
             if span.is_recording():
+                if request.resolver_match:
+                    span.update_name(f"{method} {request.resolver_match.route}")
                 span.set_attribute("http.response.status_code", response.status_code)
             return response
 
