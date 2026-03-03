@@ -33,6 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write # for release-drafter to create/update release draft
+      pull-requests: read # for release-drafter to read PR data associated with commits
     env:
       PUBLISH_DRAFT: false
     steps:
