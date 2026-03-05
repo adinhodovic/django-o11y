@@ -1431,6 +1431,14 @@
 <td>OpenTelemetry traces for psycopg2 / psycopg (v3) queries</td>
 </tr>
 <tr>
+<td><code>django-o11y[sqlite]</code></td>
+<td>OpenTelemetry traces for SQLite queries</td>
+</tr>
+<tr>
+<td><code>django-o11y[mysql]</code></td>
+<td>OpenTelemetry traces for MySQL queries via PyMySQL</td>
+</tr>
+<tr>
 <td><code>django-o11y[redis]</code></td>
 <td>OpenTelemetry traces for Redis/cache operations</td>
 </tr>
@@ -1846,12 +1854,12 @@
 <tr>
 <td>MySQL (PyMySQL)</td>
 <td>One span per query</td>
-<td>Install <a href="https://pypi.org/project/PyMySQL/">PyMySQL</a> directly</td>
+<td><code>django-o11y[mysql]</code></td>
 </tr>
 <tr>
 <td>SQLite</td>
 <td>One span per query</td>
-<td>Install <a href="https://docs.python.org/3/library/sqlite3.html">sqlite3</a> (stdlib)</td>
+<td><code>django-o11y[sqlite]</code></td>
 </tr>
 <tr>
 <td>Redis / cache</td>
