@@ -87,4 +87,6 @@ class TracingMiddleware:
         span.set_attribute(
             "user.id", str(getattr(user, "pk", None) or getattr(user, "id", None))
         )
-        span.set_attribute("user.username", user.username)  # type: ignore[union-attr]
+        username = getattr(user, "username", None)
+        if username is not None:
+            span.set_attribute("user.username", username)

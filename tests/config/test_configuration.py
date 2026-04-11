@@ -203,3 +203,17 @@ def test_build_logging_dict_file_disabled_no_file_handler():
     config = _base_config(FILE_ENABLED=False)
     result = build_logging_dict(config)
     assert "file" not in result["handlers"]
+
+
+@pytest.mark.parametrize(
+    "debug,expected_level",
+    [(True, "CRITICAL"), (False, "WARNING")],
+)
+def test_build_logging_dict_otel_logger_level(debug, expected_level):
+    config = _base_config()
+    with patch("django_o11y.logging.setup.settings") as mock_settings:
+        mock_settings.DEBUG = debug
+        result = build_logging_dict(config)
+    otel_logger = result["loggers"]["opentelemetry"]
+    assert otel_logger["level"] == expected_level
+    assert "handlers" not in otel_logger

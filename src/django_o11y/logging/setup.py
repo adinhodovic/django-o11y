@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import structlog
+from django.conf import settings
 
 from django_o11y.logging.utils import (
     OTLPHandler,
@@ -189,6 +190,11 @@ def build_logging_dict(
                 "level": "WARNING",
                 "propagate": False,
             },
+            # Silence OTel SDK exporter retry/failure noise in local dev
+            # where no collector is running.
+            "opentelemetry": {
+                "level": "CRITICAL" if settings.DEBUG else "WARNING",
+            },
         },
     }
 
@@ -204,8 +210,6 @@ def setup_logging_for_django(config: dict) -> None:
     if celery_config.get("ENABLED", False) and celery_config.get(
         "LOGGING_ENABLED", True
     ):
-        from django.conf import settings
-
         if not getattr(settings, "DJANGO_STRUCTLOG_CELERY_ENABLED", False):
             settings.DJANGO_STRUCTLOG_CELERY_ENABLED = True
 
