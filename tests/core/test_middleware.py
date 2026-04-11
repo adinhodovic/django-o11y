@@ -210,6 +210,28 @@ def test_tracing_middleware_anonymous_user():
     assert middleware(request).status_code == 200
 
 
+def test_tracing_middleware_user_without_username(rf):
+    """User model with no username (e.g. email-based auth) must not crash."""
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+    request = rf.get("/")
+    user = User(id=2, username="", is_staff=False)
+    user.pk = 2
+    user.username = None  # simulate custom model with nullable username
+    request.user = user
+
+    middleware = TracingMiddleware(lambda r: HttpResponse("OK"))
+    tracer = _make_tracer()
+
+    with tracer.start_as_current_span("test-span") as span:
+        with patch("opentelemetry.trace.get_current_span", return_value=span):
+            response = middleware(request)
+            assert span.attributes.get("user.id") == "2"
+            assert "user.username" not in span.attributes
+            assert response.status_code == 200
+
+
 # ---------------------------------------------------------------------------
 # TracingMiddleware — async capabilities
 # ---------------------------------------------------------------------------

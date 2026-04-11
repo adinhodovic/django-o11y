@@ -6,6 +6,10 @@ resolution-markers = [
     "python_full_version < '3.13'",
 ]
 
+[options]
+exclude-newer = "2026-03-28T17:54:19.960241827Z"
+exclude-newer-span = "P14D"
+
 [[package]]
 name = "amqp"
 version = "5.3.1"
