@@ -17,13 +17,9 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
-      contents: read # for release-drafter to read config/repo metadata
       pull-requests: write # for release-drafter to add labels to PR
     steps:
-      - uses: release-drafter/release-drafter@67e173cadb2fbd3de94f4a861e0c48c913b462ae # v6
-        with:
-          disable-autolabeler: false
-          disable-releaser: true
+      - uses: release-drafter/release-drafter/autolabeler@5de93583980a40bd78603b6dfdcda5b4df377b32 # v7.2.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -42,11 +38,8 @@ jobs:
         run: |
           echo "PUBLISH_DRAFT=true" >> $GITHUB_ENV
 
-      # Drafts your next Release notes
-      - uses: release-drafter/release-drafter@67e173cadb2fbd3de94f4a861e0c48c913b462ae # v6
+      - uses: release-drafter/release-drafter@5de93583980a40bd78603b6dfdcda5b4df377b32 # v7.2.0
         with:
-          disable-autolabeler: true
-          disable-releaser: false
           publish: ${{ env.PUBLISH_DRAFT }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
