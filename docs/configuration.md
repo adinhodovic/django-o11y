@@ -71,7 +71,7 @@ These settings control the log level for specific loggers:
 - `PARSO_LEVEL` — [parso](https://parso.readthedocs.io/), the Python parser used by django-extensions and IPython. `WARNING` by default; parso emits debug output during shell startup that is not useful elsewhere.
 - `AWS_LEVEL` — `botocore` and `boto3`. `WARNING` by default; AWS SDK logs at `INFO` include full request/response details that are better captured as OTel spans.
 
-Set `DD_TRACE_IDS_ENABLED=True` to add Datadog log-correlation fields `dd.trace_id` and `dd.span_id` alongside the default OpenTelemetry `trace_id` and `span_id` fields. Install `django-o11y[datadog]` to read IDs from Datadog's `ddtrace` tracer; without that extra, django-o11y derives Datadog-compatible IDs from the current OpenTelemetry span.
+Set `DD_TRACE_IDS_ENABLED=True` to add Datadog log-correlation fields `dd.trace_id` and `dd.span_id` alongside the default OpenTelemetry `trace_id` and `span_id` fields. django-o11y derives these Datadog-compatible IDs from the current OpenTelemetry span, so no Datadog SDK package is required.
 
 ### Metrics
 
