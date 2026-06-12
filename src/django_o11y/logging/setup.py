@@ -3,6 +3,7 @@
 import importlib
 import logging
 import sys
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -49,7 +50,7 @@ def build_logging_dict(
 
     _configure_structlog(cfg)
     use_foreign_pre_chain = cfg["FORMAT"] == "json"
-    foreign_pre_chain = _build_foreign_pre_chain() if use_foreign_pre_chain else None
+    foreign_pre_chain = _build_foreign_pre_chain(cfg) if use_foreign_pre_chain else None
 
     if cfg["FORMAT"] == "console":
         console_renderer_kwargs: dict[str, Any] = {"colors": cfg["COLORIZED"]}
@@ -227,13 +228,17 @@ def setup_logging_for_django(config: dict) -> None:
 
 def _configure_structlog(logging_config: dict[str, Any]) -> None:
     """Configure the structlog processor chain."""
+    span_processor = partial(
+        add_open_telemetry_spans,
+        datadog_trace_ids=logging_config.get("DD_TRACE_IDS_ENABLED", False),
+    )
     base_processors = [
         structlog.contextvars.merge_contextvars,
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
         structlog.stdlib.filter_by_level,
         add_severity,
-        add_open_telemetry_spans,
+        span_processor,
         structlog.stdlib.PositionalArgumentsFormatter(),
         structlog.processors.TimeStamper(fmt="iso"),
         structlog.processors.StackInfoRenderer(),
@@ -257,18 +262,22 @@ def _configure_structlog(logging_config: dict[str, Any]) -> None:
     )
 
 
-def _build_foreign_pre_chain() -> list[Any]:
+def _build_foreign_pre_chain(logging_config: dict[str, Any]) -> list[Any]:
     """Return processors for stdlib log records (``foreign_pre_chain``).
 
     Gives non-structlog loggers (Django, Celery, third-party) the same
     trace ids, timestamps, and callsite fields as native structlog records.
     """
+    span_processor = partial(
+        add_open_telemetry_spans,
+        datadog_trace_ids=logging_config.get("DD_TRACE_IDS_ENABLED", False),
+    )
     return [
         structlog.contextvars.merge_contextvars,
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
         add_severity,
-        add_open_telemetry_spans,
+        span_processor,
         structlog.stdlib.PositionalArgumentsFormatter(),
         structlog.processors.TimeStamper(fmt="iso"),
         structlog.processors.StackInfoRenderer(),

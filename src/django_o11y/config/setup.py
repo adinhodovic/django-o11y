@@ -85,6 +85,7 @@ def get_config() -> dict[str, Any]:
             "RICH_EXCEPTIONS": True,
             "OTLP_ENABLED": False,
             "OTLP_ENDPOINT": "http://localhost:4317",
+            "DD_TRACE_IDS_ENABLED": False,
             "FILE_ENABLED": settings.DEBUG,
             "FILE_PATH": None,  # resolved below after SERVICE_NAME is known
             "DEV_FILTERED_EVENTS": ["request_started"],
@@ -169,6 +170,7 @@ def _apply_env_overrides(config: dict[str, Any], default_sample_rate: float) -> 
     _set_bool(lg, "COLORIZED", "DJANGO_O11Y_LOGGING_COLORIZED", settings.DEBUG)
     _set_bool(lg, "RICH_EXCEPTIONS", "DJANGO_O11Y_LOGGING_RICH_EXCEPTIONS", True)
     _set_bool(lg, "OTLP_ENABLED", "DJANGO_O11Y_LOGGING_OTLP_ENABLED")
+    _set_bool(lg, "DD_TRACE_IDS_ENABLED", "DJANGO_O11Y_LOGGING_DD_TRACE_IDS_ENABLED")
     _set_bool(lg, "FILE_ENABLED", "DJANGO_O11Y_LOGGING_FILE_ENABLED", settings.DEBUG)
     if (v := os.getenv("DJANGO_O11Y_LOGGING_DEV_FILTERED_EVENTS")) is not None:
         lg["DEV_FILTERED_EVENTS"] = [e.strip() for e in v.split(",") if e.strip()]
