@@ -1058,6 +1058,12 @@ recognized: <code>OTEL_SERVICE_NAME</code>, <code>OTEL_EXPORTER_OTLP_ENDPOINT</c
 <td><code>OTEL_EXPORTER_OTLP_ENDPOINT</code></td>
 </tr>
 <tr>
+<td><code>LOGGING.DD_TRACE_IDS_ENABLED</code></td>
+<td>bool</td>
+<td><code>False</code></td>
+<td><code>DJANGO_O11Y_LOGGING_DD_TRACE_IDS_ENABLED</code></td>
+</tr>
+<tr>
 <td><code>LOGGING.FILE_ENABLED</code></td>
 <td>bool</td>
 <td>Same as <code>DEBUG</code></td>
@@ -1079,6 +1085,7 @@ recognized: <code>OTEL_SERVICE_NAME</code>, <code>OTEL_EXPORTER_OTLP_ENDPOINT</c
 <li><code>PARSO_LEVEL</code> — <a href="https://parso.readthedocs.io/">parso</a>, the Python parser used by django-extensions and IPython. <code>WARNING</code> by default; parso emits debug output during shell startup that is not useful elsewhere.</li>
 <li><code>AWS_LEVEL</code> — <code>botocore</code> and <code>boto3</code>. <code>WARNING</code> by default; AWS SDK logs at <code>INFO</code> include full request/response details that are better captured as OTel spans.</li>
 </ul>
+<p>Set <code>DD_TRACE_IDS_ENABLED=True</code> to add Datadog log-correlation fields <code>dd.trace_id</code> and <code>dd.span_id</code> alongside the default OpenTelemetry <code>trace_id</code> and <code>span_id</code> fields. django-o11y derives these Datadog-compatible IDs from the current OpenTelemetry span, so no Datadog SDK package is required.</p>
 <h3 id="metrics">Metrics<a class="headerlink" href="#metrics" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
