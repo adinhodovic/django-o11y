@@ -28,7 +28,6 @@ Or install only what you need:
 | `django-o11y[aws]` | OpenTelemetry traces for AWS SDK calls via boto3/botocore (enable via `TRACING.AWS_ENABLED`) |
 | `django-o11y[channels]` | `ChannelsLoggingMiddleware` for Django Channels WebSocket observability |
 | `django-o11y[dev-logging]` | Rich exception formatting in dev logs |
-| `django-o11y[datadog]` | Datadog `ddtrace` log-correlation IDs |
 | `django-o11y[all]` | Everything |
 
 ### Basic setup

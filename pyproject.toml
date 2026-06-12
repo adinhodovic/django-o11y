@@ -99,12 +99,9 @@ channels = ["channels[daphne]>=4.0.0"]
 # Beautiful dev logs
 dev-logging = ["rich>=14.3.3"]
 
-# Datadog log correlation support
-datadog = ["ddtrace>=3.17.0"]
-
 # All features
 all = [
-  "django-o11y[celery,profiling,postgres,sqlite,mysql,redis,http,aws,channels,dev-logging,datadog]",
+  "django-o11y[celery,profiling,postgres,sqlite,mysql,redis,http,aws,channels,dev-logging]",
 ]
 
 # Documentation
