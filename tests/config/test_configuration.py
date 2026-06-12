@@ -79,6 +79,86 @@ def test_add_open_telemetry_spans_with_parent():
             assert "span_id" in result
 
 
+def test_add_open_telemetry_spans_with_datadog_ids():
+    from opentelemetry.sdk.trace import TracerProvider
+
+    from django_o11y.logging.utils import add_open_telemetry_spans
+
+    provider = TracerProvider()
+    tracer = provider.get_tracer(__name__)
+
+    with tracer.start_as_current_span("span"):
+        result = add_open_telemetry_spans(
+            None,
+            None,
+            {},
+            datadog_trace_ids=True,
+        )
+
+    assert "dd.trace_id" in result
+    assert "dd.span_id" in result
+    assert result["dd.trace_id"].isdigit()
+    assert result["dd.span_id"].isdigit()
+
+
+def test_add_open_telemetry_spans_prefers_ddtrace_ids():
+    from opentelemetry.sdk.trace import TracerProvider
+
+    from django_o11y.logging.utils import add_open_telemetry_spans
+
+    ddtrace = MagicMock()
+    ddtrace.tracer.current_root_span.return_value.trace_id = 123
+    ddtrace.tracer.current_root_span.return_value.span_id = 456
+    provider = TracerProvider()
+    tracer = provider.get_tracer(__name__)
+
+    with patch.dict(sys.modules, {"ddtrace": ddtrace}):
+        with tracer.start_as_current_span("span"):
+            result = add_open_telemetry_spans(
+                None,
+                None,
+                {},
+                datadog_trace_ids=True,
+            )
+
+    assert result["dd.trace_id"] == "123"
+    assert result["dd.span_id"] == "456"
+
+
+def test_add_open_telemetry_spans_adds_ddtrace_ids_without_otel_span():
+    from django_o11y.logging.utils import add_open_telemetry_spans
+
+    ddtrace = MagicMock()
+    ddtrace.tracer.current_root_span.return_value.trace_id = 123
+    ddtrace.tracer.current_root_span.return_value.span_id = 456
+
+    with patch.dict(sys.modules, {"ddtrace": ddtrace}):
+        result = add_open_telemetry_spans(
+            None,
+            None,
+            {},
+            datadog_trace_ids=True,
+        )
+
+    assert result["dd.trace_id"] == "123"
+    assert result["dd.span_id"] == "456"
+
+
+def test_add_open_telemetry_spans_omits_datadog_ids_by_default():
+    from opentelemetry.sdk.trace import TracerProvider
+
+    from django_o11y.logging.utils import add_open_telemetry_spans
+
+    provider = TracerProvider()
+    tracer = provider.get_tracer(__name__)
+
+    with tracer.start_as_current_span("span"):
+        result = add_open_telemetry_spans(None, None, {})
+
+    assert "dd.trace_id" not in result
+    assert "dd.span_id" not in result
+
+
 @pytest.mark.parametrize(
     "rich_exceptions, sys_modules_patch, expected_renderer_type",
     [

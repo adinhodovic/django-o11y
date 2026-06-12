@@ -47,10 +47,22 @@ def clear_custom_context() -> None:
     structlog.contextvars.clear_contextvars()
 
 
-def add_open_telemetry_spans(_: Any, __: Any, event_dict: dict) -> dict:
+def add_open_telemetry_spans(
+    _: Any,
+    __: Any,
+    event_dict: dict,
+    *,
+    datadog_trace_ids: bool = False,
+) -> dict:
     """Attach current OpenTelemetry span ids to log events."""
     span = trace.get_current_span()
     if not span.is_recording():
+        if datadog_trace_ids:
+            dd_trace_id, dd_span_id = _get_datadog_trace_ids()
+            if dd_trace_id:
+                event_dict["dd.trace_id"] = dd_trace_id
+            if dd_span_id:
+                event_dict["dd.span_id"] = dd_span_id
         return event_dict
 
     ctx = span.get_span_context()
@@ -61,7 +73,27 @@ def add_open_telemetry_spans(_: Any, __: Any, event_dict: dict) -> dict:
     if parent:
         event_dict["parent_span_id"] = f"{parent.span_id:x}"
 
+    if datadog_trace_ids:
+        dd_trace_id, dd_span_id = _get_datadog_trace_ids()
+        event_dict["dd.trace_id"] = dd_trace_id or str(ctx.trace_id & ((1 << 64) - 1))
+        event_dict["dd.span_id"] = dd_span_id or str(ctx.span_id)
+
     return event_dict
+
+
+def _get_datadog_trace_ids() -> tuple[str | None, str | None]:
+    """Return current ddtrace IDs when the optional Datadog extra is installed."""
+    try:
+        from ddtrace import tracer
+
+        span = tracer.current_root_span()
+    except (ImportError, AttributeError):
+        return None, None
+
+    if not span:
+        return None, None
+
+    return str(span.trace_id), str(span.span_id)
 
 
 class OTLPHandler(LoggingHandler):

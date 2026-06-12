@@ -59,6 +59,7 @@ Log file paths include a `<project>` suffix derived from `SERVICE_NAME`. If `OTE
 | `LOGGING.RICH_EXCEPTIONS` | bool | `True` (requires `django-o11y[dev-logging]`, uses [rich](https://github.com/Textualize/rich)) | `DJANGO_O11Y_LOGGING_RICH_EXCEPTIONS` |
 | `LOGGING.OTLP_ENABLED` | bool | `False` | `DJANGO_O11Y_LOGGING_OTLP_ENABLED` |
 | `LOGGING.OTLP_ENDPOINT` | str | `"http://localhost:4317"` | `OTEL_EXPORTER_OTLP_ENDPOINT` |
+| `LOGGING.DD_TRACE_IDS_ENABLED` | bool | `False` | `DJANGO_O11Y_LOGGING_DD_TRACE_IDS_ENABLED` |
 | `LOGGING.FILE_ENABLED` | bool | Same as `DEBUG` | `DJANGO_O11Y_LOGGING_FILE_ENABLED` |
 | `LOGGING.FILE_PATH` | str | ``"${XDG_STATE_HOME:-~/.local/state}/django-o11y/<project>/django.log"`` | `DJANGO_O11Y_LOGGING_FILE_PATH` |
 
@@ -69,6 +70,8 @@ These settings control the log level for specific loggers:
 - `CELERY_LEVEL` — Celery's internal logger. `INFO` by default; set to `WARNING` to suppress worker chatter.
 - `PARSO_LEVEL` — [parso](https://parso.readthedocs.io/), the Python parser used by django-extensions and IPython. `WARNING` by default; parso emits debug output during shell startup that is not useful elsewhere.
 - `AWS_LEVEL` — `botocore` and `boto3`. `WARNING` by default; AWS SDK logs at `INFO` include full request/response details that are better captured as OTel spans.
+
+Set `DD_TRACE_IDS_ENABLED=True` to add Datadog log-correlation fields `dd.trace_id` and `dd.span_id` alongside the default OpenTelemetry `trace_id` and `span_id` fields. Install `django-o11y[datadog]` to read IDs from Datadog's `ddtrace` tracer; without that extra, django-o11y derives Datadog-compatible IDs from the current OpenTelemetry span.
 
 ### Metrics
 

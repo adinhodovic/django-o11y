@@ -73,6 +73,7 @@ def test_env_vars_take_precedence_over_django_settings(monkeypatch):
     monkeypatch.setenv("OTEL_SERVICE_NAME", "from-env")
     monkeypatch.setenv("DJANGO_O11Y_TRACING_ENABLED", "true")
     monkeypatch.setenv("DJANGO_O11Y_LOGGING_LEVEL", "DEBUG")
+    monkeypatch.setenv("DJANGO_O11Y_LOGGING_DD_TRACE_IDS_ENABLED", "true")
     monkeypatch.setenv("DJANGO_O11Y_CELERY_ENABLED", "true")
     monkeypatch.setenv("DJANGO_O11Y_PROFILING_ENABLED", "true")
     monkeypatch.setenv("DJANGO_O11Y_STARTUP_SERVER_COMMANDS", "runserver,tailwind")
@@ -81,7 +82,7 @@ def test_env_vars_take_precedence_over_django_settings(monkeypatch):
         DJANGO_O11Y={
             "SERVICE_NAME": "from-settings",
             "TRACING": {"ENABLED": False},
-            "LOGGING": {"LEVEL": "ERROR"},
+            "LOGGING": {"LEVEL": "ERROR", "DD_TRACE_IDS_ENABLED": False},
             "CELERY": {"ENABLED": False},
             "PROFILING": {"ENABLED": False},
             "STARTUP": {"SERVER_COMMANDS": ["runserver"]},
@@ -92,6 +93,7 @@ def test_env_vars_take_precedence_over_django_settings(monkeypatch):
     assert config["SERVICE_NAME"] == "from-env"
     assert config["TRACING"]["ENABLED"] is True
     assert config["LOGGING"]["LEVEL"] == "DEBUG"
+    assert config["LOGGING"]["DD_TRACE_IDS_ENABLED"] is True
     assert config["CELERY"]["ENABLED"] is True
     assert config["PROFILING"]["ENABLED"] is True
     assert config["STARTUP"]["SERVER_COMMANDS"] == ["runserver", "tailwind"]

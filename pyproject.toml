@@ -7,7 +7,7 @@ packages = ["src/django_o11y"]
 
 [project]
 name = "django-o11y"
-version = "0.7.2"
+version = "0.8.0"
 description = "Comprehensive OpenTelemetry observability for Django with traces, logs, metrics, and profiling"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -99,9 +99,12 @@ channels = ["channels[daphne]>=4.0.0"]
 # Beautiful dev logs
 dev-logging = ["rich>=14.3.3"]
 
+# Datadog log correlation support
+datadog = ["ddtrace>=3.17.0"]
+
 # All features
 all = [
-  "django-o11y[celery,profiling,postgres,sqlite,mysql,redis,http,aws,channels,dev-logging]",
+  "django-o11y[celery,profiling,postgres,sqlite,mysql,redis,http,aws,channels,dev-logging,datadog]",
 ]
 
 # Documentation
