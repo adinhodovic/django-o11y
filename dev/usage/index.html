@@ -1898,6 +1898,7 @@
 </tr>
 </tbody>
 </table>
+<p>SQLCommenter is enabled by default for Django queries. SQL comments include view/controller, route, and app name tags by default, for example <code>controller='order_detail'</code>, <code>route='orders/&lt;int:pk&gt;/'</code>, and <code>app_name='orders'</code>, so database logs can be grouped by the Django code path that issued each query. Use <code>TRACING.SQL_COMMENTER_WITH_CONTROLLER</code>, <code>TRACING.SQL_COMMENTER_WITH_ROUTE</code>, and <code>TRACING.SQL_COMMENTER_WITH_APP_NAME</code> to disable those tags if needed.</p>
 <h3 id="celery-tracing">Celery Tracing<a class="headerlink" href="#celery-tracing" title="Permanent link">&para;</a></h3>
 <p>Install the extra:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>pip<span class="w"> </span>install<span class="w"> </span>django-o11y<span class="o">[</span>celery<span class="o">]</span>
