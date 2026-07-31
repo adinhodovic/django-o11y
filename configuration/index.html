@@ -972,8 +972,33 @@ recognized: <code>OTEL_SERVICE_NAME</code>, <code>OTEL_EXPORTER_OTLP_ENDPOINT</c
 <td><code>False</code></td>
 <td><code>DJANGO_O11Y_TRACING_AWS_ENABLED</code></td>
 </tr>
+<tr>
+<td><code>TRACING.SQL_COMMENTER</code></td>
+<td>bool</td>
+<td><code>True</code></td>
+<td><code>DJANGO_O11Y_TRACING_SQL_COMMENTER</code></td>
+</tr>
+<tr>
+<td><code>TRACING.SQL_COMMENTER_WITH_CONTROLLER</code></td>
+<td>bool</td>
+<td><code>True</code></td>
+<td><code>DJANGO_O11Y_TRACING_SQL_COMMENTER_WITH_CONTROLLER</code></td>
+</tr>
+<tr>
+<td><code>TRACING.SQL_COMMENTER_WITH_ROUTE</code></td>
+<td>bool</td>
+<td><code>True</code></td>
+<td><code>DJANGO_O11Y_TRACING_SQL_COMMENTER_WITH_ROUTE</code></td>
+</tr>
+<tr>
+<td><code>TRACING.SQL_COMMENTER_WITH_APP_NAME</code></td>
+<td>bool</td>
+<td><code>True</code></td>
+<td><code>DJANGO_O11Y_TRACING_SQL_COMMENTER_WITH_APP_NAME</code></td>
+</tr>
 </tbody>
 </table>
+<p><code>TRACING.SQL_COMMENTER</code> enables OpenTelemetry's Django SQLCommenter integration. By default, SQL comments include the Django view/controller, route, and app name tags, so database logs and query observability can be grouped by the code path that issued the query.</p>
 <h3 id="logging">Logging<a class="headerlink" href="#logging" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
