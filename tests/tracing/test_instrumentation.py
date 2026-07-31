@@ -3,6 +3,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from django.conf import settings
 
 
 def test_setup_instrumentation_instruments_django():
@@ -74,6 +75,39 @@ def test_setup_instrumentation_sql_commenter_can_be_disabled():
         setup_instrumentation(config)
 
     mock_inst.instrument.assert_called_once_with(is_sql_commentor_enabled=False)
+
+
+def test_setup_instrumentation_configures_sql_commenter_view_tags():
+    """SQL commenter options are exposed through django-o11y tracing config."""
+    from django_o11y.tracing.instrumentation import setup_instrumentation
+
+    config = {
+        "SERVICE_NAME": "test",
+        "TRACING": {
+            "SQL_COMMENTER_WITH_CONTROLLER": True,
+            "SQL_COMMENTER_WITH_ROUTE": True,
+            "SQL_COMMENTER_WITH_APP_NAME": True,
+        },
+    }
+
+    mock_inst = MagicMock()
+    mock_django_module = MagicMock()
+    mock_django_module.DjangoInstrumentor.return_value = mock_inst
+
+    with (
+        patch.dict(
+            "sys.modules", {"opentelemetry.instrumentation.django": mock_django_module}
+        ),
+        patch("django_o11y.tracing.instrumentation._instrument_database"),
+        patch("django_o11y.tracing.instrumentation._instrument_cache"),
+        patch("django_o11y.tracing.instrumentation._instrument_celery"),
+        patch("django_o11y.tracing.instrumentation._instrument_http_clients"),
+    ):
+        setup_instrumentation(config)
+
+    assert settings.SQLCOMMENTER_WITH_CONTROLLER is True
+    assert settings.SQLCOMMENTER_WITH_ROUTE is True
+    assert settings.SQLCOMMENTER_WITH_APP_NAME is True
 
 
 def test_instrument_cache_redis():

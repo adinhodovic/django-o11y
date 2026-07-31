@@ -53,6 +53,15 @@ def test_config_metrics_otlp_not_present():
     assert "OTLP_ENABLED" not in get_o11y_config()["METRICS"]
 
 
+def test_config_sql_commenter_view_tags_enabled_by_default():
+    tracing_config = get_o11y_config()["TRACING"]
+
+    assert tracing_config["SQL_COMMENTER"] is True
+    assert tracing_config["SQL_COMMENTER_WITH_CONTROLLER"] is True
+    assert tracing_config["SQL_COMMENTER_WITH_ROUTE"] is True
+    assert tracing_config["SQL_COMMENTER_WITH_APP_NAME"] is True
+
+
 def test_config_startup_server_commands_match_defaults():
     assert (
         get_o11y_config()["STARTUP"]["SERVER_COMMANDS"] == get_default_server_commands()
@@ -97,6 +106,19 @@ def test_env_vars_take_precedence_over_django_settings(monkeypatch):
     assert config["CELERY"]["ENABLED"] is True
     assert config["PROFILING"]["ENABLED"] is True
     assert config["STARTUP"]["SERVER_COMMANDS"] == ["runserver", "tailwind"]
+
+
+@override_settings(DJANGO_O11Y={})
+def test_sql_commenter_tag_env_vars(monkeypatch):
+    monkeypatch.setenv("DJANGO_O11Y_TRACING_SQL_COMMENTER_WITH_CONTROLLER", "false")
+    monkeypatch.setenv("DJANGO_O11Y_TRACING_SQL_COMMENTER_WITH_ROUTE", "false")
+    monkeypatch.setenv("DJANGO_O11Y_TRACING_SQL_COMMENTER_WITH_APP_NAME", "false")
+
+    config = get_config()
+
+    assert config["TRACING"]["SQL_COMMENTER_WITH_CONTROLLER"] is False
+    assert config["TRACING"]["SQL_COMMENTER_WITH_ROUTE"] is False
+    assert config["TRACING"]["SQL_COMMENTER_WITH_APP_NAME"] is False
 
 
 @pytest.mark.parametrize(

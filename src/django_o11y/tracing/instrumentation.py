@@ -2,18 +2,33 @@
 
 from typing import Any
 
+from django.conf import settings
+
+_SQL_COMMENTER_SETTINGS = {
+    "SQL_COMMENTER_WITH_CONTROLLER": "SQLCOMMENTER_WITH_CONTROLLER",
+    "SQL_COMMENTER_WITH_ROUTE": "SQLCOMMENTER_WITH_ROUTE",
+    "SQL_COMMENTER_WITH_APP_NAME": "SQLCOMMENTER_WITH_APP_NAME",
+}
+
 
 def setup_instrumentation(config: dict[str, Any]) -> None:
     """Set up automatic tracing instrumentation for Django and dependencies."""
     from opentelemetry.instrumentation.django import DjangoInstrumentor
 
+    tracing_config = config.get("TRACING", {})
+    _configure_sql_commenter_settings(tracing_config)
     DjangoInstrumentor().instrument(
-        is_sql_commentor_enabled=config.get("TRACING", {}).get("SQL_COMMENTER", True)
+        is_sql_commentor_enabled=tracing_config.get("SQL_COMMENTER", True)
     )
     _instrument_database()
     _instrument_cache()
     _instrument_celery(config)
     _instrument_http_clients(config)
+
+
+def _configure_sql_commenter_settings(tracing_config: dict[str, Any]) -> None:
+    for config_key, django_setting in _SQL_COMMENTER_SETTINGS.items():
+        setattr(settings, django_setting, tracing_config.get(config_key, True))
 
 
 def _instrument_database() -> None:

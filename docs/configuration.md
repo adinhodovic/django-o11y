@@ -42,6 +42,12 @@ Log file paths include a `<project>` suffix derived from `SERVICE_NAME`. If `OTE
 | `TRACING.SAMPLE_RATE` | float | `1.0` (`DEBUG=True`) / `0.01` (`DEBUG=False`) | `OTEL_TRACES_SAMPLER_ARG` |
 | `TRACING.CONSOLE_EXPORTER` | bool | `False` | `DJANGO_O11Y_TRACING_CONSOLE_EXPORTER` |
 | `TRACING.AWS_ENABLED` | bool | `False` | `DJANGO_O11Y_TRACING_AWS_ENABLED` |
+| `TRACING.SQL_COMMENTER` | bool | `True` | `DJANGO_O11Y_TRACING_SQL_COMMENTER` |
+| `TRACING.SQL_COMMENTER_WITH_CONTROLLER` | bool | `True` | `DJANGO_O11Y_TRACING_SQL_COMMENTER_WITH_CONTROLLER` |
+| `TRACING.SQL_COMMENTER_WITH_ROUTE` | bool | `True` | `DJANGO_O11Y_TRACING_SQL_COMMENTER_WITH_ROUTE` |
+| `TRACING.SQL_COMMENTER_WITH_APP_NAME` | bool | `True` | `DJANGO_O11Y_TRACING_SQL_COMMENTER_WITH_APP_NAME` |
+
+`TRACING.SQL_COMMENTER` enables OpenTelemetry's Django SQLCommenter integration. By default, SQL comments include the Django view/controller, route, and app name tags, so database logs and query observability can be grouped by the code path that issued the query.
 
 ### Logging
 

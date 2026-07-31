@@ -475,6 +475,8 @@ Instrumentation activates automatically when the relevant package is installed. 
 | Outbound HTTP ([httpx](https://www.python-httpx.org/)) | One span per call | `django-o11y[http]` |
 | AWS SDK ([botocore](https://botocore.amazonaws.com/v1/documentation/api/latest/index.html)) | One span per API call — S3, SQS, SES, etc. | `django-o11y[aws]` + `TRACING.AWS_ENABLED: True` |
 
+SQLCommenter is enabled by default for Django queries. SQL comments include view/controller, route, and app name tags by default, for example `controller='order_detail'`, `route='orders/<int:pk>/'`, and `app_name='orders'`, so database logs can be grouped by the Django code path that issued each query. Use `TRACING.SQL_COMMENTER_WITH_CONTROLLER`, `TRACING.SQL_COMMENTER_WITH_ROUTE`, and `TRACING.SQL_COMMENTER_WITH_APP_NAME` to disable those tags if needed.
+
 ### Celery Tracing
 
 Install the extra:
